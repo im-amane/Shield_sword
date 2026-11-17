@@ -14,7 +14,7 @@ from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
 from app.handlers.warnings import WARN_LIMIT, add_warning, reset_warnings
-from app.storage import (add_allowed_domain, get_allowed_domains, is_feature_enabled, remove_allowed_domain, set_feature_enabled)
+from app.storage import (record_audit_event, add_allowed_domain, get_allowed_domains, is_feature_enabled, remove_allowed_domain, set_feature_enabled)
 
 _URL_RE = re.compile(
     r"(?i)(?:https?://|www\.)[^\s<>]+|"
@@ -183,6 +183,7 @@ def create_antilink_router() -> Router:
             return
 
         count = add_warning(message.chat.id, user.id)
+        record_audit_event(message.chat.id, "anti_link", None, user.id, f"warning={count}")
         if count >= WARN_LIMIT:
             try:
                 await message.bot.restrict_chat_member(
