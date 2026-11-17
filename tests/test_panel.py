@@ -11,7 +11,7 @@ class DashboardTests(unittest.TestCase):
         self.assertIn("<code>112233</code>", text)
         self.assertIn("<code>987654321</code>", text)
         self.assertIn("𝐎𝐧𝐥𝐢𝐧𝐞", text)
-        self.assertIn("Community overview", text)
+        self.assertIn("𝐂𝐨𝐦𝐦𝐮𝐧𝐢𝐭𝐲 𝐨𝐯𝐞𝐫𝐯𝐢𝐞𝐰", text)
 
     def test_dashboard_handles_missing_username(self) -> None:
         text = dashboard_text(None, 112233, 987654321)
@@ -33,10 +33,10 @@ class DashboardTests(unittest.TestCase):
     def test_section_keyboard_returns_to_dashboard(self) -> None:
         callbacks = [
             button.callback_data
-            for row in section_keyboard().inline_keyboard
+            for row in section_keyboard("activity").inline_keyboard
             for button in row
         ]
-        self.assertEqual(callbacks, ["owner_panel:home", "owner_panel:refresh_section", "owner_panel:close"])
+        self.assertEqual(callbacks, ["owner_panel:home", "owner_panel:refresh_activity", "owner_panel:close"])
 
 
 if __name__ == "__main__":
