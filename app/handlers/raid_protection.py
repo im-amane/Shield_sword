@@ -16,6 +16,8 @@ from app.storage import (
     get_raid_join_count,
     record_raid_joins,
     set_raid_expiry,
+    record_security_incident,
+    record_audit_event,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,6 +48,14 @@ def record_join_activity(
     if newly_activated:
         active_until = timestamp + RAID_MODE_SECONDS
         set_raid_expiry(chat_id, active_until)
+        record_security_incident(
+            chat_id, "Telegram group", "raid_detected", "critical",
+            details=f"{count} human joins within {RAID_WINDOW_SECONDS}s",
+        )
+        record_audit_event(
+            chat_id, "raid_detected", None, None,
+            f"{count} human joins within {RAID_WINDOW_SECONDS}s",
+        )
         logger.warning(
             "Raid mode activated chat_id=%s joins=%s window_seconds=%s duration_seconds=%s",
             chat_id, count, RAID_WINDOW_SECONDS, RAID_MODE_SECONDS,
