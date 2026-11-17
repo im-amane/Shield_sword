@@ -53,7 +53,7 @@ def start_keyboard() -> InlineKeyboardMarkup:
 
 
 def help_text() -> str:
-    return (
+    return premium_text((
         "📚 <b>Hey! Need a hand?</b> ✨\n\n"
         "I’m here to help you get started with Ani World.\n\n"
         "🔐 New member verification\n"
