@@ -11,7 +11,7 @@ from aiogram.types import ChatPermissions, Message
 
 from app.security.owner import is_owner
 from app.handlers.typography import premium_text
-from app.storage import record_audit_event, record_security_incident
+from app.storage import record_audit_event, record_security_incident, register_group
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +95,7 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
         & ((F.text == None) | ~F.text.startswith("/"))
     )
     async def inspect_message(message: Message) -> None:
+        register_group(message.chat.id, message.chat.title or "Telegram group")
         user = message.from_user
         if user is None or user.is_bot or is_owner(user.id, owner_id):
             return
