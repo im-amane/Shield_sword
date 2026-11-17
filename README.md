@@ -40,7 +40,7 @@ Open the bot in Telegram and send `/start`. It should reply that the core connec
 ## Railway deployment
 
 1. Create a Railway service from this GitHub repository.
-2. Add `BOT_TOKEN` and `OWNER_ID` in the service's Variables. `OWNER_ID` is required for owner-only commands and the dashboard. Add `WELCOME_CHAT_IDS` as a comma-separated list of negative Telegram group/supergroup IDs where welcome messages should be enabled. Leave it empty to keep the welcome system disabled.
+2. Add `BOT_TOKEN` and `OWNER_ID` in the service's Variables. `OWNER_ID` is required for owner-only commands and the dashboard. The welcome handler is public: it responds to new human members in any group where the bot is added and allowed to send messages. No group ID allowlist is required.
 3. Railway uses `python -m app.main` as the start command from `railway.json`.
 4. Deploy, inspect the logs for the Telegram connection message, then send `/start`.
 
@@ -56,7 +56,7 @@ Open the bot in Telegram and send `/start`. It should reply that the core connec
 - [x] Owner dashboard with refresh and close controls
 - [ ] Automated test suite verified in CI
 - [ ] Live owner dashboard test
-- [x] Welcome system with HTML-safe mentions and explicit group allowlist
+- [x] Public welcome system with HTML-safe mentions for any group where the bot is added
 - [ ] Live welcome test in a configured community group
 
 No moderation or group-management permissions are needed for this first milestone. Add only the permissions required by each later module.
