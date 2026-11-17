@@ -40,7 +40,7 @@ Open the bot in Telegram and send `/start`. It should reply that the core connec
 ## Railway deployment
 
 1. Create a Railway service from this GitHub repository.
-2. Add `BOT_TOKEN` in the service's Variables. Optionally add `OWNER_ID` with the owner's numeric Telegram user ID.
+2. Add `BOT_TOKEN` and `OWNER_ID` in the service's Variables. `OWNER_ID` is required for owner-only commands and the dashboard.
 3. Railway uses `python -m app.main` as the start command from `railway.json`.
 4. Deploy, inspect the logs for the Telegram connection message, then send `/start`.
 
@@ -52,8 +52,6 @@ Open the bot in Telegram and send `/start`. It should reply that the core connec
 - [x] Environment configuration validation
 - [x] Telegram bot startup and connection check
 - [x] `/start` command
-- [ ] Automated tests
-- [ ] Live Telegram test
 - [x] Owner authentication command and fail-closed authorization helper
 - [x] Owner dashboard with refresh and close controls
 - [ ] Automated test suite verified in CI
