@@ -17,12 +17,12 @@ def dashboard_text(bot_username: str | None, bot_id: int, owner_id: int) -> str:
     """Build a concise dashboard view from verified runtime values."""
     username = f"@{bot_username}" if bot_username else "Not available"
     return (
-        "⚔️ <b>Ani World 剣 | Owner Dashboard</b>\n\n"
+        "⚔️ <b>Ani World 剣 | Control Room</b>\n\n"
         "🟢 <b>Bot status:</b> Online\n"
         f"🤖 <b>Bot:</b> {username}\n"
         f"🆔 <b>Bot ID:</b> <code>{bot_id}</code>\n"
         f"🔐 <b>Owner ID:</b> <code>{owner_id}</code>\n\n"
-        "<i>Dashboard is active. Management modules will appear here as they are completed.</i>"
+        "<i>Control room ready. More controls will land here as they're added. 🚀</i>"
     )
 
 
@@ -56,7 +56,7 @@ def create_panel_router(owner_id: int | None) -> Router:
     async def panel_command(message: Message) -> None:
         user_id = message.from_user.id if message.from_user else None
         if not await authorized(user_id):
-            await message.answer("⛔ Access denied. Owner-only dashboard.")
+            await message.answer("⛔ Private zone! Owner dashboard sirf owner ke liye hai. 🔒")
             return
         await render_panel(message)
 
@@ -70,7 +70,7 @@ def create_panel_router(owner_id: int | None) -> Router:
         if callback.data == "owner_panel:close":
             if callback.message:
                 await callback.message.delete()
-            await callback.answer("Dashboard closed.")
+            await callback.answer("Panel closed. Catch you later! 👋")
             return
 
         if callback.data == "owner_panel:refresh":
@@ -80,7 +80,7 @@ def create_panel_router(owner_id: int | None) -> Router:
                     dashboard_text(me.username, me.id, owner_id or 0),
                     reply_markup=dashboard_keyboard(),
                 )
-            await callback.answer("Dashboard refreshed.")
+            await callback.answer("Fresh status loaded. ✨")
             return
 
         await callback.answer("Unknown dashboard action.", show_alert=True)
