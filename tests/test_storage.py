@@ -54,6 +54,18 @@ class StorageTests(unittest.TestCase):
         storage.cleanup_verifications(500)
         self.assertIsNone(storage.get_verification(-100, 7))
 
+    def test_security_audit_is_bounded_and_readable(self) -> None:
+        storage.record_audit_event(-100, "ban", 7, 8, "manual action")
+        events = storage.get_audit_events(10)
+        self.assertEqual(events[0]["action"], "ban")
+        self.assertEqual(events[0]["actor_id"], 7)
+        self.assertEqual(events[0]["target_id"], 8)
+        self.assertEqual(events[0]["details"], "manual action")
+
+    def test_database_backup_is_valid_sqlite(self) -> None:
+        backup = storage.create_database_backup()
+        self.assertTrue(backup.startswith(b"SQLite format 3"))
+
     def test_raid_join_window_and_mode_persist(self) -> None:
         self.assertEqual(storage.record_raid_joins(-100, 3, 1000.0, 60), 3)
         self.assertEqual(storage.get_raid_join_count(-100, 1010.0, 60), 3)
