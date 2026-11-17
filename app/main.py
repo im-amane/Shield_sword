@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 import sys
 
 from aiogram import Bot, Dispatcher
@@ -28,19 +29,25 @@ from app.handlers.copyright import create_copyright_router
 from app.handlers.utility import create_utility_router
 from app.handlers.diagnostics import create_diagnostics_router
 from app.handlers.security_status import create_security_status_router
-from app.storage import create_database_backup, init_storage
+from app.storage import (\n    create_database_backup, init_storage,\n    get_last_automatic_backup_at, set_last_automatic_backup_at,\n)
 from app.handlers.typography import premium_text
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-BACKUP_INTERVAL_SECONDS = 24 * 60 * 60
+BACKUP_INTERVAL_SECONDS = 7 * 24 * 60 * 60
 
 
 async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
-    """Send a validated off-volume database snapshot to the owner every 24 hours."""
+    """Send one verified backup per week, without repeating after process restarts."""
     logger = logging.getLogger(__name__)
-    # Create the first off-volume copy shortly after startup, then repeat daily.
-    await asyncio.sleep(60)
     while True:
+        last_success = get_last_automatic_backup_at()
+        if last_success is None:
+            # Preserve the initial first-run backup, but persist its success below.
+            wait_seconds = 60
+        else:
+            wait_seconds = max(0, BACKUP_INTERVAL_SECONDS - (time.time() - last_success))
+        if wait_seconds:
+            await asyncio.sleep(wait_seconds)
         try:
             snapshot = create_database_backup()
             stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -50,12 +57,12 @@ async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
                     snapshot, filename=f"aniworld-security-backup-{stamp}.sqlite3"
                 ),
                 caption=premium_text(
-                    "🛡️ <b>Automatic Database Backup</b>\\n\\n"
-                    "A verified backup snapshot is attached. Keep it private and safe. 🔐"
+                    "🛡️ <b>Automatic Weekly Database Backup</b>\\n\\n"
+                    "A verified backup snapshot is attached. The next automatic backup is scheduled in 7 days. Keep it private and safe. 🔐"
                 ),
             )
-            logger.info("Automatic database backup delivered to owner (%s bytes).", len(snapshot))
-            await asyncio.sleep(BACKUP_INTERVAL_SECONDS)
+            set_last_automatic_backup_at(time.time())
+            logger.info("Weekly automatic database backup delivered to owner (%s bytes).", len(snapshot))
         except TelegramAPIError:
             logger.exception("Automatic database backup could not be delivered to owner; retrying in one hour.")
             await asyncio.sleep(60 * 60)
