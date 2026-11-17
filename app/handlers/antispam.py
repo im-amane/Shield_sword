@@ -11,6 +11,7 @@ from aiogram.types import ChatPermissions, Message
 
 from app.security.owner import is_owner
 from app.handlers.typography import premium_text
+from app.storage import record_audit_event
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +147,7 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
                 until_date=int(time.time()) + MUTE_SECONDS,
             )
             _last_action[key] = now
+            record_audit_event(message.chat.id, "anti_spam_mute", None, user.id, f"duration={MUTE_SECONDS}s")
             logger.warning(
                 "Anti-spam muted user_id=%s chat_id=%s duration=%ss",
                 user.id,
