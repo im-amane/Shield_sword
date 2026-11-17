@@ -1,4 +1,6 @@
 """Owner-only identity check command."""
+from html import escape
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile, Message
@@ -33,15 +35,15 @@ def create_owner_router(owner_id: int | None) -> Router:
             return
         events = get_audit_events(20)
         if not events:
-            await message.answer(premium_text("📋 <b>Security Audit</b>\\n\\nNo events recorded yet."))
+            await message.answer(premium_text("📋 <b>Security Audit</b>\n\nNo events recorded yet."))
             return
-        lines = ["📋 <b>Recent Security Events</b>\\n"]
+        lines = ["📋 <b>Recent Security Events</b>\n"]
         for event in events:
             target = f" → <code>{event['target_id']}</code>" if event["target_id"] else ""
             actor = f"<code>{event['actor_id']}</code>" if event["actor_id"] else "System"
-            details = f" · {event['details']}" if event["details"] else ""
-            lines.append(f"• <code>{event['created_at']}</code> · {event['action']}\\n  Actor: {actor}{target}{details}")
-        await message.answer(premium_text("\\n".join(lines)[:3900]))
+            details = f" · {escape(str(event['details']))}" if event["details"] else ""
+            lines.append(f"• <code>{event['created_at']}</code> · {escape(str(event['action']))}\n  Actor: {actor}{target}{details}")
+        await message.answer(premium_text("\n".join(lines)[:3900]))
 
     @router.message(Command("backup"))
     async def backup_command(message: Message) -> None:
@@ -53,10 +55,10 @@ def create_owner_router(owner_id: int | None) -> Router:
             snapshot = create_database_backup()
             await message.answer_document(
                 BufferedInputFile(snapshot, filename="aniworld-security-backup.sqlite3"),
-                caption=premium_text("🗄️ <b>Database Backup</b>\\n\\nConsistent SQLite snapshot created. Store it somewhere private. 🔐"),
+                caption=premium_text("🗄️ <b>Database Backup</b>\n\nConsistent SQLite snapshot created. Store it somewhere private. 🔐"),
             )
         except Exception:
-            await message.answer(premium_text("❌ <b>Backup Failed</b>\\n\\nCheck the service logs and database storage."))
+            await message.answer(premium_text("❌ <b>Backup Failed</b>\n\nCheck the service logs and database storage."))
             raise
 
     return router
