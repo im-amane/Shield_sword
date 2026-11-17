@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import re
-from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from html import escape
 from urllib.parse import urlsplit
@@ -15,11 +14,7 @@ from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
 from app.handlers.warnings import WARN_LIMIT, add_warning, reset_warnings
-
-# Runtime settings are intentionally in-memory, matching the current warning store.
-# Protection defaults to ON for every group; toggles and allowlists reset on restart.
-_disabled_chats: set[int] = set()
-_allowed_domains: dict[int, set[str]] = defaultdict(set)
+from app.storage import (add_allowed_domain, get_allowed_domains, is_feature_enabled, remove_allowed_domain, set_feature_enabled)
 
 _URL_RE = re.compile(
     r"(?i)(?:https?://|www\.)[^\s<>]+|"
@@ -103,10 +98,10 @@ def create_antilink_router() -> Router:
         action = args[1].strip().lower() if len(args) > 1 else "status"
         chat_id = message.chat.id
         if action == "on":
-            _disabled_chats.discard(chat_id)
+            set_feature_enabled('antilink', chat_id, True)
             response = "✅ <b>Anti-Link Enabled</b>\n\nLinks from members will be removed. Admins are exempt."
         elif action == "off":
-            _disabled_chats.add(chat_id)
+            set_feature_enabled('antilink', chat_id, False)
             response = "⏸️ <b>Anti-Link Disabled</b>\n\nMembers can share links again."
         elif action in {"status", "help"}:
             state = "OFF" if chat_id in _disabled_chats else "ON"
@@ -137,7 +132,7 @@ def create_antilink_router() -> Router:
             domain = normalize_domain(args[1])
             if domain in _TG_HOSTS or domain.endswith("t.me"):
                 raise ValueError("Telegram invite domains cannot be trusted.")
-            _allowed_domains[message.chat.id].add(domain)
+            add_allowed_domain(message.chat.id, domain)
         except ValueError as exc:
             await message.answer(premium_text(f"⚠️ <b>Invalid Domain</b>\n\n{escape(str(exc))}"))
             return
@@ -155,7 +150,7 @@ def create_antilink_router() -> Router:
         except ValueError as exc:
             await message.answer(premium_text(f"⚠️ <b>Invalid Domain</b>\n\n{escape(str(exc))}"))
             return
-        _allowed_domains[message.chat.id].discard(domain)
+        remove_allowed_domain(message.chat.id, domain)
         await message.answer(premium_text(f"✅ <b>Domain Removed</b>\n\n<code>{escape(domain)}</code> is no longer trusted."))
 
     @router.message(
@@ -164,7 +159,7 @@ def create_antilink_router() -> Router:
         & ((F.text == None) | ~F.text.startswith("/"))
     )
     async def inspect_message(message: Message) -> None:
-        if message.chat.id in _disabled_chats or not message.from_user:
+        if not is_feature_enabled('antilink', message.chat.id) or not message.from_user:
             return
         user = message.from_user
         if user.is_bot:
@@ -177,7 +172,7 @@ def create_antilink_router() -> Router:
             return
 
         links = extract_links(message)
-        blocked = [url for url in links if not is_allowed_link(url, _allowed_domains[message.chat.id])]
+        blocked = [url for url in links if not is_allowed_link(url, get_allowed_domains(message.chat.id))]
         if not blocked:
             return
 
