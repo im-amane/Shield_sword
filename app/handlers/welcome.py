@@ -28,9 +28,9 @@ def render_welcome_message(chat_title: str, members: list[User]) -> str:
     count = len(members)
     noun = "member" if count == 1 else "members"
     return (
-        f"👋 Welcome to <b>{safe_chat_title}</b>!\n\n"
-        f"Welcome {joined_names}! You are our new {noun}. 🎉\n"
-        "Please follow the group rules and keep the conversation friendly."
+        f"👋 <b>{safe_chat_title}</b> mein welcome!\n\n"
+        f"Hey {joined_names}, glad you're here! ✨\n"
+        "Rules check kar lena, vibes positive rakhna aur enjoy karo. 💜"
     )
 
 
