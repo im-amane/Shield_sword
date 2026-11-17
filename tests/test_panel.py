@@ -14,7 +14,7 @@ class DashboardTests(unittest.TestCase):
 
     def test_dashboard_handles_missing_username(self) -> None:
         text = dashboard_text(None, 112233, 987654321)
-        self.assertIn("Not available", text)
+        self.assertIn("𝐍𝐨𝐭 𝐚𝐯𝐚𝐢𝐥𝐚𝐛𝐥𝐞", text)
 
     def test_keyboard_exposes_only_refresh_and_close(self) -> None:
         keyboard = dashboard_keyboard()
