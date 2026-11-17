@@ -14,7 +14,7 @@ from aiogram.filters import Command
 from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
-from app.handlers.warnings import WARN_LIMIT, add_warning, get_warnings, reset_warnings
+from app.handlers.warnings import WARN_LIMIT, add_warning, reset_warnings
 
 # Runtime settings are intentionally in-memory, matching the current warning store.
 # Protection defaults to ON for every group; toggles and allowlists reset on restart.
@@ -160,6 +160,7 @@ def create_antilink_router() -> Router:
 
     @router.message(
         F.chat.type.in_({"group", "supergroup"})
+        & ((F.text.regexp(_URL_RE)) | (F.caption.regexp(_URL_RE)) | (F.entities) | (F.caption_entities))
         & ((F.text == None) | ~F.text.startswith("/"))
     )
     async def inspect_message(message: Message) -> None:
