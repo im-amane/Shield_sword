@@ -63,6 +63,12 @@ def create_moderation_router() -> Router:
         if actor.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
             await message.answer(premium_text("🔒 <b>Admin Only</b>\n\nOnly group admins can use this command."))
             return False
+        if actor.status == ChatMemberStatus.ADMINISTRATOR:
+            actor_has_right = getattr(actor, "can_delete_messages", False) if delete else getattr(actor, "can_restrict_members", False)
+            if not actor_has_right:
+                needed = "Delete Messages" if delete else "Ban Users"
+                await message.answer(premium_text(f"🔒 <b>Missing Admin Right</b>\n\nYour admin role needs the {needed} permission."))
+                return False
         if bot_member.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
             await message.answer(premium_text("⚙️ <b>Bot Permission Needed</b>\n\nPlease promote Ani World as an admin first."))
             return False
@@ -82,7 +88,11 @@ def create_moderation_router() -> Router:
         if target.is_bot:
             await message.answer(premium_text("🤖 I can't moderate another bot with this command."))
             return None
-        member = await message.bot.get_chat_member(message.chat.id, target.id)
+        try:
+            member = await message.bot.get_chat_member(message.chat.id, target.id)
+        except Exception:
+            await message.answer(premium_text("❌ <b>Member Lookup Failed</b>\n\nI could not verify that member in this group."))
+            return None
         if member.status in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
             await message.answer(premium_text("🛡️ <b>Protected Member</b>\n\nI won't apply moderation actions to a group admin."))
             return None
@@ -145,7 +155,7 @@ def create_moderation_router() -> Router:
         except Exception:
             await message.answer(premium_text("❌ <b>Unmute Failed</b>\n\nCheck my admin permissions and try again."))
             return
-        await message.answer(premium_text(f"🔊 <b>Member Unmuted</b>\n\n👤 {target.full_name} can chat again. 💬"))
+        await message.answer(premium_text(f"🔊 <b>Member Unmuted</b>\n\n👤 {escape(target.full_name)} can chat again. 💬"))
 
     @router.message(Command("ban"))
     async def ban_command(message: Message) -> None:
@@ -216,8 +226,6 @@ def create_moderation_router() -> Router:
                         deleted += 1
                     except Exception:
                         continue
-        notice = await message.answer(premium_text(f"🧹 <b>Cleanup Complete</b>\n\nDeleted {deleted} messages."))
-        # Keep the confirmation brief; it is not part of the bulk deletion range.
-        _ = notice
+        await message.answer(premium_text(f"🧹 <b>Cleanup Complete</b>\n\nDeleted {deleted} messages."))
 
     return router
