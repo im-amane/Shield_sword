@@ -42,7 +42,7 @@ async def run() -> None:
     dispatcher.include_router(create_panel_router(settings.owner_id))
     dispatcher.include_router(create_welcome_router(settings.welcome_chat_ids, settings.owner_id))
     dispatcher.include_router(create_verification_router())
-    dispatcher.include_router(create_moderation_router())
+    dispatcher.include_router(create_moderation_router(settings.owner_id))
     dispatcher.include_router(create_warning_router())
     dispatcher.include_router(create_badwords_router())
     dispatcher.include_router(create_copyright_router())
