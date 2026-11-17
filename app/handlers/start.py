@@ -46,6 +46,9 @@ def start_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(text="👤 Owner", callback_data="start:owner"),
+                InlineKeyboardButton(text="✨ About Me", callback_data="start:about"),
+            ],
+            [
                 InlineKeyboardButton(text="➕ Add Me to Your Group", callback_data="start:addgroup"),
             ],
         ]
@@ -181,7 +184,7 @@ async def start_command(message: Message) -> None:
 
 @router.message(Command("help"))
 async def help_command(message: Message) -> None:
-    await message.answer(help_text(), reply_markup=help_keyboard())
+    await message.answer(premium_text(help_text()), reply_markup=help_keyboard())
 
 
 @router.callback_query(F.data.startswith("help:"))
@@ -191,7 +194,7 @@ async def help_section_callback(callback: CallbackQuery) -> None:
         await callback.answer()
         return
     if section == "home":
-        await callback.message.edit_text(help_text(), reply_markup=help_keyboard())
+        await callback.message.edit_text(premium_text(help_text()), reply_markup=help_keyboard())
         await callback.answer()
         return
     content = _HELP_SECTIONS.get(section)
