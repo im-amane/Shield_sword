@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from html import escape
 
 from aiogram import F, Router
@@ -14,7 +15,10 @@ from app.handlers.raid_protection import (
 )
 from app.handlers.verification import start_member_verification
 from app.handlers.typography import premium_text
-from app.storage import register_group, record_member_join
+from app.storage import (
+    get_raid_join_count, has_recent_security_incident, record_security_incident,
+    register_group, record_member_join,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +74,31 @@ def create_welcome_router(
         )
         if newly_activated:
             await announce_raid_activation(message, owner_id, join_count)
+
+        # Early warning only: a short join burst alerts the owner but does not
+        # automatically restrict members or switch the group into lockdown.
+        surge_count = get_raid_join_count(message.chat.id, time.time(), 60)
+        if surge_count >= 25 and not has_recent_security_incident(
+            message.chat.id, "join_surge", 600
+        ):
+            record_security_incident(
+                message.chat.id, chat_title, "join_surge", "high",
+                details=f"{surge_count} human joins within 60 seconds; monitoring alert only",
+            )
+            if owner_id is not None:
+                try:
+                    await message.bot.send_message(
+                        owner_id,
+                        premium_text(
+                            "⚠️ <b>Unusual Join Surge</b>\n\n"
+                            f"Group: {escape(chat_title)}\n"
+                            f"Chat ID: <code>{message.chat.id}</code>\n"
+                            f"Human joins in the last minute: <b>{surge_count}</b>\n\n"
+                            "This is an early-warning alert only. No members were automatically banned."
+                        ),
+                    )
+                except TelegramAPIError:
+                    logger.exception("Could not deliver join-surge alert to owner.")
 
         # Verification already applies to every new human member, including during raid mode.
         await start_member_verification(message, members)
