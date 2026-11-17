@@ -79,9 +79,4 @@ def create_welcome_router(
             message.chat.id,
         )
 
-    @router.message(F.chat.type.in_({"group", "supergroup"}))
-    async def remember_active_group(message: Message) -> None:
-        # Register groups on ordinary traffic too, not only when someone joins.
-        register_group(message.chat.id, message.chat.title or "Telegram group")
-
     return router
