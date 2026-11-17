@@ -51,16 +51,21 @@ def create_welcome_router(
 
     @router.message(F.new_chat_members)
     async def welcome_new_members(message: Message) -> None:
-        members = [
-            member
-            for member in (message.new_chat_members or [])
-            if not member.is_bot
-        ]
-        if not members:
+        joined_members = list(message.new_chat_members or [])
+        if not joined_members:
             return
 
         chat_title = message.chat.title or "Telegram group"
         register_group(message.chat.id, chat_title)
+        members = [member for member in joined_members if not member.is_bot]
+        for bot_member in (member for member in joined_members if member.is_bot):
+            record_security_incident(
+                message.chat.id, chat_title, "bot_join", "medium",
+                bot_member.id, bot_member.username, bot_member.full_name,
+                "Bot account joined; review whether it is trusted.",
+            )
+        if not members:
+            return
         for member in members:
             record_member_join(
                 message.chat.id, chat_title, member.id,
