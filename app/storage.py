@@ -106,6 +106,10 @@ CREATE TABLE IF NOT EXISTS security_incidents (
     display_name TEXT NOT NULL DEFAULT '',
     details TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS automatic_backup_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    last_success_at REAL NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_security_incidents_time
     ON security_incidents(created_at DESC);
 """
@@ -540,3 +544,23 @@ def is_copyright_enabled(chat_id: int) -> bool:
             "SELECT enabled FROM copyright_settings WHERE chat_id=?", (chat_id,)
         ).fetchone()
     return bool(row[0]) if row else True
+
+
+
+def get_last_automatic_backup_at() -> float | None:
+    """Return the Unix timestamp of the last successfully delivered automatic backup."""
+    with _connection() as db:
+        row = db.execute(
+            "SELECT last_success_at FROM automatic_backup_state WHERE id=1"
+        ).fetchone()
+    return float(row[0]) if row else None
+
+
+def set_last_automatic_backup_at(timestamp: float) -> None:
+    """Persist the last successful automatic backup time across service restarts."""
+    with _connection() as db:
+        db.execute(
+            """INSERT INTO automatic_backup_state(id, last_success_at) VALUES (1, ?)
+               ON CONFLICT(id) DO UPDATE SET last_success_at=excluded.last_success_at""",
+            (float(timestamp),),
+        )
