@@ -90,7 +90,8 @@ _HELP_SECTIONS = {
         "/help - Open this help center\n"
         "/id - Show your ID and chat ID\n"
         "/id (reply) - Show another member's ID\n"
-        "/checkpermissions - Check Guardian's admin rights in this group"
+        "/checkpermissions - Check Guardian's admin rights in this group\n"
+        "/security - View this group's protection status"
     ),
     "moderation": (
         "🛡️ <b>Group Moderation</b>\n\n"
@@ -136,6 +137,8 @@ _HELP_SECTIONS = {
     ),
     "permissions": (
         "⚙️ <b>Bot Permissions</b>\n\n"
+        "/security - View protection status (group admins)\n"
+        "/checkpermissions - Check the bot's admin rights\n\n"
         "Promote Ani World as an administrator in your group.\n\n"
         "• <b>Delete Messages:</b> Anti-link and purge\n"
         "• <b>Ban Users:</b> Mute, ban, kick, warnings and verification\n\n"
