@@ -169,7 +169,7 @@ def create_moderation_router() -> Router:
         except Exception:
             await message.answer(premium_text("❌ <b>Ban Failed</b>\n\nCheck my admin permissions and try again."))
             return
-        await message.answer(premium_text(f"⛔ <b>Member Banned</b>\n\n👤 {target.full_name} has been removed from the group."))
+        await message.answer(premium_text(f"⛔ <b>Member Banned</b>\n\n👤 {escape(target.full_name)} has been removed from the group."))
 
     @router.message(Command("kick"))
     async def kick_command(message: Message) -> None:
