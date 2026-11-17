@@ -22,11 +22,13 @@ from app.handlers.warnings import create_warning_router
 from app.handlers.antilink import create_antilink_router
 from app.handlers.badwords import create_badwords_router
 from app.handlers.utility import create_utility_router
+from app.storage import init_storage
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 
 
 async def run() -> None:
+    init_storage()
     settings = load_settings()
     bot = Bot(
         token=settings.bot_token,
