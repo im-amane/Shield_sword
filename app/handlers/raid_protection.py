@@ -96,7 +96,7 @@ def create_raid_router(owner_id: int | None = None) -> Router:
     @router.message(Command("raidstatus"))
     async def raid_status_command(message: Message) -> None:
         if not message.from_user or not is_owner(message.from_user.id, owner_id):
-            await message.answer("🔒 <b>Owner Access Only</b>\n\nRaid controls are reserved for the bot owner. 👑")
+            await message.answer(premium_text("🔒 <b>Owner Access Only</b>\n\nRaid controls are reserved for the bot owner. 👑"))
             return
         active, count, remaining = raid_status(message.chat.id)
         state = "🚨 ACTIVE" if active else "🟢 INACTIVE"
@@ -111,12 +111,12 @@ def create_raid_router(owner_id: int | None = None) -> Router:
     @router.message(Command("raidoff"))
     async def raid_off_command(message: Message) -> None:
         if not message.from_user or not is_owner(message.from_user.id, owner_id):
-            await message.answer("🔒 <b>Owner Access Only</b>\n\nThis control is reserved for the bot owner. 👑")
+            await message.answer(premium_text("🔒 <b>Owner Access Only</b>\n\nThis control is reserved for the bot owner. 👑"))
             return
         if disable_raid_mode(message.chat.id):
-            await message.answer("🟢 <b>All Clear!</b>\n\nRaid Shield has been disabled by the owner.\nYour community is back to normal mode. 💚")
+            await message.answer(premium_text("🟢 <b>All Clear!</b>\n\nRaid Shield has been disabled by the owner.\nYour community is back to normal mode. 💚"))
         else:
-            await message.answer("😌 <b>All Clear!</b>\n\nRaid Shield is already inactive. Your group is in normal mode. 💚")
+            await message.answer(premium_text("😌 <b>All Clear!</b>\n\nRaid Shield is already inactive. Your group is in normal mode. 💚"))
 
     return router
 
