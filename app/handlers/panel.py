@@ -118,11 +118,11 @@ def section_text(section: str) -> str:
     return "Unknown panel section."
 
 
-def section_keyboard() -> InlineKeyboardMarkup:
+def section_keyboard(section: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="⬅️ Dashboard", callback_data="owner_panel:home"),
-            InlineKeyboardButton(text="🔄 Refresh", callback_data="owner_panel:refresh_section"),
+            InlineKeyboardButton(text="🔄 Refresh", callback_data=f"owner_panel:refresh_{section}"),
         ],
         [InlineKeyboardButton(text="✖️ Close", callback_data="owner_panel:close")],
     ])
@@ -172,7 +172,7 @@ def create_panel_router(owner_id: int | None) -> Router:
                 )
             elif action in {"security", "groups", "activity", "database"}:
                 await callback.message.edit_text(
-                    section_text(action), reply_markup=section_keyboard()
+                    section_text(action), reply_markup=section_keyboard(action)
                 )
             elif action == "refresh":
                 me = await callback.bot.get_me()
