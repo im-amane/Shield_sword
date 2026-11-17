@@ -55,7 +55,7 @@ def create_badwords_router() -> Router:
 
     async def require_admin(message: Message) -> bool:
         if message.chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
-            await message.answer("This command only works in groups.")
+            await message.answer(premium_text("⚠️ This command only works in groups."))
             return False
         if not message.from_user:
             return False
@@ -64,16 +64,16 @@ def create_badwords_router() -> Router:
             me = await message.bot.get_me()
             bot_member = await message.bot.get_chat_member(message.chat.id, me.id)
         except TelegramAPIError:
-            await message.answer("Permission check failed. Please try again.")
+            await message.answer(premium_text("❌ Permission check failed. Please try again. 🛠️"))
             return False
         if actor.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
-            await message.answer("Only group admins can manage the bad-words filter.")
+            await message.answer(premium_text("🔒 Only group admins can manage the bad-words filter."))
             return False
         if actor.status == ChatMemberStatus.ADMINISTRATOR and not getattr(actor, "can_delete_messages", False):
-            await message.answer("You need Delete Messages permission to manage this filter.")
+            await message.answer(premium_text("⚙️ You need Delete Messages permission to manage this filter."))
             return False
         if bot_member.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR) or not getattr(bot_member, "can_delete_messages", False):
-            await message.answer("Promote Ani World with Delete Messages permission.")
+            await message.answer(premium_text("🛡️ Promote Ani World with Delete Messages permission."))
             return False
         return True
 
