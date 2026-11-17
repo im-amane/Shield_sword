@@ -43,7 +43,7 @@ The bot needs these Telegram administrator permissions for the current group fea
 ## Current group protection
 
 - Public welcome messages for new human members.
-- Arithmetic captcha verification for every new human member.
+- Arithmetic captcha verification for every new human member. Members stay restricted until they answer correctly; unanswered challenges expire after 3 minutes and the bot removes the member. Expired challenges are enforced by a persistent worker, including after service restarts.
 - Anti-spam: flood detection and temporary 60-second restrictions.
 - Automatic raid detection: activates when **500 human members join within 10 minutes**.
 - Raid mode lasts **30 minutes** and sends an alert to the group and configured owner. The owner can use `/raidstatus` in a group to inspect it and `/raidoff` to disable it manually.
