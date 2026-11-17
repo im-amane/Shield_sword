@@ -213,7 +213,7 @@ def create_moderation_router() -> Router:
             return
         start_id = message.reply_to_message.message_id
         end_id = message.message_id
-        ids = list(range(start_id, end_id + 1))[-100:]
+        ids = list(range(start_id, end_id + 1))[:100]
         deleted = 0
         for offset in range(0, len(ids), 100):
             try:
