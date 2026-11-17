@@ -18,7 +18,10 @@ from aiogram.types import (
 )
 
 from app.handlers.typography import premium_text
-from app.storage import delete_verification, get_expired_verifications, get_verification, save_verification
+from app.storage import (
+    delete_verification, get_expired_verifications, get_verification,
+    record_audit_event, record_security_incident, save_verification,
+)
 
 logger = logging.getLogger(__name__)
 CHALLENGE_TTL_SECONDS = 180
@@ -57,6 +60,14 @@ async def expire_member_verification(bot, chat_id: int, user_id: int) -> bool:
             only_if_banned=True,
         )
         delete_verification(chat_id, user_id)
+        record_audit_event(
+            chat_id, "captcha_timeout_removal", None, user_id,
+            "Member did not complete the join verification before expiry",
+        )
+        record_security_incident(
+            chat_id, "Telegram group", "captcha_timeout", "medium",
+            user_id, details="Member removed after CAPTCHA deadline",
+        )
         logger.info(
             "Removed unverified member user_id=%s chat_id=%s",
             user_id, chat_id,
