@@ -111,7 +111,10 @@ _HELP_SECTIONS = {
         "/antilink on - Enable link protection\n"
         "/antilink off - Disable link protection\n"
         "/allowdomain example.com - Trust a domain\n"
-        "/removedomain example.com - Remove a trusted domain\n\n"
+        "/removedomain example.com - Remove a trusted domain\n\n"        "/badwords - Check or configure the bad-words filter\n"
+        "/badwords on|off - Toggle the filter\n"
+        "/addword phrase - Add a blocked word or phrase\n"
+        "/removeword phrase - Remove a blocked word or phrase\n\n"
         "Group admins are exempt. Telegram invite links cannot be allowlisted. "
         "Requires Delete Messages permission."
     ),
