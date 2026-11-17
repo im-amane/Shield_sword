@@ -189,7 +189,7 @@ def create_moderation_router() -> Router:
             await message.answer(premium_text("❌ <b>Kick Failed</b>\n\nCheck my admin permissions and try again."))
             return
         record_audit_event(message.chat.id, "kick", message.from_user.id if message.from_user else None, target.id)
-        await message.answer(premium_text(f"👢 <b>Member Kicked</b>\n\n👤 {target.full_name} was removed. They can rejoin using an invite link."))
+        await message.answer(premium_text(f"👢 <b>Member Kicked</b>\n\n👤 {escape(target.full_name)} was removed. They can rejoin using an invite link."))
 
     @router.message(Command("unban"))
     async def unban_command(message: Message) -> None:
