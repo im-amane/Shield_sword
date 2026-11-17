@@ -13,6 +13,8 @@ class ConfigurationError(RuntimeError):
 class Settings:
     bot_token: str
     owner_id: int | None
+    # Kept as an empty compatibility field for existing deployments; welcome is public.
+    welcome_chat_ids: tuple[int, ...] = ()
 
 
 def load_settings() -> Settings:
