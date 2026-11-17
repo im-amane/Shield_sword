@@ -3,13 +3,20 @@ from __future__ import annotations
 
 import logging
 import time
-from collections import defaultdict, deque
 
 from aiogram import Router
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message, User
 
 from app.handlers.typography import premium_text
+from app.storage import (
+    clear_raid_data,
+    clear_raid_expiry,
+    get_raid_expiry,
+    get_raid_join_count,
+    record_raid_joins,
+    set_raid_expiry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +24,6 @@ logger = logging.getLogger(__name__)
 RAID_JOIN_THRESHOLD = 500
 RAID_WINDOW_SECONDS = 10 * 60
 RAID_MODE_SECONDS = 30 * 60
-_join_events: dict[int, deque[float]] = defaultdict(deque)
-_raid_until: dict[int, float] = {}
 
 
 def record_join_activity(
@@ -26,76 +31,57 @@ def record_join_activity(
     members: list[User],
     now: float | None = None,
 ) -> tuple[bool, int, bool]:
-    """Record a join batch; return (newly_activated, count_in_window, is_active)."""
-    timestamp = time.monotonic() if now is None else now
-    events = _join_events[chat_id]
-    while events and timestamp - events[0] > RAID_WINDOW_SECONDS:
-        events.popleft()
-
+    """Persist join activity and return (newly_activated, count, is_active)."""
+    timestamp = time.time() if now is None else now
     human_count = sum(1 for member in members if not member.is_bot)
-    events.extend([timestamp] * human_count)
-
-    # Remove expired state and stale chat counters to keep memory bounded.
-    active_until = _raid_until.get(chat_id, 0.0)
+    count = record_raid_joins(
+        chat_id, human_count, timestamp, RAID_WINDOW_SECONDS
+    )
+    active_until = get_raid_expiry(chat_id)
     if active_until <= timestamp:
-        _raid_until.pop(chat_id, None)
+        clear_raid_expiry(chat_id)
         active_until = 0.0
 
-    for stale_chat_id, stale_events in list(_join_events.items()):
-        while stale_events and timestamp - stale_events[0] > RAID_WINDOW_SECONDS:
-            stale_events.popleft()
-        if not stale_events and stale_chat_id != chat_id:
-            _join_events.pop(stale_chat_id, None)
-
-    count = len(events)
     newly_activated = count >= RAID_JOIN_THRESHOLD and active_until <= timestamp
     if newly_activated:
-        _raid_until[chat_id] = timestamp + RAID_MODE_SECONDS
+        active_until = timestamp + RAID_MODE_SECONDS
+        set_raid_expiry(chat_id, active_until)
         logger.warning(
             "Raid mode activated chat_id=%s joins=%s window_seconds=%s duration_seconds=%s",
-            chat_id,
-            count,
-            RAID_WINDOW_SECONDS,
-            RAID_MODE_SECONDS,
+            chat_id, count, RAID_WINDOW_SECONDS, RAID_MODE_SECONDS,
         )
-
     return newly_activated, count, newly_activated or active_until > timestamp
 
 
 def is_raid_mode_active(chat_id: int, now: float | None = None) -> bool:
     """Return whether raid mode is currently active for a chat."""
-    timestamp = time.monotonic() if now is None else now
-    until = _raid_until.get(chat_id, 0.0)
+    timestamp = time.time() if now is None else now
+    until = get_raid_expiry(chat_id)
     if until <= timestamp:
-        _raid_until.pop(chat_id, None)
+        clear_raid_expiry(chat_id)
         return False
     return True
 
 
 def reset_raid_state() -> None:
-    """Clear in-memory raid state; intended for isolated tests."""
-    _join_events.clear()
-    _raid_until.clear()
+    """Clear persisted raid state; intended for isolated tests."""
+    clear_raid_data()
 
 
 def disable_raid_mode(chat_id: int) -> bool:
     """Disable raid mode for one chat; return whether it was active."""
-    return _raid_until.pop(chat_id, None) is not None
+    return clear_raid_expiry(chat_id)
 
 
 def raid_status(chat_id: int, now: float | None = None) -> tuple[bool, int, int]:
     """Return (active, joins_in_window, seconds_remaining) for one chat."""
-    timestamp = time.monotonic() if now is None else now
-    events = _join_events.get(chat_id, deque())
-    while events and timestamp - events[0] > RAID_WINDOW_SECONDS:
-        events.popleft()
-    if not events:
-        _join_events.pop(chat_id, None)
-    until = _raid_until.get(chat_id, 0.0)
+    timestamp = time.time() if now is None else now
+    count = get_raid_join_count(chat_id, timestamp, RAID_WINDOW_SECONDS)
+    until = get_raid_expiry(chat_id)
     if until <= timestamp:
-        _raid_until.pop(chat_id, None)
-        return False, len(events), 0
-    return True, len(events), max(0, int(until - timestamp))
+        clear_raid_expiry(chat_id)
+        return False, count, 0
+    return True, count, max(0, int(until - timestamp))
 
 
 def create_raid_router(owner_id: int | None = None) -> Router:
