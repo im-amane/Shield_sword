@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import re
-from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from html import escape
 
@@ -14,10 +13,7 @@ from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
 from app.handlers.warnings import WARN_LIMIT, add_warning, reset_warnings
-
-# Enabled by default, but no words are assumed. Group admins configure their own list.
-_disabled_chats: set[int] = set()
-_chat_words: dict[int, set[str]] = defaultdict(set)
+from app.storage import add_badword, get_badwords, is_feature_enabled, remove_badword, set_feature_enabled
 
 
 def normalize_word(value: str) -> str:
@@ -46,12 +42,12 @@ class BadWordMatchFilter(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         if message.chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
             return False
-        if message.chat.id in _disabled_chats or not message.from_user or message.from_user.is_bot:
+        if not is_feature_enabled('badwords', message.chat.id) or not message.from_user or message.from_user.is_bot:
             return False
         if message.text and message.text.startswith("/"):
             return False
         value = message.text or message.caption or ""
-        return bool(value and contains_bad_word(value, _chat_words[message.chat.id]))
+        return bool(value and contains_bad_word(value, get_badwords(message.chat.id)))
 
 
 def create_badwords_router() -> Router:
@@ -89,10 +85,10 @@ def create_badwords_router() -> Router:
         action = args[1].strip().casefold() if len(args) > 1 else "status"
         chat_id = message.chat.id
         if action == "on":
-            _disabled_chats.discard(chat_id)
+            set_feature_enabled('badwords', chat_id, True)
             response = "✅ <b>Bad-Words Filter Enabled</b>"
         elif action == "off":
-            _disabled_chats.add(chat_id)
+            set_feature_enabled('badwords', chat_id, False)
             response = "⏸️ <b>Bad-Words Filter Disabled</b>"
         elif action == "status":
             state = "OFF" if chat_id in _disabled_chats else "ON"
@@ -122,7 +118,7 @@ def create_badwords_router() -> Router:
         except ValueError as exc:
             await message.answer(premium_text(f"⚠️ <b>Invalid Word</b>\n\n{escape(str(exc))}"))
             return
-        _chat_words[message.chat.id].add(word)
+        add_badword(message.chat.id, word)
         await message.answer(premium_text(f"✅ Added <code>{escape(word)}</code> to the bad-words list."))
 
     @router.message(Command("removeword"))
@@ -137,7 +133,7 @@ def create_badwords_router() -> Router:
         except ValueError as exc:
             await message.answer(premium_text(f"⚠️ <b>Invalid Word</b>\n\n{escape(str(exc))}"))
             return
-        _chat_words[message.chat.id].discard(word)
+        remove_badword(message.chat.id, word)
         await message.answer(premium_text(f"✅ Removed <code>{escape(word)}</code> from the bad-words list."))
 
     @router.message(BadWordMatchFilter())
