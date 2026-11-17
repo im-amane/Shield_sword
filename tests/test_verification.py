@@ -1,7 +1,13 @@
 """Tests for member verification challenge helpers and router registration."""
 import unittest
+from unittest.mock import AsyncMock, patch
 
-from app.handlers.verification import _make_challenge, _permissions, create_verification_router
+from aiogram.exceptions import TelegramForbiddenError
+
+from app.handlers.verification import (
+    _make_challenge, _permissions, create_verification_router,
+    expire_member_verification,
+)
 
 
 class VerificationTests(unittest.TestCase):
@@ -28,6 +34,39 @@ class VerificationTests(unittest.TestCase):
         self.assertTrue(permissions.can_send_messages)
         self.assertTrue(permissions.can_send_photos)
         self.assertTrue(permissions.can_send_other_messages)
+
+    async def test_expired_member_is_removed_and_state_is_deleted(self) -> None:
+        bot = type("FakeBot", (), {})()
+        bot.ban_chat_member = AsyncMock()
+        bot.unban_chat_member = AsyncMock()
+        with (
+            patch("app.handlers.verification.delete_verification") as delete,
+            patch("app.handlers.verification.record_audit_event") as audit,
+            patch("app.handlers.verification.record_security_incident") as incident,
+        ):
+            result = await expire_member_verification(bot, -100, 7)
+        self.assertTrue(result)
+        bot.ban_chat_member.assert_awaited_once_with(
+            chat_id=-100, user_id=7, revoke_messages=False
+        )
+        bot.unban_chat_member.assert_awaited_once_with(
+            chat_id=-100, user_id=7, only_if_banned=True
+        )
+        delete.assert_called_once_with(-100, 7)
+        audit.assert_called_once()
+        incident.assert_called_once()
+
+    async def test_failed_expiry_removal_keeps_state_for_retry(self) -> None:
+        bot = type("FakeBot", (), {})()
+        bot.ban_chat_member = AsyncMock(side_effect=TelegramForbiddenError(
+            method="banChatMember", message="not enough rights"
+        ))
+        bot.unban_chat_member = AsyncMock()
+        with patch("app.handlers.verification.delete_verification") as delete:
+            result = await expire_member_verification(bot, -100, 7)
+        self.assertFalse(result)
+        delete.assert_not_called()
+        bot.unban_chat_member.assert_not_awaited()
 
     def test_router_registers_only_verification_callback(self) -> None:
         router = create_verification_router()
