@@ -21,7 +21,9 @@ from app.handlers.panel import create_panel_router
 from app.handlers.raid_protection import create_raid_router
 from app.handlers.start import router as start_router
 from app.handlers.welcome import create_welcome_router
-from app.handlers.verification import create_verification_router
+from app.handlers.verification import (
+    create_verification_router, verification_expiry_loop,
+)
 from app.handlers.warnings import create_warning_router
 from app.handlers.antilink import create_antilink_router
 from app.handlers.badwords import create_badwords_router
@@ -104,6 +106,7 @@ async def run() -> None:
         asyncio.create_task(automatic_backup_loop(bot, settings.owner_id))
         if settings.owner_id is not None else None
     )
+    verification_task = asyncio.create_task(verification_expiry_loop(bot))
     try:
         me = await bot.get_me()
         logging.getLogger(__name__).info(
@@ -119,12 +122,13 @@ async def run() -> None:
             tasks_concurrency_limit=32,
         )
     finally:
-        if backup_task is not None:
-            backup_task.cancel()
-            try:
-                await backup_task
-            except asyncio.CancelledError:
-                pass
+        for task in (backup_task, verification_task):
+            if task is not None:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
         await bot.session.close()
 
 
