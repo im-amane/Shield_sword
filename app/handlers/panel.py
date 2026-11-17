@@ -17,12 +17,14 @@ def dashboard_text(bot_username: str | None, bot_id: int, owner_id: int) -> str:
     """Build a concise dashboard view from verified runtime values."""
     username = f"@{bot_username}" if bot_username else "Not available"
     return (
-        "⚔️ <b>Ani World 剣 | Control Room</b>\n\n"
-        "🟢 <b>Bot status:</b> Online\n"
+        "⚙️ <b>Control Center</b>\n\n"
+        "Welcome back, Owner! 👑\n\n"
+        "Your command center is ready. Manage your bot and monitor its protection systems from here.\n\n"
+        "🟢 <b>System status:</b> Online\n"
         f"🤖 <b>Bot:</b> {username}\n"
         f"🆔 <b>Bot ID:</b> <code>{bot_id}</code>\n"
         f"🔐 <b>Owner ID:</b> <code>{owner_id}</code>\n\n"
-        "<i>Control room ready. More controls will land here as they're added. 🚀</i>"
+        "<i>Your community security, one control room. 🚀</i>"
     )
 
 
@@ -56,7 +58,7 @@ def create_panel_router(owner_id: int | None) -> Router:
     async def panel_command(message: Message) -> None:
         user_id = message.from_user.id if message.from_user else None
         if not await authorized(user_id):
-            await message.answer("⛔ Private zone! Owner dashboard sirf owner ke liye hai. 🔒")
+            await message.answer("🔒 <b>Private Area</b>\n\nThe owner dashboard is only available to the bot owner. 👑")
             return
         await render_panel(message)
 
