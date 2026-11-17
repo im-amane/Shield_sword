@@ -1,0 +1,154 @@
+"""Basic anti-spam and flood protection for group chats."""
+from __future__ import annotations
+
+import logging
+import time
+from collections import defaultdict, deque
+
+from aiogram import F, Router
+from aiogram.exceptions import TelegramAPIError
+from aiogram.types import ChatPermissions, Message
+
+from app.security.owner import is_owner
+
+logger = logging.getLogger(__name__)
+
+WINDOW_SECONDS = 8
+MAX_MESSAGES_IN_WINDOW = 6
+DUPLICATE_WINDOW_SECONDS = 20
+MAX_IDENTICAL_MESSAGES = 3
+MUTE_SECONDS = 60
+STATE_TTL_SECONDS = 120
+
+_SEND_PERMISSION_FIELDS = (
+    "can_send_messages",
+    "can_send_audios",
+    "can_send_documents",
+    "can_send_photos",
+    "can_send_videos",
+    "can_send_video_notes",
+    "can_send_voice_notes",
+    "can_send_polls",
+    "can_send_other_messages",
+    "can_add_web_page_previews",
+)
+
+_message_times: dict[tuple[int, int], deque[float]] = defaultdict(deque)
+_duplicate_times: dict[tuple[int, int, str], deque[float]] = defaultdict(deque)
+_last_action: dict[tuple[int, int], float] = {}
+
+
+def _muted_permissions() -> ChatPermissions:
+    """Disable member-generated send permissions during a short flood mute."""
+    return ChatPermissions(**{field: False for field in _SEND_PERMISSION_FIELDS})
+
+
+def _message_fingerprint(message: Message) -> str:
+    """Create a lightweight fingerprint from text or caption."""
+    value = message.text or message.caption or ""
+    return " ".join(value.casefold().split())[:500]
+
+
+def _is_flooding(chat_id: int, user_id: int, fingerprint: str, now: float) -> bool:
+    """Track message rate and repeated content for one member."""
+    key = (chat_id, user_id)
+    times = _message_times[key]
+    while times and now - times[0] > WINDOW_SECONDS:
+        times.popleft()
+    times.append(now)
+
+    duplicate_key = (chat_id, user_id, fingerprint)
+    duplicates = _duplicate_times[duplicate_key]
+    while duplicates and now - duplicates[0] > DUPLICATE_WINDOW_SECONDS:
+        duplicates.popleft()
+    duplicates.append(now)
+
+    # Bound stale state so busy groups cannot grow these dictionaries forever.
+    for stale_key, stale_times in list(_message_times.items()):
+        if not stale_times or now - stale_times[-1] > STATE_TTL_SECONDS:
+            _message_times.pop(stale_key, None)
+    for stale_key, stale_times in list(_duplicate_times.items()):
+        if not stale_times or now - stale_times[-1] > STATE_TTL_SECONDS:
+            _duplicate_times.pop(stale_key, None)
+
+    return (
+        len(times) > MAX_MESSAGES_IN_WINDOW
+        or (bool(fingerprint) and len(duplicates) >= MAX_IDENTICAL_MESSAGES)
+    )
+
+
+def create_antispam_router(owner_id: int | None = None) -> Router:
+    """Create a group-only anti-spam router; admins and owner are exempt."""
+    router = Router(name="anti_spam")
+
+    @router.message(F.chat.type.in_({"group", "supergroup"}))
+    async def inspect_message(message: Message) -> None:
+        user = message.from_user
+        if user is None or user.is_bot or is_owner(user.id, owner_id):
+            return
+        if message.text and message.text.startswith("/"):
+            return
+
+        try:
+            member = await message.bot.get_chat_member(message.chat.id, user.id)
+            if member.status in ("creator", "administrator"):
+                return
+        except TelegramAPIError:
+            logger.exception(
+                "Anti-spam could not check member status chat_id=%s user_id=%s",
+                message.chat.id,
+                user.id,
+            )
+            return
+
+        now = time.monotonic()
+        key = (message.chat.id, user.id)
+        if now - _last_action.get(key, 0.0) < MUTE_SECONDS:
+            try:
+                await message.delete()
+            except TelegramAPIError:
+                logger.debug("Could not delete message during anti-spam cooldown")
+            return
+
+        if not _is_flooding(
+            message.chat.id,
+            user.id,
+            _message_fingerprint(message),
+            now,
+        ):
+            return
+
+        try:
+            await message.delete()
+        except TelegramAPIError:
+            logger.debug(
+                "Could not delete spam message chat_id=%s user_id=%s",
+                message.chat.id,
+                user.id,
+            )
+
+        try:
+            await message.bot.restrict_chat_member(
+                chat_id=message.chat.id,
+                user_id=user.id,
+                permissions=_muted_permissions(),
+                until_date=int(time.time()) + MUTE_SECONDS,
+            )
+            _last_action[key] = now
+            logger.warning(
+                "Anti-spam muted user_id=%s chat_id=%s duration=%ss",
+                user.id,
+                message.chat.id,
+                MUTE_SECONDS,
+            )
+            await message.answer(
+                f"🚫 Flood/spam detected. User restricted for {MUTE_SECONDS} seconds."
+            )
+        except TelegramAPIError:
+            logger.exception(
+                "Anti-spam restriction failed chat_id=%s user_id=%s",
+                message.chat.id,
+                user.id,
+            )
+
+    return router
