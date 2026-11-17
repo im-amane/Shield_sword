@@ -78,6 +78,36 @@ CREATE TABLE IF NOT EXISTS security_audit (
     details TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_security_audit_chat_id ON security_audit(chat_id, id DESC);
+CREATE TABLE IF NOT EXISTS known_groups (
+    chat_id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    last_seen TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS member_join_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chat_id INTEGER NOT NULL,
+    chat_title TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
+    username TEXT NOT NULL DEFAULT '',
+    display_name TEXT NOT NULL DEFAULT '',
+    joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_member_joins_chat_time
+    ON member_join_events(chat_id, joined_at DESC);
+CREATE TABLE IF NOT EXISTS security_incidents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    chat_id INTEGER NOT NULL,
+    chat_title TEXT NOT NULL DEFAULT '',
+    kind TEXT NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'medium',
+    user_id INTEGER,
+    username TEXT NOT NULL DEFAULT '',
+    display_name TEXT NOT NULL DEFAULT '',
+    details TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_security_incidents_time
+    ON security_incidents(created_at DESC);
 """
 
 _initialized_path: Path | None = None
@@ -324,6 +354,123 @@ def get_audit_events(limit: int = 20) -> list[dict]:
         ).fetchall()
     return [dict(created_at=row[0], chat_id=row[1], actor_id=row[2],
                  action=row[3], target_id=row[4], details=row[5]) for row in rows]
+
+
+
+def register_group(chat_id: int, title: str) -> None:
+    """Remember a group the bot has observed, without storing message content."""
+    safe_title = str(title or "Telegram group")[:200]
+    with _connection() as db:
+        db.execute(
+            """INSERT INTO known_groups(chat_id, title, last_seen)
+               VALUES (?, ?, CURRENT_TIMESTAMP)
+               ON CONFLICT(chat_id) DO UPDATE SET
+                 title=excluded.title, last_seen=CURRENT_TIMESTAMP""",
+            (chat_id, safe_title),
+        )
+
+
+def record_member_join(chat_id: int, chat_title: str, user_id: int,
+                       username: str | None, display_name: str) -> None:
+    """Store public Telegram profile fields and join time for defensive review."""
+    with _connection() as db:
+        db.execute(
+            """INSERT INTO member_join_events
+               (chat_id, chat_title, user_id, username, display_name)
+               VALUES (?, ?, ?, ?, ?)""",
+            (chat_id, str(chat_title or "Telegram group")[:200], user_id,
+             str(username or "")[:64], str(display_name or "")[:160]),
+        )
+        db.execute(
+            "DELETE FROM member_join_events WHERE id NOT IN "
+            "(SELECT id FROM member_join_events ORDER BY id DESC LIMIT 5000)"
+        )
+
+
+def record_security_incident(chat_id: int, chat_title: str, kind: str,
+                             severity: str = "medium", user_id: int | None = None,
+                             username: str | None = None, display_name: str = "",
+                             details: str = "") -> None:
+    """Store concise defensive incident metadata, never message bodies or secrets."""
+    allowed_severities = {"low", "medium", "high", "critical"}
+    severity = severity if severity in allowed_severities else "medium"
+    with _connection() as db:
+        db.execute(
+            """INSERT INTO security_incidents
+               (chat_id, chat_title, kind, severity, user_id, username, display_name, details)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (chat_id, str(chat_title or "Telegram group")[:200], str(kind)[:80],
+             severity, user_id, str(username or "")[:64],
+             str(display_name or "")[:160], str(details)[:500]),
+        )
+        db.execute(
+            "DELETE FROM security_incidents WHERE id NOT IN "
+            "(SELECT id FROM security_incidents ORDER BY id DESC LIMIT 3000)"
+        )
+
+
+def get_known_groups(limit: int = 20) -> list[dict]:
+    limit = max(1, min(int(limit), 50))
+    with _connection() as db:
+        rows = db.execute(
+            "SELECT chat_id, title, last_seen FROM known_groups "
+            "ORDER BY last_seen DESC LIMIT ?", (limit,)
+        ).fetchall()
+    return [dict(chat_id=row[0], title=row[1], last_seen=row[2]) for row in rows]
+
+
+def get_owner_security_summary() -> dict:
+    """Return aggregated security counters for the owner dashboard."""
+    with _connection() as db:
+        groups = db.execute("SELECT COUNT(*) FROM known_groups").fetchone()[0]
+        joins_24h = db.execute(
+            "SELECT COUNT(*) FROM member_join_events "
+            "WHERE datetime(joined_at) >= datetime('now', '-1 day')"
+        ).fetchone()[0]
+        incidents_24h = db.execute(
+            "SELECT COUNT(*) FROM security_incidents "
+            "WHERE datetime(created_at) >= datetime('now', '-1 day')"
+        ).fetchone()[0]
+        raids_7d = db.execute(
+            "SELECT COUNT(*) FROM security_incidents WHERE kind='raid_detected' "
+            "AND datetime(created_at) >= datetime('now', '-7 days')"
+        ).fetchone()[0]
+        spam_24h = db.execute(
+            "SELECT COUNT(*) FROM security_incidents WHERE kind='anti_spam' "
+            "AND datetime(created_at) >= datetime('now', '-1 day')"
+        ).fetchone()[0]
+        active_raids = db.execute(
+            "SELECT COUNT(*) FROM raid_modes WHERE expires_at > ?", (time.time(),)
+        ).fetchone()[0]
+    return {
+        "groups": int(groups), "joins_24h": int(joins_24h),
+        "incidents_24h": int(incidents_24h), "raids_7d": int(raids_7d),
+        "spam_24h": int(spam_24h), "active_raids": int(active_raids),
+    }
+
+
+def get_recent_security_incidents(limit: int = 10) -> list[dict]:
+    limit = max(1, min(int(limit), 30))
+    with _connection() as db:
+        rows = db.execute(
+            """SELECT created_at, chat_id, chat_title, kind, severity,
+                      user_id, username, display_name, details
+               FROM security_incidents ORDER BY id DESC LIMIT ?""", (limit,)
+        ).fetchall()
+    keys = ("created_at", "chat_id", "chat_title", "kind", "severity",
+            "user_id", "username", "display_name", "details")
+    return [dict(zip(keys, row)) for row in rows]
+
+
+def get_recent_member_joins(limit: int = 10) -> list[dict]:
+    limit = max(1, min(int(limit), 30))
+    with _connection() as db:
+        rows = db.execute(
+            """SELECT joined_at, chat_id, chat_title, user_id, username, display_name
+               FROM member_join_events ORDER BY id DESC LIMIT ?""", (limit,)
+        ).fetchall()
+    keys = ("joined_at", "chat_id", "chat_title", "user_id", "username", "display_name")
+    return [dict(zip(keys, row)) for row in rows]
 
 
 def get_database_status() -> dict:
