@@ -21,41 +21,14 @@ class LoadSettingsTests(unittest.TestCase):
             settings = load_settings()
         self.assertEqual(settings.owner_id, 987654)
 
-    def test_parses_and_deduplicates_welcome_chat_ids(self) -> None:
+    def test_welcome_is_not_limited_by_environment_allowlist(self) -> None:
         with patch.dict(
             os.environ,
-            {"BOT_TOKEN": "123:abc", "WELCOME_CHAT_IDS": "-1001, -1002,-1001"},
+            {"BOT_TOKEN": "123:abc", "WELCOME_CHAT_IDS": "-1001"},
             clear=True,
         ):
             settings = load_settings()
-        self.assertEqual(settings.welcome_chat_ids, (-1001, -1002))
-
-    def test_rejects_non_numeric_welcome_chat_id(self) -> None:
-        with patch.dict(
-            os.environ,
-            {"BOT_TOKEN": "123:abc", "WELCOME_CHAT_IDS": "-1001,group"},
-            clear=True,
-        ):
-            with self.assertRaises(ConfigurationError):
-                load_settings()
-
-    def test_rejects_positive_welcome_chat_id(self) -> None:
-        with patch.dict(
-            os.environ,
-            {"BOT_TOKEN": "123:abc", "WELCOME_CHAT_IDS": "12345"},
-            clear=True,
-        ):
-            with self.assertRaises(ConfigurationError):
-                load_settings()
-
-    def test_rejects_empty_welcome_chat_id_entry(self) -> None:
-        with patch.dict(
-            os.environ,
-            {"BOT_TOKEN": "123:abc", "WELCOME_CHAT_IDS": "-1001,"},
-            clear=True,
-        ):
-            with self.assertRaises(ConfigurationError):
-                load_settings()
+        self.assertEqual(settings.welcome_chat_ids, ())
 
     def test_missing_token_is_rejected(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
