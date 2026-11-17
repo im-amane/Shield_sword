@@ -43,8 +43,7 @@ class WelcomeRouterTests(unittest.IsolatedAsyncioTestCase):
     async def test_router_registers_join_handler(self) -> None:
         router = create_welcome_router()
         self.assertEqual(router.name, "welcome")
-        self.assertEqual(len(router.message.handlers), 2)
-        # The first handler processes joins; the second registers ordinary group activity.
+        self.assertEqual(len(router.message.handlers), 1)
 
     async def test_any_group_gets_welcome_without_allowlist(self) -> None:
         router = create_welcome_router()
