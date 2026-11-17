@@ -134,7 +134,7 @@ def section_text(section: str) -> str:
             f"Size: <b>{db['size_bytes'] / (1024 * 1024):.2f} MB</b>\n"
             f"Journal: <code>{escape(db['journal_mode'])}</code>\n\n"
             "Commands: <code>/dbstatus</code> · <code>/backup</code>\n"
-            "Automatic verified backup is sent to the owner daily."
+            "Automatic verified backup is sent to the owner once every 7 days."
         )
     return "Unknown panel section."
 
