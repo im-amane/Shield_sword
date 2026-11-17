@@ -180,15 +180,12 @@ def create_panel_router(owner_id: int | None) -> Router:
                     dashboard_text(me.username, me.id, owner_id or 0),
                     reply_markup=dashboard_keyboard(),
                 )
-            elif action == "refresh_section":
-                current = "security"
-                old = callback.message.text or ""
-                for candidate in ("security", "groups", "activity", "database"):
-                    if section_text(candidate).split("\n", 1)[0] in old:
-                        current = candidate
-                        break
+            elif action.startswith("refresh_"):
+                current = action.removeprefix("refresh_")
+                if current not in {"security", "groups", "activity", "database"}:
+                    current = "security"
                 await callback.message.edit_text(
-                    section_text(current), reply_markup=section_keyboard()
+                    section_text(current), reply_markup=section_keyboard(current)
                 )
             else:
                 await callback.answer(premium_text("Unknown dashboard action. 😅"), show_alert=True)
