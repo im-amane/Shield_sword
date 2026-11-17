@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -13,8 +14,8 @@ DB_PATH = Path(os.getenv("DATABASE_PATH", "data/aniworld.sqlite3"))
 def _connect() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(DB_PATH, timeout=10)
-    connection.execute("PRAGMA journal_mode=WAL")
     connection.execute("PRAGMA foreign_keys=ON")
+    connection.execute("PRAGMA busy_timeout=5000")
     return connection
 
 
@@ -65,6 +66,14 @@ CREATE TABLE IF NOT EXISTS raid_modes (
 """
 
 _initialized_path: Path | None = None
+_CACHE_TTL = 15.0
+_feature_cache: dict[tuple[str, int], tuple[float, bool]] = {}
+_badwords_cache: dict[int, tuple[float, set[str]]] = {}
+_domains_cache: dict[int, tuple[float, set[str]]] = {}
+
+
+def _cache_valid(entry) -> bool:
+    return entry is not None and time.monotonic() - entry[0] < _CACHE_TTL
 
 
 @contextmanager
@@ -73,6 +82,8 @@ def _connection():
     db = _connect()
     try:
         if _initialized_path != DB_PATH:
+            db.execute("PRAGMA journal_mode=WAL")
+            db.execute("PRAGMA synchronous=NORMAL")
             db.executescript(SCHEMA_SQL)
             _initialized_path = DB_PATH
         yield db
@@ -118,6 +129,7 @@ def set_feature_enabled(feature: str, chat_id: int, enabled: bool) -> None:
     table = {"badwords": "badword_settings", "antilink": "antilink_settings"}.get(feature)
     if table is None:
         raise ValueError("Unknown protection feature")
+    _feature_cache.pop((feature, chat_id), None)
     with _connection() as db:
         db.execute(
             f"""INSERT INTO {table}(chat_id, enabled) VALUES (?, ?)
@@ -130,41 +142,61 @@ def is_feature_enabled(feature: str, chat_id: int) -> bool:
     table = {"badwords": "badword_settings", "antilink": "antilink_settings"}.get(feature)
     if table is None:
         raise ValueError("Unknown protection feature")
+    key = (feature, chat_id)
+    cached = _feature_cache.get(key)
+    if _cache_valid(cached):
+        return cached[1]
     with _connection() as db:
         row = db.execute(f"SELECT enabled FROM {table} WHERE chat_id=?", (chat_id,)).fetchone()
-        return bool(row[0]) if row else True
+    value = bool(row[0]) if row else True
+    _feature_cache[key] = (time.monotonic(), value)
+    return value
 
 
 def add_badword(chat_id: int, word: str) -> None:
+    _badwords_cache.pop(chat_id, None)
     with _connection() as db:
         db.execute("INSERT OR IGNORE INTO badwords(chat_id, word) VALUES (?, ?)", (chat_id, word))
 
 
 def remove_badword(chat_id: int, word: str) -> None:
+    _badwords_cache.pop(chat_id, None)
     with _connection() as db:
         db.execute("DELETE FROM badwords WHERE chat_id=? AND word=?", (chat_id, word))
 
 
 def get_badwords(chat_id: int) -> set[str]:
+    cached = _badwords_cache.get(chat_id)
+    if _cache_valid(cached):
+        return set(cached[1])
     with _connection() as db:
         rows = db.execute("SELECT word FROM badwords WHERE chat_id=? ORDER BY word", (chat_id,)).fetchall()
-        return {str(row[0]) for row in rows}
+    value = {str(row[0]) for row in rows}
+    _badwords_cache[chat_id] = (time.monotonic(), value)
+    return set(value)
 
 
 def add_allowed_domain(chat_id: int, domain: str) -> None:
+    _domains_cache.pop(chat_id, None)
     with _connection() as db:
         db.execute("INSERT OR IGNORE INTO allowed_domains(chat_id, domain) VALUES (?, ?)", (chat_id, domain))
 
 
 def remove_allowed_domain(chat_id: int, domain: str) -> None:
+    _domains_cache.pop(chat_id, None)
     with _connection() as db:
         db.execute("DELETE FROM allowed_domains WHERE chat_id=? AND domain=?", (chat_id, domain))
 
 
 def get_allowed_domains(chat_id: int) -> set[str]:
+    cached = _domains_cache.get(chat_id)
+    if _cache_valid(cached):
+        return set(cached[1])
     with _connection() as db:
         rows = db.execute("SELECT domain FROM allowed_domains WHERE chat_id=? ORDER BY domain", (chat_id,)).fetchall()
-        return {str(row[0]) for row in rows}
+    value = {str(row[0]) for row in rows}
+    _domains_cache[chat_id] = (time.monotonic(), value)
+    return set(value)
 
 
 def save_verification(chat_id: int, user_id: int, correct_index: int,
