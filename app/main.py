@@ -20,6 +20,7 @@ from app.handlers.welcome import create_welcome_router
 from app.handlers.verification import create_verification_router
 from app.handlers.warnings import create_warning_router
 from app.handlers.antilink import create_antilink_router
+from app.handlers.utility import create_utility_router
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 
@@ -32,6 +33,7 @@ async def run() -> None:
     )
     dispatcher = Dispatcher()
     dispatcher.include_router(start_router)
+    dispatcher.include_router(create_utility_router())
     dispatcher.include_router(create_owner_router(settings.owner_id))
     dispatcher.include_router(create_panel_router(settings.owner_id))
     dispatcher.include_router(create_welcome_router(settings.welcome_chat_ids, settings.owner_id))
