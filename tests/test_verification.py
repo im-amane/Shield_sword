@@ -10,7 +10,7 @@ from app.handlers.verification import (
 )
 
 
-class VerificationTests(unittest.TestCase):
+class VerificationTests(unittest.IsolatedAsyncioTestCase):
     def test_challenge_has_four_choices_and_one_correct_answer(self) -> None:
         question, options, correct_index = _make_challenge()
         self.assertIn("What is", question)
