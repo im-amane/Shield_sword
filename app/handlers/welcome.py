@@ -28,13 +28,13 @@ def render_welcome_message(chat_title: str, members: list[User]) -> str:
     joined_names = ", ".join(mentions)
     count = len(members)
     noun = "member" if count == 1 else "members"
-    return premium_text((
+    return (
         f"🌸 <b>Welcome to {safe_chat_title}!</b>\n\n"
         f"Hey {joined_names}, we're happy to have you here! ❤️\n\n"
         "Make yourself comfortable, check the group rules, "
         "keep the vibes positive and enjoy your time with everyone! ✨\n\n"
         "⚔️ <b>Ani World 剣</b>"
-    ))
+    )
 
 
 def create_welcome_router(
