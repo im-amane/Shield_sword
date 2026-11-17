@@ -328,12 +328,10 @@ def create_database_backup() -> bytes:
     target = sqlite3.connect(":memory:")
     try:
         source.backup(target)
-        return_bytes = BytesIO()
-        target.backup(sqlite3.connect(return_bytes)) if False else None
-        target_path = BytesIO()
+        snapshot = BytesIO()
         # Serialize returns the complete consistent database image.
-        target_path.write(target.serialize())
-        return target_path.getvalue()
+        snapshot.write(target.serialize())
+        return snapshot.getvalue()
     finally:
         target.close()
         source.close()
