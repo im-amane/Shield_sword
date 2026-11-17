@@ -10,6 +10,7 @@ from aiogram.exceptions import TelegramAPIError
 from aiogram.types import ChatPermissions, Message
 
 from app.security.owner import is_owner
+from app.handlers.typography import premium_text
 
 logger = logging.getLogger(__name__)
 
@@ -144,11 +145,11 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
                 message.chat.id,
                 MUTE_SECONDS,
             )
-            await message.answer(
+            await message.answer(premium_text(
                 f"⚠️ <b>Easy there!</b>\n\nYou’re sending messages a little too fast. "
                 f"Please slow down and let everyone enjoy the conversation. 💬\n\n"
                 f"🛡️ <b>Ani World Anti-Spam</b> · Timeout: {MUTE_SECONDS}s"
-            )
+            ))
         except TelegramAPIError:
             logger.exception(
                 "Anti-spam restriction failed chat_id=%s user_id=%s",
