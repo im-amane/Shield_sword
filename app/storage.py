@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from io import BytesIO
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -63,6 +64,16 @@ CREATE TABLE IF NOT EXISTS raid_modes (
     chat_id INTEGER PRIMARY KEY,
     expires_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS security_audit (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    chat_id INTEGER NOT NULL,
+    actor_id INTEGER,
+    action TEXT NOT NULL,
+    target_id INTEGER,
+    details TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_security_audit_chat_id ON security_audit(chat_id, id DESC);
 """
 
 _initialized_path: Path | None = None
@@ -282,3 +293,47 @@ def clear_raid_data() -> None:
     with _connection() as db:
         db.execute("DELETE FROM raid_joins")
         db.execute("DELETE FROM raid_modes")
+
+
+def record_audit_event(chat_id: int, action: str, actor_id: int | None = None,
+                       target_id: int | None = None, details: str = "") -> None:
+    """Append a bounded, non-secret security event to the audit trail."""
+    safe_details = str(details).replace("\\x00", "")[:500]
+    with _connection() as db:
+        db.execute(
+            "INSERT INTO security_audit(chat_id, actor_id, action, target_id, details) VALUES (?, ?, ?, ?, ?)",
+            (chat_id, actor_id, action[:80], target_id, safe_details),
+        )
+        db.execute(
+            "DELETE FROM security_audit WHERE id NOT IN "
+            "(SELECT id FROM security_audit ORDER BY id DESC LIMIT 5000)"
+        )
+
+
+def get_audit_events(limit: int = 20) -> list[dict]:
+    """Return newest security events, capped to a safe maximum."""
+    limit = max(1, min(int(limit), 100))
+    with _connection() as db:
+        rows = db.execute(
+            "SELECT created_at, chat_id, actor_id, action, target_id, details "
+            "FROM security_audit ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
+    return [dict(created_at=row[0], chat_id=row[1], actor_id=row[2],
+                 action=row[3], target_id=row[4], details=row[5]) for row in rows]
+
+
+def create_database_backup() -> bytes:
+    """Create a consistent SQLite backup snapshot in memory."""
+    source = _connect()
+    target = sqlite3.connect(":memory:")
+    try:
+        source.backup(target)
+        return_bytes = BytesIO()
+        target.backup(sqlite3.connect(return_bytes)) if False else None
+        target_path = BytesIO()
+        # Serialize returns the complete consistent database image.
+        target_path.write(target.serialize())
+        return target_path.getvalue()
+    finally:
+        target.close()
+        source.close()
