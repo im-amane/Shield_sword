@@ -122,7 +122,22 @@ _HELP_SECTIONS = {
         "Group admins are exempt. Telegram invite links cannot be allowlisted. "
         "Requires Delete Messages permission."
     ),
-    "copyright": (\n        "©️ <b>Copyright Shield</b>\\n\\n"\n        "/copyright - Check current protection status\\n"\n        "/copyright on - Block member media uploads\\n"\n        "/copyright off - Allow member media uploads\\n\\n"\n        "Default is ON. Group admins can post media. Bot needs Delete Messages permission.\\n"\n        "This reduces infringement risk but cannot guarantee immunity from copyright claims."\n    ),\n    "owner": (
+    "copyright": (
+        "©️ <b>Copyright Shield</b>\
+\
+"
+        "/copyright - Check current protection status\
+"
+        "/copyright on - Block member media uploads\
+"
+        "/copyright off - Allow member media uploads\
+\
+"
+        "Default is ON. Group admins can post media. Bot needs Delete Messages permission.\
+"
+        "This reduces infringement risk but cannot guarantee immunity from copyright claims."
+    ),
+    "owner": (
         "👑 <b>Owner Commands</b>\n\n"
         "/owner - Verify owner access\n"
         "/panel - Open the owner control center\n"
