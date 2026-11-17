@@ -1,7 +1,6 @@
 """Admin warning system with automatic timeout after three warnings."""
 from __future__ import annotations
 
-from collections import defaultdict
 from html import escape
 from datetime import datetime, timedelta, timezone
 
@@ -15,22 +14,7 @@ from app.handlers.typography import premium_text
 WARN_LIMIT = 3
 AUTO_MUTE_SECONDS = 10 * 60
 
-# In-memory for now; counts reset when the process restarts.
-_warning_counts: dict[tuple[int, int], int] = defaultdict(int)
-
-
-def add_warning(chat_id: int, user_id: int) -> int:
-    key = (chat_id, user_id)
-    _warning_counts[key] += 1
-    return _warning_counts[key]
-
-
-def get_warnings(chat_id: int, user_id: int) -> int:
-    return _warning_counts.get((chat_id, user_id), 0)
-
-
-def reset_warnings(chat_id: int, user_id: int) -> None:
-    _warning_counts.pop((chat_id, user_id), None)
+from app.storage import add_warning, get_warnings, reset_warnings
 
 
 def create_warning_router() -> Router:
