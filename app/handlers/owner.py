@@ -3,6 +3,7 @@ from html import escape
 
 from aiogram import Router
 from aiogram.filters import Command
+from aiogram.enums import ChatType
 from aiogram.types import BufferedInputFile, Message
 
 from app.security.owner import is_owner
@@ -29,6 +30,9 @@ def create_owner_router(owner_id: int | None) -> Router:
 
     @router.message(Command("audit"))
     async def audit_command(message: Message) -> None:
+        if message.chat.type != ChatType.PRIVATE:
+            await message.answer(premium_text("🔒 Use /audit in my private chat to keep security records private."))
+            return
         user_id = message.from_user.id if message.from_user else None
         if not is_owner(user_id, owner_id):
             await message.answer(premium_text("🔒 <b>Owner Access Only</b>"))
@@ -47,6 +51,9 @@ def create_owner_router(owner_id: int | None) -> Router:
 
     @router.message(Command("dbstatus"))
     async def dbstatus_command(message: Message) -> None:
+        if message.chat.type != ChatType.PRIVATE:
+            await message.answer(premium_text("🔒 Use /dbstatus in my private chat to keep storage details private."))
+            return
         user_id = message.from_user.id if message.from_user else None
         if not is_owner(user_id, owner_id):
             await message.answer(premium_text("🔒 <b>Owner Access Only</b>"))
@@ -70,6 +77,9 @@ def create_owner_router(owner_id: int | None) -> Router:
 
     @router.message(Command("backup"))
     async def backup_command(message: Message) -> None:
+        if message.chat.type != ChatType.PRIVATE:
+            await message.answer(premium_text("🔒 Use /backup in my private chat. Database files must never be posted in a group."))
+            return
         user_id = message.from_user.id if message.from_user else None
         if not is_owner(user_id, owner_id):
             await message.answer(premium_text("🔒 <b>Owner Access Only</b>"))
