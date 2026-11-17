@@ -26,6 +26,7 @@ from app.handlers.antilink import create_antilink_router
 from app.handlers.badwords import create_badwords_router
 from app.handlers.copyright import create_copyright_router
 from app.handlers.utility import create_utility_router
+from app.handlers.diagnostics import create_diagnostics_router
 from app.storage import create_database_backup, init_storage
 from app.handlers.typography import premium_text
 
@@ -72,6 +73,7 @@ async def run() -> None:
     dispatcher = Dispatcher()
     dispatcher.include_router(start_router)
     dispatcher.include_router(create_utility_router())
+    dispatcher.include_router(create_diagnostics_router())
     dispatcher.include_router(create_owner_router(settings.owner_id))
     dispatcher.include_router(create_panel_router(settings.owner_id))
     dispatcher.include_router(create_welcome_router(settings.welcome_chat_ids, settings.owner_id))
