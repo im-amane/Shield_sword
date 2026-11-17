@@ -123,18 +123,11 @@ _HELP_SECTIONS = {
         "Requires Delete Messages permission."
     ),
     "copyright": (
-        "©️ <b>Copyright Shield</b>\
-\
-"
-        "/copyright - Check current protection status\
-"
-        "/copyright on - Block member media uploads\
-"
-        "/copyright off - Allow member media uploads\
-\
-"
-        "Default is ON. Group admins can post media. Bot needs Delete Messages permission.\
-"
+        "©️ <b>Copyright Shield</b>\\n\\n"
+        "/copyright - Check current protection status\\n"
+        "/copyright on - Block member media uploads\\n"
+        "/copyright off - Allow member media uploads\\n\\n"
+        "Default is ON. Group admins can post media. Bot needs Delete Messages permission.\\n"
         "This reduces infringement risk but cannot guarantee immunity from copyright claims."
     ),
     "owner": (
