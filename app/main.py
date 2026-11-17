@@ -29,7 +29,10 @@ from app.handlers.copyright import create_copyright_router
 from app.handlers.utility import create_utility_router
 from app.handlers.diagnostics import create_diagnostics_router
 from app.handlers.security_status import create_security_status_router
-from app.storage import (\n    create_database_backup, init_storage,\n    get_last_automatic_backup_at, set_last_automatic_backup_at,\n)
+from app.storage import (
+    create_database_backup, init_storage,
+    get_last_automatic_backup_at, set_last_automatic_backup_at,
+)
 from app.handlers.typography import premium_text
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
