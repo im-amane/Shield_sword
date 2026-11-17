@@ -62,7 +62,7 @@ class StorageTests(unittest.TestCase):
         self.assertEqual(events[0]["target_id"], 8)
         self.assertEqual(events[0]["details"], "manual action")
 
-    def test_database_backup_is_valid_sqlite(self) -> None:
+    def test_copyright_protection_defaults_on_and_can_be_toggled(self) -> None:\n        self.assertTrue(storage.is_copyright_enabled(-100))\n        storage.set_copyright_enabled(-100, False)\n        self.assertFalse(storage.is_copyright_enabled(-100))\n        storage.set_copyright_enabled(-100, True)\n        self.assertTrue(storage.is_copyright_enabled(-100))\n\n    def test_database_backup_is_valid_sqlite(self) -> None:
         backup = storage.create_database_backup()
         self.assertTrue(backup.startswith(b"SQLite format 3"))
 
