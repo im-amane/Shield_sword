@@ -108,9 +108,10 @@ async def start_member_verification(message: Message, members: list[User]) -> No
                 ]
             )
             await message.answer(
-                f"🔐 <a href=\"tg://user?id={member.id}\">{member.full_name}</a>, "
-                f"3 minutes mein verify karo aur chat unlock karo.\n\n"
-                f"<b>{question}</b>",
+                f"⛩️ Hey <a href=\"tg://user?id={member.id}\">{member.full_name}</a>!\n\n"
+                "Before joining the conversation, complete this little security challenge.\n\n"
+                f"🧩 <b>{question}</b>\n\n"
+                "⏳ You have 3 minutes to verify and unlock the chat.",
                 reply_markup=keyboard,
             )
         except TelegramAPIError:
@@ -145,11 +146,11 @@ def create_verification_router() -> Router:
         state = _pending.get((chat_id, user_id))
         if not state or int(state["expires_at"]) <= int(time.time()):
             _pending.pop((chat_id, user_id), None)
-            await callback.answer("Time up! Verification expire ho gaya. Try karne ke liye group dobara join karo.", show_alert=True)
+            await callback.answer("⏳ Verification expired! Please rejoin the group to try again.", show_alert=True)
             return
 
         if selected_index != int(state["correct_index"]):
-            await callback.answer("Not quite! Ek aur try maaro. 😄", show_alert=True)
+            await callback.answer("Not quite! Give it another try. 😊", show_alert=True)
             return
 
         try:
@@ -160,12 +161,13 @@ def create_verification_router() -> Router:
             )
             _pending.pop((chat_id, user_id), None)
             await callback.message.edit_text(
-                f"✅ <a href=\"tg://user?id={user_id}\">Member</a> verified. Welcome!"
+                f"✅ <a href=\"tg://user?id={user_id}\">Member</a> verified!\n\n"
+                "You're all set. Welcome to the community! 🎉"
             )
             await callback.answer("Verified! Welcome in. 🎉")
             logger.info("Verified user_id=%s chat_id=%s", user_id, chat_id)
         except TelegramAPIError:
             logger.exception("Could not complete verification for user_id=%s", user_id)
-            await callback.answer("Verification complete nahi ho paya. Admin ko ping karo. 🛠️", show_alert=True)
+            await callback.answer("We couldn’t complete verification. Please contact a group admin. 🛠️", show_alert=True)
 
     return router
