@@ -74,3 +74,7 @@ Raid counters and active mode are persisted in SQLite. The database survives pro
 
 
 Never commit `.env`, paste bot tokens into chats, or print secrets in logs. If a token is exposed, revoke it through @BotFather and create a new one.
+
+
+## Global inline UI
+- Bot replies in groups and private chats include a `✖️ Close` inline button. Existing inline actions are preserved. Tapping Close deletes that bot message for everyone in the chat.
