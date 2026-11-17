@@ -104,8 +104,8 @@ def create_antilink_router() -> Router:
             set_feature_enabled('antilink', chat_id, False)
             response = "⏸️ <b>Anti-Link Disabled</b>\n\nMembers can share links again."
         elif action in {"status", "help"}:
-            state = "OFF" if chat_id in _disabled_chats else "ON"
-            domains = sorted(_allowed_domains[chat_id])
+            state = "ON" if is_feature_enabled("antilink", chat_id) else "OFF"
+            domains = sorted(get_allowed_domains(chat_id))
             allow_text = ", ".join(escape(item) for item in domains) if domains else "None"
             response = (
                 f"🛡️ <b>Anti-Link Status: {state}</b>\n\n"
