@@ -263,9 +263,8 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
         await callback.answer(
             premium_text(
                 "🛡️ <b>Shield 剣 · Ani World Guardian</b>\n\n"
-                "I keep the group tidy with verification, anti-spam, raid defence, "
-                "link filtering and moderation tools. I report suspicious activity "
-                "without pretending to know private information about people. ✨"
+                "I protect groups with verification, anti-spam, raid defence, "
+                "link filtering and moderation tools. ✨"
             ),
             show_alert=True,
         )
