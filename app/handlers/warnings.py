@@ -10,6 +10,7 @@ from aiogram.filters import Command
 from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
+from app.storage import record_audit_event
 
 WARN_LIMIT = 3
 AUTO_MUTE_SECONDS = 10 * 60
@@ -74,6 +75,7 @@ def create_warning_router() -> Router:
         if target is None:
             return
         count = add_warning(message.chat.id, target.id)
+        record_audit_event(message.chat.id, "warn", message.from_user.id if message.from_user else None, target.id, f"count={count}")
         if count < WARN_LIMIT:
             await message.answer(premium_text(
                 f"⚠️ <b>Warning Issued</b>\n\n"
@@ -96,6 +98,7 @@ def create_warning_router() -> Router:
             await message.answer(premium_text("❌ <b>Auto-Mute Failed</b>\n\nCheck my Ban Users permission and try again."))
             return
         reset_warnings(message.chat.id, target.id)
+        record_audit_event(message.chat.id, "auto_mute", message.from_user.id if message.from_user else None, target.id, "warnings threshold reached")
         await message.answer(premium_text(
             f"🔇 <b>Warning Limit Reached</b>\n\n"
             f"👤 {escape(target.full_name)}\n"
@@ -126,6 +129,7 @@ def create_warning_router() -> Router:
         if target is None:
             return
         reset_warnings(message.chat.id, target.id)
+        record_audit_event(message.chat.id, "reset_warnings", message.from_user.id if message.from_user else None, target.id)
         await message.answer(premium_text(
             f"✅ <b>Warnings Cleared</b>\n\n"
             f"👤 {escape(target.full_name)}\n"
