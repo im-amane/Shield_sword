@@ -1,6 +1,7 @@
 """Join verification with a short arithmetic captcha."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import secrets
 import time
@@ -17,10 +18,11 @@ from aiogram.types import (
 )
 
 from app.handlers.typography import premium_text
-from app.storage import cleanup_verifications, delete_verification, get_verification, save_verification
+from app.storage import delete_verification, get_expired_verifications, get_verification, save_verification
 
 logger = logging.getLogger(__name__)
 CHALLENGE_TTL_SECONDS = 180
+EXPIRY_CHECK_INTERVAL_SECONDS = 10
 
 _SEND_PERMISSION_FIELDS = (
     "can_send_messages",
@@ -41,6 +43,45 @@ def _permissions(allowed: bool) -> ChatPermissions:
     return ChatPermissions(**{field: allowed for field in _SEND_PERMISSION_FIELDS})
 
 
+async def expire_member_verification(bot, chat_id: int, user_id: int) -> bool:
+    """Remove a member who did not complete the CAPTCHA before its deadline."""
+    try:
+        await bot.ban_chat_member(
+            chat_id=chat_id,
+            user_id=user_id,
+            revoke_messages=False,
+        )
+        await bot.unban_chat_member(
+            chat_id=chat_id,
+            user_id=user_id,
+            only_if_banned=True,
+        )
+        delete_verification(chat_id, user_id)
+        logger.info(
+            "Removed unverified member user_id=%s chat_id=%s",
+            user_id, chat_id,
+        )
+        return True
+    except TelegramAPIError:
+        # Keep the row so the background worker can retry after a transient API failure.
+        logger.exception(
+            "Could not remove expired unverified member user_id=%s chat_id=%s",
+            user_id, chat_id,
+        )
+        return False
+
+
+async def verification_expiry_loop(bot) -> None:
+    """Enforce expired challenges, including records surviving a service restart."""
+    while True:
+        expired = get_expired_verifications(int(time.time()))
+        for item in expired:
+            await expire_member_verification(
+                bot, item["chat_id"], item["user_id"]
+            )
+        await asyncio.sleep(EXPIRY_CHECK_INTERVAL_SECONDS)
+
+
 def _make_challenge() -> tuple[str, list[int], int]:
     """Return a simple addition question, shuffled choices, and correct choice index."""
     left = secrets.randbelow(8) + 2
@@ -55,7 +96,6 @@ async def start_member_verification(message: Message, members: list[User]) -> No
     """Restrict new members and send their captcha from the shared join handler."""
     chat_id = message.chat.id
     now = int(time.time())
-    cleanup_verifications(now)
 
     for member in members:
         if member.is_bot:
@@ -86,7 +126,7 @@ async def start_member_verification(message: Message, members: list[User]) -> No
                 chat_id=chat_id,
                 user_id=member.id,
                 permissions=_permissions(False),
-                until_date=expires_at,
+                # Keep the member restricted until a correct answer or expiry enforcement.
             )
 
             question, options, correct_index = _make_challenge()
@@ -140,14 +180,29 @@ def create_verification_router() -> Router:
             await callback.answer(premium_text("Ye button valid nahi hai. Dobara try karo. 😅"), show_alert=True)
             return
 
-        if callback.from_user.id != user_id or not callback.message:
+        if (
+            callback.from_user.id != user_id
+            or not callback.message
+            or callback.message.chat.id != chat_id
+        ):
             await callback.answer(premium_text("Ye verification kisi aur member ke liye hai. 🙂"), show_alert=True)
             return
 
         state = get_verification(chat_id, user_id)
         if not state or int(state["expires_at"]) <= int(time.time()):
-            delete_verification(chat_id, user_id)
-            await callback.answer(premium_text("⏳ Verification expired! Please rejoin the group to try again."), show_alert=True)
+            removed = await expire_member_verification(
+                callback.bot, chat_id, user_id
+            )
+            if removed:
+                await callback.answer(
+                    premium_text("⏳ Verification expired. You were removed from the group; rejoin to try again."),
+                    show_alert=True,
+                )
+            else:
+                await callback.answer(
+                    premium_text("⏳ Verification expired, but removal failed. Please contact a group admin."),
+                    show_alert=True,
+                )
             return
 
         if selected_index != int(state["correct_index"]):
