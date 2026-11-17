@@ -11,6 +11,7 @@ from aiogram.enums import ParseMode
 
 from app.config import ConfigurationError, load_settings
 from app.handlers.owner import create_owner_router
+from app.handlers.panel import create_panel_router
 from app.handlers.start import router as start_router
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
@@ -25,6 +26,7 @@ async def run() -> None:
     dispatcher = Dispatcher()
     dispatcher.include_router(start_router)
     dispatcher.include_router(create_owner_router(settings.owner_id))
+    dispatcher.include_router(create_panel_router(settings.owner_id))
 
     try:
         me = await bot.get_me()
