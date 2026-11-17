@@ -237,3 +237,9 @@ def clear_raid_expiry(chat_id: int) -> bool:
     with _connection() as db:
         cursor = db.execute("DELETE FROM raid_modes WHERE chat_id=?", (chat_id,))
         return cursor.rowcount > 0
+
+
+def clear_raid_data() -> None:
+    with _connection() as db:
+        db.execute("DELETE FROM raid_joins")
+        db.execute("DELETE FROM raid_modes")
