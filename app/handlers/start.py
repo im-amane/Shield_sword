@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from html import escape
+from urllib.parse import urlsplit
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
@@ -37,19 +39,50 @@ def start_text(first_name: str) -> str:
     ))
 
 
-def start_keyboard() -> InlineKeyboardMarkup:
+def _public_url(name: str) -> str | None:
+    """Accept only absolute HTTPS links from optional deployment configuration."""
+    value = os.getenv(name, "").strip()
+    if not value:
+        return None
+    parsed = urlsplit(value)
+    if parsed.scheme != "https" or not parsed.netloc:
+        return None
+    return value
+
+
+def start_keyboard(bot_username: str | None = None) -> InlineKeyboardMarkup:
+    main_url = _public_url("MAIN_GROUP_URL")
+    owner_url = _public_url("OWNER_CONTACT_URL")
+    add_url = (
+        f"https://t.me/{bot_username}?startgroup=true"
+        if bot_username and bot_username.replace("_", "").isalnum()
+        else None
+    )
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="🌐 Main Group", callback_data="start:group"),
+                InlineKeyboardButton(
+                    text="🌐 Main Group",
+                    url=main_url,
+                ) if main_url else InlineKeyboardButton(
+                    text="🌐 Main Group", callback_data="start:group"
+                ),
                 InlineKeyboardButton(text="📚 Help", callback_data="start:help"),
             ],
             [
-                InlineKeyboardButton(text="👤 Owner", callback_data="start:owner"),
+                InlineKeyboardButton(
+                    text="👤 Owner", url=owner_url
+                ) if owner_url else InlineKeyboardButton(
+                    text="👤 Owner", callback_data="start:owner"
+                ),
                 InlineKeyboardButton(text="✨ About Me", callback_data="start:about"),
             ],
             [
-                InlineKeyboardButton(text="➕ Add Me to Your Group", callback_data="start:addgroup"),
+                InlineKeyboardButton(
+                    text="➕ Add Me to Your Group", url=add_url
+                ) if add_url else InlineKeyboardButton(
+                    text="➕ Add Me to Your Group", callback_data="start:addgroup"
+                ),
             ],
         ]
     )
@@ -178,6 +211,7 @@ async def start_command(message: Message) -> None:
         "╰──────────────╯\n"
         "<i>Ready! ✨</i>",
     ]
+    bot_identity = await message.bot.get_me()
     sent = await message.answer(premium_text(frames[0]))
     for frame in frames[1:]:
         await asyncio.sleep(0.55)
@@ -186,7 +220,7 @@ async def start_command(message: Message) -> None:
     first_name = message.from_user.first_name if message.from_user else "there"
     await sent.edit_text(
         start_text(first_name),
-        reply_markup=start_keyboard(),
+        reply_markup=start_keyboard(bot_identity.username),
     )
 
 
@@ -225,13 +259,29 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
         await callback.answer()
         return
 
-    placeholders = {
-        "group": premium_text("Main Group ka link baad mein add karenge. 🔗"),
-        "owner": premium_text("Owner ka contact baad mein add karenge. 👤"),
-        "addgroup": premium_text("Add-to-group link baad mein add karenge. ➕"),
+    if action == "about":
+        await callback.answer(
+            premium_text(
+                "🛡️ <b>Shield 剣 · Ani World Guardian</b>\n\n"
+                "I keep the group tidy with verification, anti-spam, raid defence, "
+                "link filtering and moderation tools. I report suspicious activity "
+                "without pretending to know private information about people. ✨"
+            ),
+            show_alert=True,
+        )
+        return
+
+    missing_links = {
+        "group": ("MAIN_GROUP_URL", "Main Group link is not configured yet. 🔗"),
+        "owner": ("OWNER_CONTACT_URL", "Owner contact link is not configured yet. 👤"),
+        "addgroup": ("", "Use the Add Me button after opening /start again. ➕"),
     }
-    if action in placeholders:
-        await callback.answer(placeholders[action], show_alert=True)
+    if action in missing_links:
+        variable, message_text = missing_links[action]
+        if variable and _public_url(variable):
+            await callback.answer("Open the configured link from the menu. 🔗")
+        else:
+            await callback.answer(premium_text(message_text), show_alert=True)
         return
 
     await callback.answer(premium_text("Unknown menu action. 😅"), show_alert=True)
