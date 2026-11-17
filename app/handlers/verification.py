@@ -109,7 +109,7 @@ async def start_member_verification(message: Message, members: list[User]) -> No
             )
             await message.answer(
                 f"🔐 <a href=\"tg://user?id={member.id}\">{member.full_name}</a>, "
-                f"verify within 3 minutes to chat.\n\n"
+                f"3 minutes mein verify karo aur chat unlock karo.\n\n"
                 f"<b>{question}</b>",
                 reply_markup=keyboard,
             )
@@ -135,21 +135,21 @@ def create_verification_router() -> Router:
                 int(raw_index),
             )
         except (TypeError, ValueError):
-            await callback.answer("Invalid verification button.", show_alert=True)
+            await callback.answer("Ye button valid nahi hai. Dobara try karo.", show_alert=True)
             return
 
         if callback.from_user.id != user_id or not callback.message:
-            await callback.answer("This verification belongs to another member.", show_alert=True)
+            await callback.answer("Ye verification kisi aur member ke liye hai. 🙂", show_alert=True)
             return
 
         state = _pending.get((chat_id, user_id))
         if not state or int(state["expires_at"]) <= int(time.time()):
             _pending.pop((chat_id, user_id), None)
-            await callback.answer("Verification expired. Please rejoin to try again.", show_alert=True)
+            await callback.answer("Time up! Verification expire ho gaya. Try karne ke liye group dobara join karo.", show_alert=True)
             return
 
         if selected_index != int(state["correct_index"]):
-            await callback.answer("Incorrect answer. Try again.", show_alert=True)
+            await callback.answer("Not quite! Ek aur try maaro. 😄", show_alert=True)
             return
 
         try:
@@ -162,10 +162,10 @@ def create_verification_router() -> Router:
             await callback.message.edit_text(
                 f"✅ <a href=\"tg://user?id={user_id}\">Member</a> verified. Welcome!"
             )
-            await callback.answer("Verification successful.")
+            await callback.answer("Verified! Welcome in. 🎉")
             logger.info("Verified user_id=%s chat_id=%s", user_id, chat_id)
         except TelegramAPIError:
             logger.exception("Could not complete verification for user_id=%s", user_id)
-            await callback.answer("Verification failed. Please contact an admin.", show_alert=True)
+            await callback.answer("Verification complete nahi ho paya. Admin ko ping karo. 🛠️", show_alert=True)
 
     return router
