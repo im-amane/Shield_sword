@@ -92,6 +92,8 @@ class StorageTests(unittest.TestCase):
         self.assertEqual(summary["joins_24h"], 1)
         self.assertEqual(summary["incidents_24h"], 1)
         self.assertEqual(summary["raids_7d"], 1)
+        self.assertTrue(storage.has_recent_security_incident(-100, "raid_detected", 600))
+        self.assertFalse(storage.has_recent_security_incident(-200, "raid_detected", 600))
 
     def test_raid_join_window_and_mode_persist(self) -> None:
         self.assertEqual(storage.record_raid_joins(-100, 3, 1000.0, 60), 3)
