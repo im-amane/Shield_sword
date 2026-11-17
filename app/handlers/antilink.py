@@ -160,7 +160,7 @@ def create_antilink_router() -> Router:
 
     @router.message(
         F.chat.type.in_({"group", "supergroup"})
-        & ((F.text.regexp(_URL_RE)) | (F.caption.regexp(_URL_RE)) | (F.entities) | (F.caption_entities))
+        & ((F.text.regexp(_URL_RE)) | (F.caption.regexp(_URL_RE)) | (F.entities.func(lambda entities: any(entity.type in {"url", "text_link"} for entity in (entities or [])))) | (F.caption_entities.func(lambda entities: any(entity.type in {"url", "text_link"} for entity in (entities or [])))))
         & ((F.text == None) | ~F.text.startswith("/"))
     )
     async def inspect_message(message: Message) -> None:
