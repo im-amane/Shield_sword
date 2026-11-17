@@ -9,6 +9,8 @@ from aiogram import Router
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message, User
 
+from app.handlers.typography import premium_text
+
 logger = logging.getLogger(__name__)
 
 # 500 human accounts joining within 10 minutes activates a 30-minute raid mode.
@@ -112,13 +114,13 @@ def create_raid_router(owner_id: int | None = None) -> Router:
             return
         active, count, remaining = raid_status(message.chat.id)
         state = "🚨 ACTIVE" if active else "🟢 INACTIVE"
-        await message.answer(
+        await message.answer(premium_text(
             "🛡️ <b>Raid Shield Status</b>\n\n"
             f"Current mode: <b>{state}</b>\n"
             f"Recent human joins: <b>{count}/{RAID_JOIN_THRESHOLD}</b>\n"
             f"Time remaining: <b>{remaining // 60}m {remaining % 60}s</b>\n\n"
             "<i>Your community security overview.</i>"
-        )
+        ))
 
     @router.message(Command("raidoff"))
     async def raid_off_command(message: Message) -> None:
@@ -140,14 +142,14 @@ async def announce_raid_activation(
 ) -> None:
     """Notify the group and owner when the rapid-join threshold is crossed."""
     chat_title = message.chat.title or "Telegram group"
-    group_notice = (
+    group_notice = premium_text((
         "🚨 <b>RAID ALERT · SHIELD ACTIVATED</b>\n\n"
         f"<b>{RAID_JOIN_THRESHOLD}</b> human members joined within "
         f"<b>{RAID_WINDOW_SECONDS // 60} minutes</b>.\n\n"
         "🛡️ New members must complete verification before chatting.\n"
         "✅ Existing members are not restricted.\n\n"
         "<i>Ani World is keeping watch.</i>"
-    )
+    ))
     try:
         await message.answer(group_notice)
     except TelegramAPIError:
@@ -166,7 +168,7 @@ async def announce_raid_activation(
             f"Recent human joins: <b>{join_count}</b> in "
             f"{RAID_WINDOW_SECONDS // 60} minutes\n"
             f"Raid mode is active for {RAID_MODE_SECONDS // 60} minutes. "
-            "New members continue to face verification.",
+            premium_text("New members continue to face verification."),
         )
     except TelegramAPIError:
         logger.exception("Could not send raid alert to owner_id=%s", owner_id)
