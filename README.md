@@ -1,6 +1,6 @@
 # Ani World 剣 Management Bot
 
-The first milestone is the **Bot Core**: validated configuration, Telegram connection, structured logging, and a working `/start` health check. Community-management modules will be added one at a time and tested before moving on.
+The bot is built one feature at a time, with automated tests and live verification before moving to the next module.
 
 ## Stack
 
@@ -12,19 +12,15 @@ The first milestone is the **Bot Core**: validated configuration, Telegram conne
 ## Run locally
 
 1. Create a bot with [@BotFather](https://t.me/BotFather).
-2. Copy `.env.example` to `.env` and set `BOT_TOKEN`.
-3. Install dependencies and start the bot:
+2. Set `BOT_TOKEN` in your environment.
+3. Install dependencies and start:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-Export the environment variable before running:
-
-```bash
 export BOT_TOKEN="your-token"
+export OWNER_ID="your-telegram-user-id"
 python -m app.main
 ```
 
@@ -32,31 +28,29 @@ On Windows PowerShell:
 
 ```powershell
 $env:BOT_TOKEN="your-token"
+$env:OWNER_ID="your-telegram-user-id"
 python -m app.main
 ```
 
-Open the bot in Telegram and send `/start`. It should reply that the core connection test succeeded. Set `OWNER_ID` to your numeric Telegram user ID, then use `/owner` to verify authorization and `/panel` to open the owner dashboard.
-
 ## Railway deployment
 
-1. Create a Railway service from this GitHub repository.
-2. Add `BOT_TOKEN` and `OWNER_ID` in the service's Variables. `OWNER_ID` is required for owner-only commands and the dashboard. The welcome handler is public: it responds to new human members in any group where the bot is added and allowed to send messages. No group ID allowlist is required.
-3. Railway uses `python -m app.main` as the start command from `railway.json`.
-4. Deploy, inspect the logs for the Telegram connection message, then send `/start`.
+Set `BOT_TOKEN` and `OWNER_ID` in the existing Railway service Variables. The service starts with `python -m app.main`.
 
-**Security:** Never commit `.env`, paste bot tokens into chats, or print secrets in logs. If a token is exposed, revoke it through @BotFather and create a new one.
+The bot needs these Telegram administrator permissions for the current group features:
+- Delete messages: anti-spam cleanup.
+- Ban users: temporary restrictions for verification and anti-spam. This permission does not mean the bot automatically bans members.
 
-## Current status
+## Current group protection
 
-- [x] Project skeleton
-- [x] Environment configuration validation
-- [x] Telegram bot startup and connection check
-- [x] `/start` command
-- [x] Owner authentication command and fail-closed authorization helper
-- [x] Owner dashboard with refresh and close controls
-- [ ] Automated test suite verified in CI
-- [ ] Live owner dashboard test
-- [x] Public welcome system with HTML-safe mentions for any group where the bot is added
-- [ ] Live welcome test in a configured community group
+- Public welcome messages for new human members.
+- Arithmetic captcha verification for every new human member.
+- Anti-spam: flood detection and temporary 60-second restrictions.
+- Automatic raid detection: activates when **500 human members join within 10 minutes**.
+- Raid mode lasts **30 minutes** and sends an alert to the group and configured owner.
+- During raid mode, all new human members continue to face the existing verification challenge. Existing members are not restricted.
 
-No moderation or group-management permissions are needed for this first milestone. Add only the permissions required by each later module.
+Raid counters and active mode are currently held in memory, so a service restart resets the detection window and active raid state. Persistent storage is a planned hardening step before relying on this for large-scale incident response.
+
+## Security
+
+Never commit `.env`, paste bot tokens into chats, or print secrets in logs. If a token is exposed, revoke it through @BotFather and create a new one.
