@@ -99,7 +99,7 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
             return None
         target = message.reply_to_message.from_user
         if owner_id is not None and target.id == owner_id:
-            await message.answer(premium_text("👑 <b>Protected Member</b>\\n\\nThe configured bot owner is exempt from moderation actions."))
+            await message.answer(premium_text("👑 <b>Protected Member</b>\n\nThe configured bot owner is exempt from moderation actions."))
             return None
         if target.is_bot:
             await message.answer(premium_text("🤖 I can't moderate another bot with this command."))
