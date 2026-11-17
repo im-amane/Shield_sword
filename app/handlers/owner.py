@@ -14,12 +14,13 @@ def create_owner_router(owner_id: int | None) -> Router:
     async def owner_command(message: Message) -> None:
         user_id = message.from_user.id if message.from_user else None
         if not is_owner(user_id, owner_id):
-            await message.answer("⛔ Nope! Ye command sirf bot owner ke liye hai. 🔒")
+            await message.answer("🔒 <b>Owner Access</b>\n\nThis area is reserved for the bot owner.\nAuthorization required. 👑")
             return
 
         await message.answer(
-            "🔐 <b>Access granted!</b>\n"
-            "Owner verified. Boss, sab set hai. 😎"
+            "👑 <b>Welcome back, Owner!</b>\n\n"
+            "Your identity is verified and owner access is ready.\n"
+            "Use /panel to open your control center. ⚙️"
         )
 
     return router
