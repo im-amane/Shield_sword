@@ -409,6 +409,21 @@ def record_security_incident(chat_id: int, chat_title: str, kind: str,
         )
 
 
+
+def has_recent_security_incident(chat_id: int, kind: str, seconds: int = 600) -> bool:
+    """Check whether a matching alert was already recorded within a cooldown."""
+    seconds = max(1, min(int(seconds), 86400))
+    with _connection() as db:
+        row = db.execute(
+            """SELECT 1 FROM security_incidents
+               WHERE chat_id=? AND kind=?
+                 AND created_at >= datetime('now', ?)
+               LIMIT 1""",
+            (chat_id, kind, f"-{seconds} seconds"),
+        ).fetchone()
+    return row is not None
+
+
 def get_known_groups(limit: int = 20) -> list[dict]:
     limit = max(1, min(int(limit), 50))
     with _connection() as db:
