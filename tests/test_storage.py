@@ -72,6 +72,10 @@ class StorageTests(unittest.TestCase):
     def test_database_backup_is_valid_sqlite(self) -> None:
         backup = storage.create_database_backup()
         self.assertTrue(backup.startswith(b"SQLite format 3"))
+        status = storage.get_database_status()
+        self.assertEqual(status["integrity"], "ok")
+        self.assertTrue(status["exists"])
+        self.assertGreaterEqual(status["table_count"], 10)
 
     def test_raid_join_window_and_mode_persist(self) -> None:
         self.assertEqual(storage.record_raid_joins(-100, 3, 1000.0, 60), 3)
