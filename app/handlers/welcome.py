@@ -14,6 +14,7 @@ from app.handlers.raid_protection import (
 )
 from app.handlers.verification import start_member_verification
 from app.handlers.typography import premium_text
+from app.storage import register_group, record_member_join
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,14 @@ def create_welcome_router(
         if not members:
             return
 
-        await message.answer(render_welcome_message(message.chat.title or "", members))
+        chat_title = message.chat.title or "Telegram group"
+        register_group(message.chat.id, chat_title)
+        for member in members:
+            record_member_join(
+                message.chat.id, chat_title, member.id,
+                member.username, member.full_name,
+            )
+        await message.answer(render_welcome_message(chat_title, members))
 
         newly_activated, join_count, _raid_active = record_join_activity(
             message.chat.id,
