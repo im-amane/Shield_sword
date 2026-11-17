@@ -52,12 +52,15 @@ def start_keyboard() -> InlineKeyboardMarkup:
 
 def help_text() -> str:
     return (
-        "📚 <b>Help Center</b>\n\n"
-        "• New members verification (CAPTCHA)\n"
-        "• Anti-spam and repeated-message protection\n"
-        "• Raid Shield for sudden join floods\n\n"
-        "Bot ko group mein admin permissions dena zaroori hai. "
-        "Setup ke liye group admins se contact karo. 💬"
+        "📚 <b>Hey! Need a hand?</b> ✨\n\n"
+        "I’m here to help you get started with Ani World.\n\n"
+        "🔐 New member verification\n"
+        "🚫 Anti-spam and flood protection\n"
+        "⚡ Automatic raid detection\n"
+        "⚙️ Owner tools and group controls\n\n"
+        "For protection features, make sure the bot has the required "
+        "administrator permissions in your group. 💬\n\n"
+        "More helpful features are on the way! 🚀"
     )
 
 
