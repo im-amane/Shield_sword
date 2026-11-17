@@ -51,6 +51,14 @@ The bot needs these Telegram administrator permissions for the current group fea
 
 Raid counters and active mode are persisted in SQLite. The database survives process restarts only when its path is on persistent storage. On Railway, attach a Volume mounted at `/data` and set `DATABASE_PATH=/data/aniworld.sqlite3`; without that, redeploys may replace the database.
 
+## Automatic copyright-risk controls
+
+- Every group automatically blocks ordinary members from posting photos, videos, animations/GIFs, documents, audio, voice notes, video notes and stickers. No setup command is required.
+- Group admins can still publish approved media; text discussion remains available.
+- The filter also checks edited media messages and records removal metadata in the security audit log.
+- This is a group-level upload policy, not a copyright ownership detector or legal guarantee. It does not yet moderate channel posts. Channel protection requires a separate channel-admin integration and Telegram's Restrict Saving Content setting should also be enabled manually where appropriate.
+- Use licensed/official anime sources and respond to valid rights-holder notices.
+
 ## Security
 
 - All bot-sent messages/documents use Telegram's protected-content flag by default to discourage forwarding and saving.
