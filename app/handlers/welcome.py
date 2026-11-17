@@ -27,7 +27,7 @@ def render_welcome_message(chat_title: str, members: list[User]) -> str:
     )
 
 
-def create_welcome_router() -> Router:
+def create_welcome_router(_legacy_allowed_chat_ids: tuple[int, ...] | None = None) -> Router:
     """Create a public welcome handler for every group the bot is added to."""
     router = Router(name="welcome")
 
