@@ -34,7 +34,7 @@ python -m app.main
 
 ## Railway deployment
 
-Set `BOT_TOKEN` and `OWNER_ID` in the existing Railway service Variables. The service starts with `python -m app.main`.
+Set `BOT_TOKEN` and `OWNER_ID` in the existing Railway service Variables. Optional public menu links are `MAIN_GROUP_URL` and `OWNER_CONTACT_URL` (HTTPS URLs only). The Add Me button is generated automatically from the bot username. The service starts with `python -m app.main`.
 
 The bot needs these Telegram administrator permissions for the current group features:
 - Delete messages: anti-spam cleanup.
