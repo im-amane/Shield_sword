@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 
 DB_PATH = Path(os.getenv("DATABASE_PATH", "data/aniworld.sqlite3"))
@@ -16,8 +17,18 @@ def _connect() -> sqlite3.Connection:
     return connection
 
 
+@contextmanager
+def _connection():
+    db = _connect()
+    try:
+        yield db
+        db.commit()
+    finally:
+        db.close()
+
+
 def init_storage() -> None:
-    with _connect() as db:
+    with _connection() as db:
         db.executescript(
             """
             CREATE TABLE IF NOT EXISTS warnings (
@@ -49,7 +60,7 @@ def init_storage() -> None:
 
 
 def add_warning(chat_id: int, user_id: int) -> int:
-    with _connect() as db:
+    with _connection() as db:
         db.execute(
             """INSERT INTO warnings(chat_id, user_id, count) VALUES (?, ?, 1)
                ON CONFLICT(chat_id, user_id) DO UPDATE SET count = count + 1""",
