@@ -53,7 +53,7 @@ def start_keyboard() -> InlineKeyboardMarkup:
 
 
 def help_text() -> str:
-    return (
+    return premium_text(
         "📚 <b>Ani World · Help Center</b> ✨\n\n"
         "Commands ko categories mein divide kiya gaya hai. Neeche kisi section par tap karo.\n\n"
         "🛡️ Group protection · 👮 Moderation\n"
@@ -196,10 +196,10 @@ async def help_section_callback(callback: CallbackQuery) -> None:
         return
     content = _HELP_SECTIONS.get(section)
     if content is None:
-        await callback.answer("Unknown help section.", show_alert=True)
+        await callback.answer(premium_text("Unknown help section. 😅"), show_alert=True)
         return
     await callback.message.edit_text(
-        content,
+        premium_text(content),
         reply_markup=help_section_keyboard(),
     )
     await callback.answer()
@@ -215,12 +215,12 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
         return
 
     placeholders = {
-        "group": "Main Group ka link baad mein add karenge. 🔗",
-        "owner": "Owner ka contact baad mein add karenge. 👤",
-        "addgroup": "Add-to-group link baad mein add karenge. ➕",
+        "group": premium_text("Main Group ka link baad mein add karenge. 🔗"),
+        "owner": premium_text("Owner ka contact baad mein add karenge. 👤"),
+        "addgroup": premium_text("Add-to-group link baad mein add karenge. ➕"),
     }
     if action in placeholders:
         await callback.answer(placeholders[action], show_alert=True)
         return
 
-    await callback.answer("Unknown menu action.", show_alert=True)
+    await callback.answer(premium_text("Unknown menu action. 😅"), show_alert=True)
