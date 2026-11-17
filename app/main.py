@@ -11,6 +11,7 @@ from aiogram.enums import ParseMode
 
 from app.config import ConfigurationError, load_settings
 from app.handlers.owner import create_owner_router
+from app.handlers.moderation import create_moderation_router
 from app.handlers.antispam import create_antispam_router
 from app.handlers.panel import create_panel_router
 from app.handlers.raid_protection import create_raid_router
@@ -33,6 +34,7 @@ async def run() -> None:
     dispatcher.include_router(create_panel_router(settings.owner_id))
     dispatcher.include_router(create_welcome_router(settings.welcome_chat_ids, settings.owner_id))
     dispatcher.include_router(create_verification_router())
+    dispatcher.include_router(create_moderation_router())
     dispatcher.include_router(create_antispam_router(settings.owner_id))
     dispatcher.include_router(create_raid_router(settings.owner_id))
 
