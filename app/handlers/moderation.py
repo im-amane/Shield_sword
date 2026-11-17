@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from html import escape
 from datetime import datetime, timedelta, timezone
 
 from aiogram import Router
@@ -11,7 +12,7 @@ from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
 
-_DURATION = re.compile(r"^(\\d+)(s|m|h|d)$", re.IGNORECASE)
+_DURATION = re.compile(r"^(\d+)(s|m|h|d)$", re.IGNORECASE)
 DEFAULT_MUTE_SECONDS = 10 * 60
 MAX_MUTE_SECONDS = 365 * 24 * 60 * 60
 
@@ -48,7 +49,7 @@ def create_moderation_router() -> Router:
 
     async def require_admin(message: Message, *, delete: bool = False) -> bool:
         if message.chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
-            await message.answer(premium_text("⚠️ <b>Group Only</b>\\n\\nThis command works inside a group."))
+            await message.answer(premium_text("⚠️ <b>Group Only</b>\n\nThis command works inside a group."))
             return False
         if not message.from_user:
             return False
@@ -57,25 +58,25 @@ def create_moderation_router() -> Router:
             bot_user = await message.bot.get_me()
             bot_member = await message.bot.get_chat_member(message.chat.id, bot_user.id)
         except Exception:
-            await message.answer(premium_text("❌ <b>Permission Check Failed</b>\\n\\nI could not verify group permissions. Try again."))
+            await message.answer(premium_text("❌ <b>Permission Check Failed</b>\n\nI could not verify group permissions. Try again."))
             return False
         if actor.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
-            await message.answer(premium_text("🔒 <b>Admin Only</b>\\n\\nOnly group admins can use this command."))
+            await message.answer(premium_text("🔒 <b>Admin Only</b>\n\nOnly group admins can use this command."))
             return False
         if bot_member.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
-            await message.answer(premium_text("⚙️ <b>Bot Permission Needed</b>\\n\\nPlease promote Ani World as an admin first."))
+            await message.answer(premium_text("⚙️ <b>Bot Permission Needed</b>\n\nPlease promote Ani World as an admin first."))
             return False
         if delete and not getattr(bot_member, "can_delete_messages", False):
-            await message.answer(premium_text("⚙️ <b>Missing Permission</b>\\n\\nI need the Delete Messages permission to do that."))
+            await message.answer(premium_text("⚙️ <b>Missing Permission</b>\n\nI need the Delete Messages permission to do that."))
             return False
         if not delete and not getattr(bot_member, "can_restrict_members", False):
-            await message.answer(premium_text("⚙️ <b>Missing Permission</b>\\n\\nI need the Ban Users permission to do that."))
+            await message.answer(premium_text("⚙️ <b>Missing Permission</b>\n\nI need the Ban Users permission to do that."))
             return False
         return True
 
     async def replied_target(message: Message):
         if not message.reply_to_message or not message.reply_to_message.from_user:
-            await message.answer(premium_text("↩️ <b>Reply Required</b>\\n\\nReply to the member's message and try again."))
+            await message.answer(premium_text("↩️ <b>Reply Required</b>\n\nReply to the member's message and try again."))
             return None
         target = message.reply_to_message.from_user
         if target.is_bot:
@@ -83,7 +84,7 @@ def create_moderation_router() -> Router:
             return None
         member = await message.bot.get_chat_member(message.chat.id, target.id)
         if member.status in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
-            await message.answer(premium_text("🛡️ <b>Protected Member</b>\\n\\nI won't apply moderation actions to a group admin."))
+            await message.answer(premium_text("🛡️ <b>Protected Member</b>\n\nI won't apply moderation actions to a group admin."))
             return None
         return target
 
@@ -98,7 +99,7 @@ def create_moderation_router() -> Router:
         try:
             seconds = parse_duration(args[1] if len(args) > 1 else None)
         except ValueError as exc:
-            await message.answer(premium_text(f"⚠️ <b>Invalid Duration</b>\\n\\n{exc}"))
+            await message.answer(premium_text(f"⚠️ <b>Invalid Duration</b>\n\n{exc}"))
             return
         until = datetime.now(timezone.utc) + timedelta(seconds=seconds)
         try:
@@ -109,11 +110,11 @@ def create_moderation_router() -> Router:
                 until_date=until,
             )
         except Exception:
-            await message.answer(premium_text("❌ <b>Mute Failed</b>\\n\\nCheck my admin permissions and try again."))
+            await message.answer(premium_text("❌ <b>Mute Failed</b>\n\nCheck my admin permissions and try again."))
             return
         await message.answer(premium_text(
-            f"🔇 <b>Member Muted</b>\\n\\n"
-            f"👤 {target.full_name}\\n"
+            f"🔇 <b>Member Muted</b>\n\n"
+            f"👤 {escape(target.full_name)}\n"
             f"⏳ Duration: {format_duration(seconds)}"
         ))
 
@@ -142,9 +143,9 @@ def create_moderation_router() -> Router:
                 ),
             )
         except Exception:
-            await message.answer(premium_text("❌ <b>Unmute Failed</b>\\n\\nCheck my admin permissions and try again."))
+            await message.answer(premium_text("❌ <b>Unmute Failed</b>\n\nCheck my admin permissions and try again."))
             return
-        await message.answer(premium_text(f"🔊 <b>Member Unmuted</b>\\n\\n👤 {target.full_name} can chat again. 💬"))
+        await message.answer(premium_text(f"🔊 <b>Member Unmuted</b>\n\n👤 {target.full_name} can chat again. 💬"))
 
     @router.message(Command("ban"))
     async def ban_command(message: Message) -> None:
@@ -156,9 +157,9 @@ def create_moderation_router() -> Router:
         try:
             await message.bot.ban_chat_member(chat_id=message.chat.id, user_id=target.id)
         except Exception:
-            await message.answer(premium_text("❌ <b>Ban Failed</b>\\n\\nCheck my admin permissions and try again."))
+            await message.answer(premium_text("❌ <b>Ban Failed</b>\n\nCheck my admin permissions and try again."))
             return
-        await message.answer(premium_text(f"⛔ <b>Member Banned</b>\\n\\n👤 {target.full_name} has been removed from the group."))
+        await message.answer(premium_text(f"⛔ <b>Member Banned</b>\n\n👤 {target.full_name} has been removed from the group."))
 
     @router.message(Command("kick"))
     async def kick_command(message: Message) -> None:
@@ -171,9 +172,9 @@ def create_moderation_router() -> Router:
             await message.bot.ban_chat_member(chat_id=message.chat.id, user_id=target.id)
             await message.bot.unban_chat_member(chat_id=message.chat.id, user_id=target.id, only_if_banned=True)
         except Exception:
-            await message.answer(premium_text("❌ <b>Kick Failed</b>\\n\\nCheck my admin permissions and try again."))
+            await message.answer(premium_text("❌ <b>Kick Failed</b>\n\nCheck my admin permissions and try again."))
             return
-        await message.answer(premium_text(f"👢 <b>Member Kicked</b>\\n\\n👤 {target.full_name} was removed. They can rejoin using an invite link."))
+        await message.answer(premium_text(f"👢 <b>Member Kicked</b>\n\n👤 {target.full_name} was removed. They can rejoin using an invite link."))
 
     @router.message(Command("unban"))
     async def unban_command(message: Message) -> None:
@@ -182,23 +183,23 @@ def create_moderation_router() -> Router:
         args = (message.text or "").split(maxsplit=1)
         raw_id = args[1].strip() if len(args) > 1 else ""
         if not raw_id.isdigit():
-            await message.answer(premium_text("📝 <b>How to use</b>\\n\\n/unban USER_ID"))
+            await message.answer(premium_text("📝 <b>How to use</b>\n\n/unban USER_ID"))
             return
         try:
             await message.bot.unban_chat_member(
                 chat_id=message.chat.id, user_id=int(raw_id), only_if_banned=True
             )
         except Exception:
-            await message.answer(premium_text("❌ <b>Unban Failed</b>\\n\\nCheck the user ID and my admin permissions."))
+            await message.answer(premium_text("❌ <b>Unban Failed</b>\n\nCheck the user ID and my admin permissions."))
             return
-        await message.answer(premium_text(f"✅ <b>Ban Removed</b>\\n\\nUser <code>{raw_id}</code> can rejoin the group."))
+        await message.answer(premium_text(f"✅ <b>Ban Removed</b>\n\nUser <code>{raw_id}</code> can rejoin the group."))
 
     @router.message(Command("purge"))
     async def purge_command(message: Message) -> None:
         if not await require_admin(message, delete=True):
             return
         if not message.reply_to_message:
-            await message.answer(premium_text("↩️ <b>Reply Required</b>\\n\\nReply to the first message you want deleted, then use /purge."))
+            await message.answer(premium_text("↩️ <b>Reply Required</b>\n\nReply to the first message you want deleted, then use /purge."))
             return
         start_id = message.reply_to_message.message_id
         end_id = message.message_id
@@ -215,7 +216,7 @@ def create_moderation_router() -> Router:
                         deleted += 1
                     except Exception:
                         continue
-        notice = await message.answer(premium_text(f"🧹 <b>Cleanup Complete</b>\\n\\nDeleted {deleted} messages."))
+        notice = await message.answer(premium_text(f"🧹 <b>Cleanup Complete</b>\n\nDeleted {deleted} messages."))
         # Keep the confirmation brief; it is not part of the bulk deletion range.
         _ = notice
 
