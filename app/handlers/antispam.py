@@ -81,7 +81,10 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
     """Create a group-only anti-spam router; admins and owner are exempt."""
     router = Router(name="anti_spam")
 
-    @router.message(F.chat.type.in_({"group", "supergroup"}))
+    @router.message(
+        F.chat.type.in_({"group", "supergroup"})
+        & ((F.text == None) | ~F.text.startswith("/"))
+    )
     async def inspect_message(message: Message) -> None:
         user = message.from_user
         if user is None or user.is_bot or is_owner(user.id, owner_id):
