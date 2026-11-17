@@ -27,9 +27,9 @@ class SecurityStatusTests(unittest.TestCase):
     @patch("app.handlers.security_status.is_feature_enabled", return_value=False)
     def test_disabled_features_are_visible(self, feature_enabled, copyright_enabled):
         text = security_status_text(-200, "Test Group")
-        self.assertIn("Anti-link:", text)
-        self.assertIn("Bad-word filter:", text)
-        self.assertIn("Media upload policy:", text)
+        self.assertIn(premium_text("Anti-link:"), text)
+        self.assertIn(premium_text("Bad-word filter:"), text)
+        self.assertIn(premium_text("Media upload policy:"), text)
 
 
 if __name__ == "__main__":
