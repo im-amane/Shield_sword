@@ -1,0 +1,171 @@
+"""Join verification with a short arithmetic captcha."""
+from __future__ import annotations
+
+import logging
+import secrets
+import time
+
+from aiogram import F, Router
+from aiogram.exceptions import TelegramAPIError
+from aiogram.types import (
+    ChatPermissions,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+    User,
+)
+
+logger = logging.getLogger(__name__)
+CHALLENGE_TTL_SECONDS = 180
+_pending: dict[tuple[int, int], dict[str, object]] = {}
+
+_SEND_PERMISSION_FIELDS = (
+    "can_send_messages",
+    "can_send_audios",
+    "can_send_documents",
+    "can_send_photos",
+    "can_send_videos",
+    "can_send_video_notes",
+    "can_send_voice_notes",
+    "can_send_polls",
+    "can_send_other_messages",
+    "can_add_web_page_previews",
+)
+
+
+def _permissions(allowed: bool) -> ChatPermissions:
+    """Build a complete send-permission set for restricting/restoring a member."""
+    return ChatPermissions(**{field: allowed for field in _SEND_PERMISSION_FIELDS})
+
+
+def _make_challenge() -> tuple[str, list[int], int]:
+    """Return a simple addition question, shuffled choices, and correct choice index."""
+    left = secrets.randbelow(8) + 2
+    right = secrets.randbelow(8) + 2
+    answer = left + right
+    choices = {answer, answer + 1, answer - 1, answer + 2}
+    options = list(choices)
+    secrets.SystemRandom().shuffle(options)
+    return f"What is {left} + {right}?", options, options.index(answer)
+
+
+def create_verification_router() -> Router:
+    """Verify new human members in every group where the bot can restrict members."""
+    router = Router(name="member_verification")
+
+    @router.message(F.new_chat_members)
+    async def verify_new_members(message: Message) -> None:
+        chat_id = message.chat.id
+        now = int(time.time())
+        for key, state in list(_pending.items()):
+            if int(state["expires_at"]) <= now:
+                _pending.pop(key, None)
+
+        for member in message.new_chat_members or []:
+            if member.is_bot:
+                continue
+            try:
+                member_status = await message.bot.get_chat_member(chat_id, member.id)
+                if member_status.status in ("creator", "administrator"):
+                    continue
+
+                bot_identity = await message.bot.get_me()
+                bot_status = await message.bot.get_chat_member(chat_id, bot_identity.id)
+                if bot_status.status != "administrator" or not getattr(
+                    bot_status, "can_restrict_members", False
+                ):
+                    logger.warning(
+                        "Verification skipped: bot lacks restrict permission in chat_id=%s",
+                        chat_id,
+                    )
+                    await message.answer(
+                        "⚠️ Member verification is not active: please make the bot an "
+                        "administrator with <b>Ban users</b> permission."
+                    )
+                    continue
+
+                chat = await message.bot.get_chat(chat_id)
+                original_permissions = chat.permissions or _permissions(True)
+                expires_at = now + CHALLENGE_TTL_SECONDS
+                await message.bot.restrict_chat_member(
+                    chat_id=chat_id,
+                    user_id=member.id,
+                    permissions=_permissions(False),
+                    until_date=expires_at,
+                )
+
+                question, options, correct_index = _make_challenge()
+                _pending[(chat_id, member.id)] = {
+                    "correct_index": correct_index,
+                    "expires_at": expires_at,
+                    "permissions": original_permissions,
+                }
+                keyboard = InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [
+                            InlineKeyboardButton(
+                                text=str(option),
+                                callback_data=f"verify:{chat_id}:{member.id}:{index}",
+                            )
+                            for index, option in enumerate(options)
+                        ]
+                    ]
+                )
+                await message.answer(
+                    f"🔐 <a href=\"tg://user?id={member.id}\">{member.full_name}</a>, "
+                    f"verify within 3 minutes to chat.\n\n"
+                    f"<b>{question}</b>",
+                    reply_markup=keyboard,
+                )
+            except TelegramAPIError:
+                logger.exception(
+                    "Could not start verification for user_id=%s chat_id=%s",
+                    member.id,
+                    chat_id,
+                )
+
+    @router.callback_query(F.data.startswith("verify:"))
+    async def verify_callback(callback: CallbackQuery) -> None:
+        try:
+            _, raw_chat_id, raw_user_id, raw_index = (callback.data or "").split(":")
+            chat_id, user_id, selected_index = (
+                int(raw_chat_id),
+                int(raw_user_id),
+                int(raw_index),
+            )
+        except (TypeError, ValueError):
+            await callback.answer("Invalid verification button.", show_alert=True)
+            return
+
+        if callback.from_user.id != user_id or not callback.message:
+            await callback.answer("This verification belongs to another member.", show_alert=True)
+            return
+
+        state = _pending.get((chat_id, user_id))
+        if not state or int(state["expires_at"]) <= int(time.time()):
+            _pending.pop((chat_id, user_id), None)
+            await callback.answer("Verification expired. Please rejoin to try again.", show_alert=True)
+            return
+
+        if selected_index != int(state["correct_index"]):
+            await callback.answer("Incorrect answer. Try again.", show_alert=True)
+            return
+
+        try:
+            await callback.bot.restrict_chat_member(
+                chat_id=chat_id,
+                user_id=user_id,
+                permissions=state["permissions"],
+            )
+            _pending.pop((chat_id, user_id), None)
+            await callback.message.edit_text(
+                f"✅ <a href=\"tg://user?id={user_id}\">Member</a> verified. Welcome!"
+            )
+            await callback.answer("Verification successful.")
+            logger.info("Verified user_id=%s chat_id=%s", user_id, chat_id)
+        except TelegramAPIError:
+            logger.exception("Could not complete verification for user_id=%s", user_id)
+            await callback.answer("Verification failed. Please contact an admin.", show_alert=True)
+
+    return router
