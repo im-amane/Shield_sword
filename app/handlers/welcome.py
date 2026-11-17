@@ -2,19 +2,19 @@
 from __future__ import annotations
 
 import logging
+from html import escape
 
 from aiogram import F, Router
 from aiogram.types import Message, User
-from aiogram.utils.html import quote
 
 logger = logging.getLogger(__name__)
 
 
 def render_welcome_message(chat_title: str, members: list[User]) -> str:
     """Build a safe HTML welcome message for one or more newly joined members."""
-    safe_chat_title = quote(chat_title or "this group")
+    safe_chat_title = escape(chat_title or "this group", quote=True)
     mentions = [
-        f'<a href="tg://user?id={member.id}">{quote(member.full_name)}</a>'
+        f'<a href="tg://user?id={member.id}">{escape(member.full_name, quote=True)}</a>'
         for member in members
     ]
     joined_names = ", ".join(mentions)
