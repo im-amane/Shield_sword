@@ -108,7 +108,7 @@ def create_raid_router(owner_id: int | None = None) -> Router:
     @router.message(Command("raidstatus"))
     async def raid_status_command(message: Message) -> None:
         if not message.from_user or not is_owner(message.from_user.id, owner_id):
-            await message.answer("⛔ Access denied. Owner-only command.")
+            await message.answer("⛔ Ye control owner-only hai. 🔒")
             return
         active, count, remaining = raid_status(message.chat.id)
         state = "🚨 ACTIVE" if active else "🟢 INACTIVE"
@@ -125,9 +125,9 @@ def create_raid_router(owner_id: int | None = None) -> Router:
             await message.answer("⛔ Access denied. Owner-only command.")
             return
         if disable_raid_mode(message.chat.id):
-            await message.answer("✅ Raid Mode manually disabled for this group.")
+            await message.answer("✅ Raid Shield off kar diya. Group ab normal mode mein hai.")
         else:
-            await message.answer("ℹ️ Raid Mode is already inactive in this group.")
+            await message.answer("😌 Raid Shield pehle se hi inactive hai.")
 
     return router
 
@@ -140,7 +140,7 @@ async def announce_raid_activation(
     """Notify the group and owner when the rapid-join threshold is crossed."""
     chat_title = message.chat.title or "Telegram group"
     group_notice = (
-        "🚨 <b>RAID MODE ACTIVATED</b>\n"
+        "🚨 <b>RAID SHIELD ACTIVATED</b>\n"
         f"<b>{RAID_JOIN_THRESHOLD}</b> human members joined within "
         f"<b>{RAID_WINDOW_SECONDS // 60} minutes</b>.\n"
         "New members must pass the existing verification challenge. "
