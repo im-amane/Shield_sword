@@ -26,7 +26,8 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(
             callbacks,
             ["owner_panel:security", "owner_panel:groups",
-             "owner_panel:activity", "owner_panel:database",
+             "owner_panel:activity", "owner_panel:audit",
+             "owner_panel:database", "owner_panel:backup",
              "owner_panel:refresh", "owner_panel:close"],
         )
 
