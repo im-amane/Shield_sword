@@ -1,11 +1,7 @@
 """Tests for member verification challenge helpers and router registration."""
 import unittest
 
-from app.handlers.verification import (
-    _make_challenge,
-    _permissions,
-    create_verification_router,
-)
+from app.handlers.verification import _make_challenge, _permissions, create_verification_router
 
 
 class VerificationTests(unittest.TestCase):
@@ -33,10 +29,10 @@ class VerificationTests(unittest.TestCase):
         self.assertTrue(permissions.can_send_photos)
         self.assertTrue(permissions.can_send_other_messages)
 
-    def test_router_registers_join_and_callback_handlers(self) -> None:
+    def test_router_registers_only_verification_callback(self) -> None:
         router = create_verification_router()
         self.assertEqual(router.name, "member_verification")
-        self.assertEqual(len(router.message.handlers), 1)
+        self.assertEqual(len(router.message.handlers), 0)
         self.assertEqual(len(router.callback_query.handlers), 1)
 
 
