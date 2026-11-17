@@ -33,6 +33,15 @@ def parse_duration(value: str | None) -> int:
     return seconds
 
 
+def format_duration(seconds: int) -> str:
+    """Render seconds as a readable duration."""
+    for label, size in (("day", 86400), ("hour", 3600), ("minute", 60), ("second", 1)):
+        if seconds % size == 0:
+            amount = seconds // size
+            return f"{amount} {label}{'' if amount == 1 else 's'}"
+    return f"{seconds} seconds"
+
+
 def create_moderation_router() -> Router:
     """Create admin-only moderation commands."""
     router = Router(name="moderation")
@@ -43,12 +52,16 @@ def create_moderation_router() -> Router:
             return False
         if not message.from_user:
             return False
-        actor = await message.bot.get_chat_member(message.chat.id, message.from_user.id)
+        try:
+            actor = await message.bot.get_chat_member(message.chat.id, message.from_user.id)
+            bot_user = await message.bot.get_me()
+            bot_member = await message.bot.get_chat_member(message.chat.id, bot_user.id)
+        except Exception:
+            await message.answer(premium_text("❌ <b>Permission Check Failed</b>\\n\\nI could not verify group permissions. Try again."))
+            return False
         if actor.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
             await message.answer(premium_text("🔒 <b>Admin Only</b>\\n\\nOnly group admins can use this command."))
             return False
-        bot_user = await message.bot.get_me()
-        bot_member = await message.bot.get_chat_member(message.chat.id, bot_user.id)
         if bot_member.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
             await message.answer(premium_text("⚙️ <b>Bot Permission Needed</b>\\n\\nPlease promote Ani World as an admin first."))
             return False
@@ -101,8 +114,7 @@ def create_moderation_router() -> Router:
         await message.answer(premium_text(
             f"🔇 <b>Member Muted</b>\\n\\n"
             f"👤 {target.full_name}\\n"
-            f"⏳ Duration: {seconds // 60 if seconds % 60 == 0 else seconds} "
-            f"{'minutes' if seconds % 60 == 0 and seconds != 60 else 'seconds' if seconds % 60 else 'minutes'}"
+            f"⏳ Duration: {format_duration(seconds)}"
         ))
 
     @router.message(Command("unmute"))
