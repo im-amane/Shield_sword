@@ -126,7 +126,9 @@ _HELP_SECTIONS = {
         "/owner - Verify owner access\n"
         "/panel - Open the owner control center\n"
         "/raidstatus - Check raid shield status\n"
-        "/raidoff - Disable active raid mode\n\n"
+        "/raidoff - Disable active raid mode\n"
+        "/audit - View recent security events\n"
+        "/backup - Send a private database backup\n\n"
         "<i>These commands are restricted to the configured bot owner.</i>"
     ),
     "permissions": (
