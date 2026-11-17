@@ -17,7 +17,7 @@ from app.handlers.typography import premium_text
 def dashboard_text(bot_username: str | None, bot_id: int, owner_id: int) -> str:
     """Build a concise dashboard view from verified runtime values."""
     username = f"@{bot_username}" if bot_username else "Not available"
-    return (
+    return premium_text(
         "⚙️ <b>Control Center</b>\n\n"
         "Welcome back, Owner! 👑\n\n"
         "Your command center is ready. Manage your bot and monitor its protection systems from here.\n\n"
@@ -59,7 +59,7 @@ def create_panel_router(owner_id: int | None) -> Router:
     async def panel_command(message: Message) -> None:
         user_id = message.from_user.id if message.from_user else None
         if not await authorized(user_id):
-            await message.answer("🔒 <b>Private Area</b>\n\nThe owner dashboard is only available to the bot owner. 👑")
+            await message.answer(premium_text("🔒 <b>Private Area</b>\n\nThe owner dashboard is only available to the bot owner. 👑"))
             return
         await render_panel(message)
 
@@ -67,13 +67,13 @@ def create_panel_router(owner_id: int | None) -> Router:
     async def panel_callback(callback: CallbackQuery) -> None:
         user_id = callback.from_user.id if callback.from_user else None
         if not await authorized(user_id):
-            await callback.answer("Access denied.", show_alert=True)
+            await callback.answer(premium_text("Access denied. 🔒"), show_alert=True)
             return
 
         if callback.data == "owner_panel:close":
             if callback.message:
                 await callback.message.delete()
-            await callback.answer("Panel closed. Catch you later! 👋")
+            await callback.answer(premium_text("Panel closed. Catch you later! 👋"))
             return
 
         if callback.data == "owner_panel:refresh":
@@ -83,9 +83,9 @@ def create_panel_router(owner_id: int | None) -> Router:
                     dashboard_text(me.username, me.id, owner_id or 0),
                     reply_markup=dashboard_keyboard(),
                 )
-            await callback.answer("Fresh status loaded. ✨")
+            await callback.answer(premium_text("Fresh status loaded. ✨"))
             return
 
-        await callback.answer("Unknown dashboard action.", show_alert=True)
+        await callback.answer(premium_text("Unknown dashboard action. 😅"), show_alert=True)
 
     return router
