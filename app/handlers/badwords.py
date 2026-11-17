@@ -91,8 +91,8 @@ def create_badwords_router() -> Router:
             set_feature_enabled('badwords', chat_id, False)
             response = "⏸️ <b>Bad-Words Filter Disabled</b>"
         elif action == "status":
-            state = "OFF" if chat_id in _disabled_chats else "ON"
-            words = sorted(_chat_words[chat_id])
+            state = "ON" if is_feature_enabled("badwords", chat_id) else "OFF"
+            words = sorted(get_badwords(chat_id))
             listed = ", ".join(f"<code>{escape(word)}</code>" for word in words) if words else "No words added yet."
             response = (
                 f"🛡️ <b>Bad-Words Filter: {state}</b>\n\n"
