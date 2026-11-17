@@ -32,7 +32,7 @@ async def run() -> None:
     settings = load_settings()
     bot = Bot(
         token=settings.bot_token,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML, protect_content=True),
     )
     dispatcher = Dispatcher()
     dispatcher.include_router(start_router)
