@@ -21,6 +21,7 @@ from app.handlers.verification import create_verification_router
 from app.handlers.warnings import create_warning_router
 from app.handlers.antilink import create_antilink_router
 from app.handlers.badwords import create_badwords_router
+from app.handlers.copyright import create_copyright_router
 from app.handlers.utility import create_utility_router
 from app.storage import init_storage
 
@@ -44,6 +45,7 @@ async def run() -> None:
     dispatcher.include_router(create_moderation_router())
     dispatcher.include_router(create_warning_router())
     dispatcher.include_router(create_badwords_router())
+    dispatcher.include_router(create_copyright_router())
     dispatcher.include_router(create_antispam_router(settings.owner_id))
     dispatcher.include_router(create_antilink_router())
     dispatcher.include_router(create_raid_router(settings.owner_id))
