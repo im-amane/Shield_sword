@@ -110,6 +110,10 @@ CREATE TABLE IF NOT EXISTS automatic_backup_state (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     last_success_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS daily_report_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    last_success_at REAL NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_security_incidents_time
     ON security_incidents(created_at DESC);
 """
@@ -576,6 +580,25 @@ def set_last_automatic_backup_at(timestamp: float) -> None:
     with _connection() as db:
         db.execute(
             """INSERT INTO automatic_backup_state(id, last_success_at) VALUES (1, ?)
+               ON CONFLICT(id) DO UPDATE SET last_success_at=excluded.last_success_at""",
+            (float(timestamp),),
+        )
+
+
+def get_last_daily_report_at() -> float | None:
+    """Return the timestamp of the last successfully delivered daily report."""
+    with _connection() as db:
+        row = db.execute(
+            "SELECT last_success_at FROM daily_report_state WHERE id=1"
+        ).fetchone()
+    return float(row[0]) if row else None
+
+
+def set_last_daily_report_at(timestamp: float) -> None:
+    """Persist successful daily report delivery to prevent restart duplicates."""
+    with _connection() as db:
+        db.execute(
+            """INSERT INTO daily_report_state(id, last_success_at) VALUES (1, ?)
                ON CONFLICT(id) DO UPDATE SET last_success_at=excluded.last_success_at""",
             (float(timestamp),),
         )

@@ -35,11 +35,13 @@ from app.ui import create_ui_router, install_ui_middleware
 from app.storage import (
     create_database_backup, init_storage,
     get_last_automatic_backup_at, set_last_automatic_backup_at,
+    get_last_daily_report_at, set_last_daily_report_at, get_owner_security_summary,
 )
 from app.handlers.typography import premium_text
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 BACKUP_INTERVAL_SECONDS = 7 * 24 * 60 * 60
+DAILY_REPORT_INTERVAL_SECONDS = 24 * 60 * 60
 
 
 async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
@@ -77,6 +79,42 @@ async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
             await asyncio.sleep(60 * 60)
 
 
+async def daily_security_report_loop(bot: Bot, owner_id: int) -> None:
+    """Send a persisted daily security summary to the owner."""
+    logger = logging.getLogger(__name__)
+    while True:
+        last_success = get_last_daily_report_at()
+        if last_success is None:
+            wait_seconds = 60
+        else:
+            wait_seconds = max(
+                0, DAILY_REPORT_INTERVAL_SECONDS - (time.time() - last_success)
+            )
+        if wait_seconds:
+            await asyncio.sleep(wait_seconds)
+        try:
+            stats = get_owner_security_summary()
+            report = (
+                "🛡️ <b>Daily Security Report</b>\\n\\n"
+                f"👥 Groups monitored: <b>{stats['groups']}</b>\\n"
+                f"🆕 New members (24h): <b>{stats['joins_24h']}</b>\\n"
+                f"🚨 Security incidents (24h): <b>{stats['incidents_24h']}</b>\\n"
+                f"⚔️ Raids detected (7d): <b>{stats['raids_7d']}</b>\\n"
+                f"🔇 Anti-spam actions (24h): <b>{stats['spam_24h']}</b>\\n"
+                f"🚧 Active raid modes: <b>{stats['active_raids']}</b>\\n\\n"
+                "Next report: in 24 hours. 🔐"
+            )
+            await bot.send_message(chat_id=owner_id, text=premium_text(report))
+            set_last_daily_report_at(time.time())
+            logger.info("Daily security report delivered to owner.")
+        except TelegramAPIError:
+            logger.exception("Daily security report delivery failed; retrying in one hour.")
+            await asyncio.sleep(60 * 60)
+        except Exception:
+            logger.exception("Daily security report failed; retrying in one hour.")
+            await asyncio.sleep(60 * 60)
+
+
 async def run() -> None:
     init_storage()
     settings = load_settings()
@@ -109,6 +147,10 @@ async def run() -> None:
         asyncio.create_task(automatic_backup_loop(bot, settings.owner_id))
         if settings.owner_id is not None else None
     )
+    daily_report_task = (
+        asyncio.create_task(daily_security_report_loop(bot, settings.owner_id))
+        if settings.owner_id is not None else None
+    )
     verification_task = asyncio.create_task(verification_expiry_loop(bot))
     try:
         me = await bot.get_me()
@@ -125,7 +167,7 @@ async def run() -> None:
             tasks_concurrency_limit=32,
         )
     finally:
-        for task in (backup_task, verification_task):
+        for task in (backup_task, daily_report_task, verification_task):
             if task is not None:
                 task.cancel()
                 try:

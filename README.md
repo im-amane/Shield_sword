@@ -78,3 +78,9 @@ Never commit `.env`, paste bot tokens into chats, or print secrets in logs. If a
 
 ## Global inline UI
 - Bot replies in groups and private chats include a `✖️ Close` inline button. Existing inline actions are preserved. Tapping Close deletes that bot message for everyone in the chat.
+
+
+## Daily owner security reports
+- A daily security summary is sent to the configured owner in private chat.
+- It includes monitored groups, new member joins, recent security incidents, raid detections, anti-spam actions and active raid modes.
+- Successful delivery time is persisted in SQLite, so a service restart does not cause duplicate reports. The first report is sent shortly after the first-ever startup; failed deliveries retry after one hour.
