@@ -145,7 +145,7 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
                 MUTE_SECONDS,
             )
             await message.answer(
-                f"🚫 Flood/spam detected. User restricted for {MUTE_SECONDS} seconds."
+                f"🚫 <b>Easy there!</b> Spam detect hua. Member ko {MUTE_SECONDS}s ke liye timeout mil gaya. 🧊"
             )
         except TelegramAPIError:
             logger.exception(
