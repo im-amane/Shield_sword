@@ -10,6 +10,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from app.config import ConfigurationError, load_settings
+from app.handlers.owner import create_owner_router
 from app.handlers.start import router as start_router
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
@@ -23,12 +24,17 @@ async def run() -> None:
     )
     dispatcher = Dispatcher()
     dispatcher.include_router(start_router)
+    dispatcher.include_router(create_owner_router(settings.owner_id))
 
     try:
         me = await bot.get_me()
         logging.getLogger(__name__).info(
             "Connected to Telegram as @%s (id=%s)", me.username, me.id
         )
+        if settings.owner_id is None:
+            logging.getLogger(__name__).warning(
+                "OWNER_ID is not configured; owner-only commands are locked."
+            )
         await dispatcher.start_polling(
             bot,
             allowed_updates=dispatcher.resolve_used_update_types(),
