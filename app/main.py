@@ -14,6 +14,7 @@ from app.handlers.owner import create_owner_router
 from app.handlers.panel import create_panel_router
 from app.handlers.start import router as start_router
 from app.handlers.welcome import create_welcome_router
+from app.handlers.verification import create_verification_router
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 
@@ -29,6 +30,7 @@ async def run() -> None:
     dispatcher.include_router(create_owner_router(settings.owner_id))
     dispatcher.include_router(create_panel_router(settings.owner_id))
     dispatcher.include_router(create_welcome_router(settings.welcome_chat_ids))
+    dispatcher.include_router(create_verification_router())
 
     if not settings.welcome_chat_ids:
         logging.getLogger(__name__).warning(
