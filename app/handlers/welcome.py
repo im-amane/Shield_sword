@@ -1,12 +1,17 @@
-"""Welcome new human members and start their verification."""
+"""Welcome new human members, detect raids, and start their verification."""
 from __future__ import annotations
 
 import logging
 from html import escape
 
 from aiogram import F, Router
+from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message, User
 
+from app.handlers.raid_protection import (
+    announce_raid_activation,
+    record_join_activity,
+)
 from app.handlers.verification import start_member_verification
 
 logger = logging.getLogger(__name__)
@@ -29,8 +34,11 @@ def render_welcome_message(chat_title: str, members: list[User]) -> str:
     )
 
 
-def create_welcome_router(_legacy_allowed_chat_ids: tuple[int, ...] | None = None) -> Router:
-    """Create the shared public join handler for welcome and verification."""
+def create_welcome_router(
+    _legacy_allowed_chat_ids: tuple[int, ...] | None = None,
+    owner_id: int | None = None,
+) -> Router:
+    """Create the shared public join handler for welcome, raid detection, and verification."""
     router = Router(name="welcome")
 
     @router.message(F.new_chat_members)
@@ -44,6 +52,15 @@ def create_welcome_router(_legacy_allowed_chat_ids: tuple[int, ...] | None = Non
             return
 
         await message.answer(render_welcome_message(message.chat.title or "", members))
+
+        newly_activated, join_count, _raid_active = record_join_activity(
+            message.chat.id,
+            members,
+        )
+        if newly_activated:
+            await announce_raid_activation(message, owner_id, join_count)
+
+        # Verification already applies to every new human member, including during raid mode.
         await start_member_verification(message, members)
         logger.info(
             "Welcomed %s member(s) in chat_id=%s",
