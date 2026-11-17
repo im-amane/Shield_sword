@@ -7,7 +7,7 @@ from aiogram.types import BufferedInputFile, Message
 
 from app.security.owner import is_owner
 from app.handlers.typography import premium_text
-from app.storage import create_database_backup, get_audit_events
+from app.storage import create_database_backup, get_audit_events, get_database_status
 
 
 def create_owner_router(owner_id: int | None) -> Router:
@@ -44,6 +44,29 @@ def create_owner_router(owner_id: int | None) -> Router:
             details = f" · {escape(str(event['details']))}" if event["details"] else ""
             lines.append(f"• <code>{event['created_at']}</code> · {escape(str(event['action']))}\n  Actor: {actor}{target}{details}")
         await message.answer(premium_text("\n".join(lines)[:3900]))
+
+    @router.message(Command("dbstatus"))
+    async def dbstatus_command(message: Message) -> None:
+        user_id = message.from_user.id if message.from_user else None
+        if not is_owner(user_id, owner_id):
+            await message.answer(premium_text("🔒 <b>Owner Access Only</b>"))
+            return
+        try:
+            status = get_database_status()
+            size_mb = status["size_bytes"] / (1024 * 1024)
+            state = "✅ Healthy" if status["integrity"] == "ok" else "⚠️ Check required"
+            await message.answer(premium_text(
+                "🛡️ <b>Database Health</b>\\n\\n"
+                f"Status: {state}\\n"
+                f"Integrity: <code>{escape(status['integrity'])}</code>\\n"
+                f"Tables: <code>{status['table_count']}</code>\\n"
+                f"Size: <code>{size_mb:.2f} MB</code>\\n"
+                f"Journal: <code>{escape(status['journal_mode'])}</code>\\n"
+                f"Storage: <code>{escape(status['path'])}</code>"
+            ))
+        except Exception:
+            await message.answer(premium_text("❌ <b>Database Check Failed</b>"))
+            raise
 
     @router.message(Command("backup"))
     async def backup_command(message: Message) -> None:
