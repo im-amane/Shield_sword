@@ -37,6 +37,7 @@ _SEND_PERMISSION_FIELDS = (
 _message_times: dict[tuple[int, int], deque[float]] = defaultdict(deque)
 _duplicate_times: dict[tuple[int, int, str], deque[float]] = defaultdict(deque)
 _last_action: dict[tuple[int, int], float] = {}
+_last_state_cleanup = 0.0
 
 
 def _muted_permissions() -> ChatPermissions:
@@ -64,13 +65,19 @@ def _is_flooding(chat_id: int, user_id: int, fingerprint: str, now: float) -> bo
         duplicates.popleft()
     duplicates.append(now)
 
-    # Bound stale state so busy groups cannot grow these dictionaries forever.
-    for stale_key, stale_times in list(_message_times.items()):
-        if not stale_times or now - stale_times[-1] > STATE_TTL_SECONDS:
-            _message_times.pop(stale_key, None)
-    for stale_key, stale_times in list(_duplicate_times.items()):
-        if not stale_times or now - stale_times[-1] > STATE_TTL_SECONDS:
-            _duplicate_times.pop(stale_key, None)
+    # Sweep stale keys periodically, not on every incoming message.
+    global _last_state_cleanup
+    if now - _last_state_cleanup >= 30:
+        _last_state_cleanup = now
+        for stale_key, stale_times in list(_message_times.items()):
+            if not stale_times or now - stale_times[-1] > STATE_TTL_SECONDS:
+                _message_times.pop(stale_key, None)
+        for stale_key, stale_times in list(_duplicate_times.items()):
+            if not stale_times or now - stale_times[-1] > STATE_TTL_SECONDS:
+                _duplicate_times.pop(stale_key, None)
+        for stale_key, last_action in list(_last_action.items()):
+            if now - last_action > STATE_TTL_SECONDS:
+                _last_action.pop(stale_key, None)
 
     return (
         len(times) > MAX_MESSAGES_IN_WINDOW
