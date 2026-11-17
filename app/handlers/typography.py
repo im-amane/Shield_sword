@@ -24,7 +24,7 @@ def premium_text(value: str) -> str:
                 in_code = True
             elif tag.startswith("</code") or tag.startswith("</pre"):
                 in_code = False
-        elif in_code or part.startswith("/") or (part.startswith("&") and part.endswith(";")):
+        elif in_code or part.startswith("/") or part.startswith("@") or (part.startswith("&") and part.endswith(";")):
             output.append(part)
         else:
             output.append(part.translate(_BOLD_SERIF))
