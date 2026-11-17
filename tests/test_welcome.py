@@ -13,7 +13,7 @@ class WelcomeMessageTests(unittest.TestCase):
         message = render_welcome_message("Anime Fans", [member])
         self.assertIn("𝐀𝐧𝐢𝐦𝐞 𝐅𝐚𝐧𝐬", message)
         self.assertIn('tg://user?id=12345', message)
-        self.assertIn("Ari", message)
+        self.assertIn("𝐀𝐫𝐢", message)
         self.assertIn("𝐠𝐫𝐨𝐮𝐩 𝐫𝐮𝐥𝐞𝐬", message)
 
     def test_escapes_html_in_group_and_member_names(self) -> None:
