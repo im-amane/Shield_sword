@@ -1,7 +1,8 @@
-""""Basic bot health and start command."""
+"""Basic bot health and start command."""
 from __future__ import annotations
 
 import asyncio
+from html import escape
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
@@ -15,11 +16,22 @@ from aiogram.types import (
 router = Router(name="start")
 
 
-def start_text() -> str:
+def start_text(first_name: str) -> str:
+    safe_name = escape(first_name)
     return (
-        "⚔️ <b>Ani World 剣</b>\\n\\n"
-        "Welcome! 👋 Main tumhare group ko safe aur spam-free rakhne ke liye ready hoon. 🛡️\\n"
-        "Verification, anti-spam aur raid protection. Sab kuch ek hi jagah! ✨"
+        f"Hey {safe_name}! 👋✨\n\n"
+        "Welcome to <b>𝗔𝗡𝗜 𝗪𝗢𝗥𝗟𝗗 剣</b>\n\n"
+        "I'm your friendly group companion, here to "
+        "keep your community safe, clean and secure. 🛡️\n\n"
+        "I can help you with:\n"
+        "» Protecting your group from spam.\n"
+        "» Verifying new members.\n"
+        "» Keeping raid attacks under control.\n"
+        "» Making group management easier.\n\n"
+        "And there's more coming soon! 🚀\n\n"
+        "Need help getting started?\n"
+        "Just explore the buttons below. 💫\n\n"
+        "Have a wonderful time! ❤️"
     )
 
 
@@ -40,10 +52,10 @@ def start_keyboard() -> InlineKeyboardMarkup:
 
 def help_text() -> str:
     return (
-        "📚 <b>Help Center</b>\\n\\n"
-        "• New members verification (CAPTCHA)\\n"
-        "• Anti-spam and repeated-message protection\\n"
-        "• Raid Shield for sudden join floods\\n\\n"
+        "📚 <b>Help Center</b>\n\n"
+        "• New members verification (CAPTCHA)\n"
+        "• Anti-spam and repeated-message protection\n"
+        "• Raid Shield for sudden join floods\n\n"
         "Bot ko group mein admin permissions dena zaroori hai. "
         "Setup ke liye group admins se contact karo. 💬"
     )
@@ -53,25 +65,25 @@ def help_text() -> str:
 async def start_command(message: Message) -> None:
     # Telegram text reveal/loading animation before the actual welcome message.
     frames = [
-        "╭──────────────╮\\n"
-        "   ⚔️ <b>ANI WORLD</b>\\n"
-        "   ▫️▫️▫️▫️▫️  0%\\n"
-        "╰──────────────╯\\n"
+        "╭──────────────╮\n"
+        "   ⚔️ <b>ANI WORLD</b>\n"
+        "   ▫️▫️▫️▫️▫️  0%\n"
+        "╰──────────────╯\n"
         "<i>Starting up...</i>",
-        "╭──────────────╮\\n"
-        "   ⚔️ <b>ANI WORLD</b>\\n"
-        "   🟩▫️▫️▫️▫️  20%\\n"
-        "╰──────────────╯\\n"
+        "╭──────────────╮\n"
+        "   ⚔️ <b>ANI WORLD</b>\n"
+        "   🟩▫️▫️▫️▫️  20%\n"
+        "╰──────────────╯\n"
         "<i>Loading modules...</i>",
-        "╭──────────────╮\\n"
-        "   ⚔️ <b>ANI WORLD</b>\\n"
-        "   🟩🟩🟩▫️▫️  60%\\n"
-        "╰──────────────╯\\n"
+        "╭──────────────╮\n"
+        "   ⚔️ <b>ANI WORLD</b>\n"
+        "   🟩🟩🟩▫️▫️  60%\n"
+        "╰──────────────╯\n"
         "<i>Activating protection...</i>",
-        "╭──────────────╮\\n"
-        "   ⚔️ <b>ANI WORLD</b>\\n"
-        "   🟩🟩🟩🟩🟩  100%\\n"
-        "╰──────────────╯\\n"
+        "╭──────────────╮\n"
+        "   ⚔️ <b>ANI WORLD</b>\n"
+        "   🟩🟩🟩🟩🟩  100%\n"
+        "╰──────────────╯\n"
         "<i>Ready! ✨</i>",
     ]
     sent = await message.answer(frames[0])
@@ -79,8 +91,9 @@ async def start_command(message: Message) -> None:
         await asyncio.sleep(0.55)
         await sent.edit_text(frame)
 
+    first_name = message.from_user.first_name if message.from_user else "there"
     await sent.edit_text(
-        start_text(),
+        start_text(first_name),
         reply_markup=start_keyboard(),
     )
 
@@ -109,4 +122,3 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
         return
 
     await callback.answer("Unknown menu action.", show_alert=True)
-"
