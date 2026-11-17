@@ -11,10 +11,10 @@ class WelcomeMessageTests(unittest.TestCase):
     def test_renders_member_mention_and_group_title(self) -> None:
         member = User(id=12345, is_bot=False, first_name="Ari")
         message = render_welcome_message("Anime Fans", [member])
-        self.assertIn("Anime Fans", message)
+        self.assertIn("𝐀𝐧𝐢𝐦𝐞 𝐅𝐚𝐧𝐬", message)
         self.assertIn('tg://user?id=12345', message)
         self.assertIn("Ari", message)
-        self.assertIn("group rules", message)
+        self.assertIn("𝐠𝐫𝐨𝐮𝐩 𝐫𝐮𝐥𝐞𝐬", message)
 
     def test_escapes_html_in_group_and_member_names(self) -> None:
         member = User(id=12345, is_bot=False, first_name="<Admin>")
@@ -31,12 +31,12 @@ class WelcomeMessageTests(unittest.TestCase):
         message = render_welcome_message("Anime Fans", members)
         self.assertIn("One", message)
         self.assertIn("Two", message)
-        self.assertIn("new members", message)
+        self.assertIn("𝐧𝐞𝐰 𝐦𝐞𝐦𝐛𝐞𝐫𝐬", message)
 
     def test_handles_missing_group_title(self) -> None:
         member = User(id=12345, is_bot=False, first_name="Ari")
         message = render_welcome_message("", [member])
-        self.assertIn("this group", message)
+        self.assertIn("𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩", message)
 
 
 class WelcomeRouterTests(unittest.IsolatedAsyncioTestCase):
