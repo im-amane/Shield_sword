@@ -11,6 +11,7 @@ from aiogram.filters import Command
 from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
+from app.storage import record_audit_event
 
 _DURATION = re.compile(r"^(\d+)(s|m|h|d)$", re.IGNORECASE)
 DEFAULT_MUTE_SECONDS = 10 * 60
@@ -122,6 +123,7 @@ def create_moderation_router() -> Router:
         except Exception:
             await message.answer(premium_text("❌ <b>Mute Failed</b>\n\nCheck my admin permissions and try again."))
             return
+        record_audit_event(message.chat.id, "mute", message.from_user.id if message.from_user else None, target.id, f"duration={seconds}s")
         await message.answer(premium_text(
             f"🔇 <b>Member Muted</b>\n\n"
             f"👤 {escape(target.full_name)}\n"
@@ -155,6 +157,7 @@ def create_moderation_router() -> Router:
         except Exception:
             await message.answer(premium_text("❌ <b>Unmute Failed</b>\n\nCheck my admin permissions and try again."))
             return
+        record_audit_event(message.chat.id, "unmute", message.from_user.id if message.from_user else None, target.id)
         await message.answer(premium_text(f"🔊 <b>Member Unmuted</b>\n\n👤 {escape(target.full_name)} can chat again. 💬"))
 
     @router.message(Command("ban"))
@@ -169,6 +172,7 @@ def create_moderation_router() -> Router:
         except Exception:
             await message.answer(premium_text("❌ <b>Ban Failed</b>\n\nCheck my admin permissions and try again."))
             return
+        record_audit_event(message.chat.id, "ban", message.from_user.id if message.from_user else None, target.id)
         await message.answer(premium_text(f"⛔ <b>Member Banned</b>\n\n👤 {escape(target.full_name)} has been removed from the group."))
 
     @router.message(Command("kick"))
@@ -184,6 +188,7 @@ def create_moderation_router() -> Router:
         except Exception:
             await message.answer(premium_text("❌ <b>Kick Failed</b>\n\nCheck my admin permissions and try again."))
             return
+        record_audit_event(message.chat.id, "kick", message.from_user.id if message.from_user else None, target.id)
         await message.answer(premium_text(f"👢 <b>Member Kicked</b>\n\n👤 {target.full_name} was removed. They can rejoin using an invite link."))
 
     @router.message(Command("unban"))
@@ -202,6 +207,7 @@ def create_moderation_router() -> Router:
         except Exception:
             await message.answer(premium_text("❌ <b>Unban Failed</b>\n\nCheck the user ID and my admin permissions."))
             return
+        record_audit_event(message.chat.id, "unban", message.from_user.id if message.from_user else None, int(raw_id))
         await message.answer(premium_text(f"✅ <b>Ban Removed</b>\n\nUser <code>{raw_id}</code> can rejoin the group."))
 
     @router.message(Command("purge"))
@@ -226,6 +232,7 @@ def create_moderation_router() -> Router:
                         deleted += 1
                     except Exception:
                         continue
+        record_audit_event(message.chat.id, "purge", message.from_user.id if message.from_user else None, details=f"deleted={deleted}")
         await message.answer(premium_text(f"🧹 <b>Cleanup Complete</b>\n\nDeleted {deleted} messages."))
 
     return router
