@@ -162,13 +162,15 @@ async def announce_raid_activation(
     try:
         await message.bot.send_message(
             owner_id,
-            "🚨 <b>Group Security Alert</b>\n\n"
-            f"Group: {chat_title}\n"
-            f"Chat ID: <code>{message.chat.id}</code>\n"
-            f"Recent human joins: <b>{join_count}</b> in "
-            f"{RAID_WINDOW_SECONDS // 60} minutes\n"
-            f"Raid mode is active for {RAID_MODE_SECONDS // 60} minutes. "
-            premium_text("New members continue to face verification."),
+            premium_text(
+                "🚨 <b>Group Security Alert</b>\n\n"
+                f"Group: {chat_title}\n"
+                f"Chat ID: <code>{message.chat.id}</code>\n"
+                f"Recent human joins: <b>{join_count}</b> in "
+                f"{RAID_WINDOW_SECONDS // 60} minutes\n"
+                f"Raid mode is active for {RAID_MODE_SECONDS // 60} minutes. "
+                "New members continue to face verification."
+            ),
         )
     except TelegramAPIError:
         logger.exception("Could not send raid alert to owner_id=%s", owner_id)
