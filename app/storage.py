@@ -1,6 +1,7 @@
 """SQLite-backed storage for group protection settings and warning records."""
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 from contextlib import contextmanager
@@ -54,6 +55,25 @@ def init_storage() -> None:
                 chat_id INTEGER NOT NULL,
                 domain TEXT NOT NULL,
                 PRIMARY KEY (chat_id, domain)
+            );
+            CREATE TABLE IF NOT EXISTS pending_verifications (
+                chat_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                correct_index INTEGER NOT NULL,
+                expires_at INTEGER NOT NULL,
+                permissions_json TEXT NOT NULL,
+                PRIMARY KEY (chat_id, user_id)
+            );
+            CREATE TABLE IF NOT EXISTS raid_joins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                chat_id INTEGER NOT NULL,
+                joined_at REAL NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_raid_joins_chat_time
+                ON raid_joins(chat_id, joined_at);
+            CREATE TABLE IF NOT EXISTS raid_modes (
+                chat_id INTEGER PRIMARY KEY,
+                expires_at REAL NOT NULL
             );
             """
         )
@@ -138,3 +158,82 @@ def get_allowed_domains(chat_id: int) -> set[str]:
     with _connect() as db:
         rows = db.execute("SELECT domain FROM allowed_domains WHERE chat_id=? ORDER BY domain", (chat_id,)).fetchall()
         return {str(row[0]) for row in rows}
+
+
+def save_verification(chat_id: int, user_id: int, correct_index: int,
+                      expires_at: int, permissions: dict) -> None:
+    with _connection() as db:
+        db.execute(
+            """INSERT INTO pending_verifications
+               (chat_id, user_id, correct_index, expires_at, permissions_json)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(chat_id, user_id) DO UPDATE SET
+                 correct_index=excluded.correct_index,
+                 expires_at=excluded.expires_at,
+                 permissions_json=excluded.permissions_json""",
+            (chat_id, user_id, correct_index, expires_at,
+             json.dumps(permissions, separators=(",", ":"))),
+        )
+
+
+def get_verification(chat_id: int, user_id: int) -> dict | None:
+    with _connect() as db:
+        row = db.execute(
+            """SELECT correct_index, expires_at, permissions_json
+               FROM pending_verifications WHERE chat_id=? AND user_id=?""",
+            (chat_id, user_id),
+        ).fetchone()
+    if not row:
+        return None
+    return {"correct_index": int(row[0]), "expires_at": int(row[1]),
+            "permissions": json.loads(row[2])}
+
+
+def delete_verification(chat_id: int, user_id: int) -> None:
+    with _connect() as db:
+        db.execute("DELETE FROM pending_verifications WHERE chat_id=? AND user_id=?",
+                   (chat_id, user_id))
+
+
+def cleanup_verifications(now: int) -> None:
+    with _connect() as db:
+        db.execute("DELETE FROM pending_verifications WHERE expires_at<=?", (now,))
+
+
+def record_raid_joins(chat_id: int, count: int, joined_at: float,
+                      window_seconds: int) -> int:
+    with _connection() as db:
+        db.execute("DELETE FROM raid_joins WHERE chat_id=? AND joined_at<?",
+                   (chat_id, joined_at - window_seconds))
+        db.executemany("INSERT INTO raid_joins(chat_id, joined_at) VALUES (?, ?)",
+                       [(chat_id, joined_at)] * count)
+        row = db.execute("SELECT COUNT(*) FROM raid_joins WHERE chat_id=? AND joined_at>=?",
+                         (chat_id, joined_at - window_seconds)).fetchone()
+        return int(row[0])
+
+
+def get_raid_join_count(chat_id: int, now: float, window_seconds: int) -> int:
+    with _connect() as db:
+        row = db.execute("SELECT COUNT(*) FROM raid_joins WHERE chat_id=? AND joined_at>=?",
+                         (chat_id, now - window_seconds)).fetchone()
+        return int(row[0])
+
+
+def get_raid_expiry(chat_id: int) -> float:
+    with _connect() as db:
+        row = db.execute("SELECT expires_at FROM raid_modes WHERE chat_id=?",
+                         (chat_id,)).fetchone()
+        return float(row[0]) if row else 0.0
+
+
+def set_raid_expiry(chat_id: int, expires_at: float) -> None:
+    with _connection() as db:
+        db.execute("""INSERT INTO raid_modes(chat_id, expires_at) VALUES (?, ?)
+                      ON CONFLICT(chat_id) DO UPDATE SET expires_at=excluded.expires_at""",
+                   (chat_id, expires_at))
+
+
+def clear_raid_expiry(chat_id: int) -> bool:
+    with _connection() as db:
+        cursor = db.execute("DELETE FROM raid_modes WHERE chat_id=?", (chat_id,))
+        return cursor.rowcount > 0
