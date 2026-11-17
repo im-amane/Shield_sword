@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from html import escape
 from urllib.parse import urlsplit
 
@@ -192,8 +193,7 @@ def create_antilink_router() -> Router:
                     chat_id=message.chat.id,
                     user_id=user.id,
                     permissions=ChatPermissions(can_send_messages=False),
-                    until_date=__import__("datetime").datetime.now(__import__("datetime").timezone.utc)
-                    + __import__("datetime").timedelta(minutes=10),
+                    until_date=datetime.now(timezone.utc) + timedelta(minutes=10),
                 )
             except TelegramAPIError:
                 await message.answer(premium_text(
