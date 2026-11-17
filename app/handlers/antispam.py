@@ -145,7 +145,9 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
                 MUTE_SECONDS,
             )
             await message.answer(
-                f"🚫 <b>Easy there!</b> Spam detect hua. Member ko {MUTE_SECONDS}s ke liye timeout mil gaya. 🧊"
+                f"⚠️ <b>Easy there!</b>\n\nYou’re sending messages a little too fast. "
+                f"Please slow down and let everyone enjoy the conversation. 💬\n\n"
+                f"🛡️ <b>Ani World Anti-Spam</b> · Timeout: {MUTE_SECONDS}s"
             )
         except TelegramAPIError:
             logger.exception(
