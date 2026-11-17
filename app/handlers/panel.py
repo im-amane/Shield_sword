@@ -17,7 +17,7 @@ from app.handlers.typography import premium_text
 def dashboard_text(bot_username: str | None, bot_id: int, owner_id: int) -> str:
     """Build a concise dashboard view from verified runtime values."""
     username = f"@{bot_username}" if bot_username else "Not available"
-    return premium_text((
+    return (
         "⚙️ <b>Control Center</b>\n\n"
         "Welcome back, Owner! 👑\n\n"
         "Your command center is ready. Manage your bot and monitor its protection systems from here.\n\n"
@@ -26,7 +26,7 @@ def dashboard_text(bot_username: str | None, bot_id: int, owner_id: int) -> str:
         f"🆔 <b>Bot ID:</b> <code>{bot_id}</code>\n"
         f"🔐 <b>Owner ID:</b> <code>{owner_id}</code>\n\n"
         "<i>Your community security, one control room. 🚀</i>"
-    ))
+    )
 
 
 def dashboard_keyboard() -> InlineKeyboardMarkup:
