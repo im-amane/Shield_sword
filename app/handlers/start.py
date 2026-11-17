@@ -61,6 +61,7 @@ def help_text() -> str:
         "Commands ko categories mein divide kiya gaya hai. Neeche kisi section par tap karo.\n\n"
         "🛡️ Group protection · 👮 Moderation\n"
         "👤 General · 👑 Owner tools\n\n"
+        "©️ Copyright Shield runs automatically in groups.\n\n"
         "<i>Har section mein command ka use aur zaroori permissions di gayi hain.</i>"
     )
 
@@ -76,7 +77,6 @@ def help_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🔗 Anti-Link", callback_data="help:antilink"),
         ],
         [
-            InlineKeyboardButton(text="©️ Copyright", callback_data="help:copyright"),
             InlineKeyboardButton(text="👑 Owner", callback_data="help:owner"),
             InlineKeyboardButton(text="⚙️ Permissions", callback_data="help:permissions"),
         ],
@@ -115,20 +115,13 @@ _HELP_SECTIONS = {
         "/antilink on - Enable link protection\n"
         "/antilink off - Disable link protection\n"
         "/allowdomain example.com - Trust a domain\n"
-        "/removedomain example.com - Remove a trusted domain\n\n"        "/badwords - Check or configure the bad-words filter\n"
+        "/removedomain example.com - Remove a trusted domain\n\n"
+        "/badwords - Check or configure the bad-words filter\n"
         "/badwords on|off - Toggle the filter\n"
         "/addword phrase - Add a blocked word or phrase\n"
         "/removeword phrase - Remove a blocked word or phrase\n\n"
         "Group admins are exempt. Telegram invite links cannot be allowlisted. "
         "Requires Delete Messages permission."
-    ),
-    "copyright": (
-        "©️ <b>Copyright Shield</b>\\n\\n"
-        "/copyright - Check current protection status\\n"
-        "/copyright on - Block member media uploads\\n"
-        "/copyright off - Allow member media uploads\\n\\n"
-        "Default is ON. Group admins can post media. Bot needs Delete Messages permission.\\n"
-        "This reduces infringement risk but cannot guarantee immunity from copyright claims."
     ),
     "owner": (
         "👑 <b>Owner Commands</b>\n\n"
