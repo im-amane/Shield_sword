@@ -32,11 +32,6 @@ async def run() -> None:
     dispatcher.include_router(create_welcome_router(settings.welcome_chat_ids))
     dispatcher.include_router(create_verification_router())
 
-    if not settings.welcome_chat_ids:
-        logging.getLogger(__name__).warning(
-            "WELCOME_CHAT_IDS is empty; the welcome system is disabled."
-        )
-
     try:
         me = await bot.get_me()
         logging.getLogger(__name__).info(
