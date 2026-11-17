@@ -49,8 +49,14 @@ The bot needs these Telegram administrator permissions for the current group fea
 - Raid mode lasts **30 minutes** and sends an alert to the group and configured owner. The owner can use `/raidstatus` in a group to inspect it and `/raidoff` to disable it manually.
 - During raid mode, all new human members continue to face the existing verification challenge. Existing members are not restricted.
 
-Raid counters and active mode are currently held in memory, so a service restart resets the detection window and active raid state. Persistent storage is a planned hardening step before relying on this for large-scale incident response.
+Raid counters and active mode are persisted in SQLite. The database survives process restarts only when its path is on persistent storage. On Railway, attach a Volume mounted at `/data` and set `DATABASE_PATH=/data/aniworld.sqlite3`; without that, redeploys may replace the database.
 
 ## Security
+
+- All bot-sent messages/documents use Telegram's protected-content flag by default to discourage forwarding and saving.
+- This does not prevent screenshots, screen recording, copying text manually, or protect user-posted content. Enable Telegram channel/group Restrict Saving Content in chat settings for stronger chat-wide controls.
+- Owner-only `/audit` shows the latest bounded security event log; `/backup` sends a consistent SQLite backup to the configured owner. Keep backups private.
+- Audit events contain moderation/security metadata only; never store bot tokens or private message contents.
+
 
 Never commit `.env`, paste bot tokens into chats, or print secrets in logs. If a token is exposed, revoke it through @BotFather and create a new one.
