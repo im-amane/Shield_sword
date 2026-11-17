@@ -108,26 +108,27 @@ def create_raid_router(owner_id: int | None = None) -> Router:
     @router.message(Command("raidstatus"))
     async def raid_status_command(message: Message) -> None:
         if not message.from_user or not is_owner(message.from_user.id, owner_id):
-            await message.answer("⛔ Ye control owner-only hai. 🔒")
+            await message.answer("🔒 <b>Owner Access Only</b>\n\nRaid controls are reserved for the bot owner. 👑")
             return
         active, count, remaining = raid_status(message.chat.id)
         state = "🚨 ACTIVE" if active else "🟢 INACTIVE"
         await message.answer(
-            "🛡️ <b>Raid Protection Status</b>\n"
-            f"Mode: <b>{state}</b>\n"
-            f"Human joins in last 10 minutes: <b>{count}/{RAID_JOIN_THRESHOLD}</b>\n"
-            f"Time remaining: <b>{remaining // 60}m {remaining % 60}s</b>"
+            "🛡️ <b>Raid Shield Status</b>\n\n"
+            f"Current mode: <b>{state}</b>\n"
+            f"Recent human joins: <b>{count}/{RAID_JOIN_THRESHOLD}</b>\n"
+            f"Time remaining: <b>{remaining // 60}m {remaining % 60}s</b>\n\n"
+            "<i>Your community security overview.</i>"
         )
 
     @router.message(Command("raidoff"))
     async def raid_off_command(message: Message) -> None:
         if not message.from_user or not is_owner(message.from_user.id, owner_id):
-            await message.answer("⛔ Access denied. Owner-only command.")
+            await message.answer("🔒 <b>Owner Access Only</b>\n\nThis control is reserved for the bot owner. 👑")
             return
         if disable_raid_mode(message.chat.id):
-            await message.answer("✅ Raid Shield off kar diya. Group ab normal mode mein hai.")
+            await message.answer("🟢 <b>All Clear!</b>\n\nRaid Shield has been disabled by the owner.\nYour community is back to normal mode. 💚")
         else:
-            await message.answer("😌 Raid Shield pehle se hi inactive hai.")
+            await message.answer("😌 <b>All Clear!</b>\n\nRaid Shield is already inactive. Your group is in normal mode. 💚")
 
     return router
 
@@ -140,11 +141,12 @@ async def announce_raid_activation(
     """Notify the group and owner when the rapid-join threshold is crossed."""
     chat_title = message.chat.title or "Telegram group"
     group_notice = (
-        "🚨 <b>RAID SHIELD ACTIVATED</b>\n"
+        "🚨 <b>RAID ALERT · SHIELD ACTIVATED</b>\n\n"
         f"<b>{RAID_JOIN_THRESHOLD}</b> human members joined within "
-        f"<b>{RAID_WINDOW_SECONDS // 60} minutes</b>.\n"
-        "New members must pass the existing verification challenge. "
-        "Existing members are not restricted."
+        f"<b>{RAID_WINDOW_SECONDS // 60} minutes</b>.\n\n"
+        "🛡️ New members must complete verification before chatting.\n"
+        "✅ Existing members are not restricted.\n\n"
+        "<i>Ani World is keeping watch.</i>"
     )
     try:
         await message.answer(group_notice)
@@ -158,7 +160,7 @@ async def announce_raid_activation(
     try:
         await message.bot.send_message(
             owner_id,
-            "🚨 <b>Group raid alert</b>\n"
+            "🚨 <b>Group Security Alert</b>\n\n"
             f"Group: {chat_title}\n"
             f"Chat ID: <code>{message.chat.id}</code>\n"
             f"Recent human joins: <b>{join_count}</b> in "
