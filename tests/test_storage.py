@@ -51,6 +51,11 @@ class StorageTests(unittest.TestCase):
             storage.get_verification(-100, 7),
             {"correct_index": 2, "expires_at": 500, "permissions": permissions},
         )
+        self.assertEqual(
+            storage.get_expired_verifications(500),
+            [{"chat_id": -100, "user_id": 7, "expires_at": 500}],
+        )
+        self.assertEqual(storage.get_expired_verifications(499), [])
         storage.cleanup_verifications(500)
         self.assertIsNone(storage.get_verification(-100, 7))
 
