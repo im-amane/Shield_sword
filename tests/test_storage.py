@@ -77,6 +77,22 @@ class StorageTests(unittest.TestCase):
         self.assertTrue(status["exists"])
         self.assertGreaterEqual(status["table_count"], 10)
 
+    def test_owner_security_intelligence_records_group_joins_and_incidents(self) -> None:
+        storage.register_group(-100, "Ani World Main")
+        storage.record_member_join(-100, "Ani World Main", 7, "sample_user", "Sample User")
+        storage.record_security_incident(
+            -100, "Ani World Main", "raid_detected", "critical",
+            details="rapid join spike",
+        )
+        self.assertEqual(storage.get_known_groups()[0]["title"], "Ani World Main")
+        self.assertEqual(storage.get_recent_member_joins()[0]["username"], "sample_user")
+        self.assertEqual(storage.get_recent_security_incidents()[0]["kind"], "raid_detected")
+        summary = storage.get_owner_security_summary()
+        self.assertEqual(summary["groups"], 1)
+        self.assertEqual(summary["joins_24h"], 1)
+        self.assertEqual(summary["incidents_24h"], 1)
+        self.assertEqual(summary["raids_7d"], 1)
+
     def test_raid_join_window_and_mode_persist(self) -> None:
         self.assertEqual(storage.record_raid_joins(-100, 3, 1000.0, 60), 3)
         self.assertEqual(storage.get_raid_join_count(-100, 1010.0, 60), 3)
