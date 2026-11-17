@@ -113,9 +113,9 @@ def create_raid_router(owner_id: int | None = None) -> Router:
         active, count, remaining = raid_status(message.chat.id)
         state = "🚨 ACTIVE" if active else "🟢 INACTIVE"
         await message.answer(
-            "🛡️ <b>Raid Protection Status</b>\\n"
-            f"Mode: <b>{state}</b>\\n"
-            f"Human joins in last 10 minutes: <b>{count}/{RAID_JOIN_THRESHOLD}</b>\\n"
+            "🛡️ <b>Raid Protection Status</b>\n"
+            f"Mode: <b>{state}</b>\n"
+            f"Human joins in last 10 minutes: <b>{count}/{RAID_JOIN_THRESHOLD}</b>\n"
             f"Time remaining: <b>{remaining // 60}m {remaining % 60}s</b>"
         )
 
