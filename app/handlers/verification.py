@@ -16,6 +16,8 @@ from aiogram.types import (
     User,
 )
 
+from app.handlers.typography import premium_text
+
 logger = logging.getLogger(__name__)
 CHALLENGE_TTL_SECONDS = 180
 _pending: dict[tuple[int, int], dict[str, object]] = {}
@@ -107,11 +109,11 @@ async def start_member_verification(message: Message, members: list[User]) -> No
                     ]
                 ]
             )
-            await message.answer(
+            await message.answer(premium_text(
                 f"⛩️ Hey <a href=\"tg://user?id={member.id}\">{member.full_name}</a>!\n\n"
                 "Before joining the conversation, complete this little security challenge.\n\n"
                 f"🧩 <b>{question}</b>\n\n"
-                "⏳ You have 3 minutes to verify and unlock the chat.",
+                "⏳ You have 3 minutes to verify and unlock the chat."),
                 reply_markup=keyboard,
             )
         except TelegramAPIError:
@@ -160,10 +162,10 @@ def create_verification_router() -> Router:
                 permissions=state["permissions"],
             )
             _pending.pop((chat_id, user_id), None)
-            await callback.message.edit_text(
+            await callback.message.edit_text(premium_text(
                 f"✅ <a href=\"tg://user?id={user_id}\">Member</a> verified!\n\n"
                 "You're all set. Welcome to the community! 🎉"
-            )
+            ))
             await callback.answer("Verified! Welcome in. 🎉")
             logger.info("Verified user_id=%s chat_id=%s", user_id, chat_id)
         except TelegramAPIError:
