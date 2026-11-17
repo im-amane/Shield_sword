@@ -7,7 +7,7 @@ from aiogram import F, Router
 from aiogram.exceptions import TelegramAPIError
 from aiogram.methods import (
     EditMessageCaption, EditMessageMedia, EditMessageText,
-    SendAnimation, SendAudio, SendContact, SendDice, SendDocument,
+    SendAnimation, SendAudio, SendContact, SendDocument,
     SendGame, SendInvoice, SendLocation, SendMessage, SendPhoto,
     SendPoll, SendVenue, SendVideo, SendVoice,
 )
@@ -25,7 +25,7 @@ _CLOSE_BUTTON = InlineKeyboardButton(
 )
 
 # Telegram methods that support inline reply_markup. Album sends are excluded
-# because sendMediaGroup does not accept a reply keyboard.
+# because sendMediaGroup does not accept inline reply_markup.
 _REPLY_METHODS = (
     SendMessage, SendPhoto, SendVideo, SendAnimation, SendDocument,
     SendAudio, SendVoice, SendLocation,
