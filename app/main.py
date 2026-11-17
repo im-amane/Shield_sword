@@ -18,6 +18,7 @@ from app.handlers.raid_protection import create_raid_router
 from app.handlers.start import router as start_router
 from app.handlers.welcome import create_welcome_router
 from app.handlers.verification import create_verification_router
+from app.handlers.warnings import create_warning_router
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 
@@ -35,6 +36,7 @@ async def run() -> None:
     dispatcher.include_router(create_welcome_router(settings.welcome_chat_ids, settings.owner_id))
     dispatcher.include_router(create_verification_router())
     dispatcher.include_router(create_moderation_router())
+    dispatcher.include_router(create_warning_router())
     dispatcher.include_router(create_antispam_router(settings.owner_id))
     dispatcher.include_router(create_raid_router(settings.owner_id))
 
