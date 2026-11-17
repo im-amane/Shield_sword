@@ -53,13 +53,13 @@ def start_keyboard() -> InlineKeyboardMarkup:
 
 
 def help_text() -> str:
-    return premium_text((
+    return (
         "📚 <b>Ani World · Help Center</b> ✨\n\n"
         "Commands ko categories mein divide kiya gaya hai. Neeche kisi section par tap karo.\n\n"
         "🛡️ Group protection · 👮 Moderation\n"
         "👤 General · 👑 Owner tools\n\n"
         "<i>Har section mein command ka use aur zaroori permissions di gayi hain.</i>"
-    ))
+    )
 
 
 def help_keyboard() -> InlineKeyboardMarkup:
@@ -196,7 +196,7 @@ async def help_section_callback(callback: CallbackQuery) -> None:
         await callback.answer("Unknown help section.", show_alert=True)
         return
     await callback.message.edit_text(
-        premium_text(content),
+        content,
         reply_markup=help_section_keyboard(),
     )
     await callback.answer()
