@@ -36,8 +36,9 @@ BACKUP_INTERVAL_SECONDS = 24 * 60 * 60
 async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
     """Send a validated off-volume database snapshot to the owner every 24 hours."""
     logger = logging.getLogger(__name__)
+    # Create the first off-volume copy shortly after startup, then repeat daily.
+    await asyncio.sleep(60)
     while True:
-        await asyncio.sleep(BACKUP_INTERVAL_SECONDS)
         try:
             snapshot = create_database_backup()
             stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -52,10 +53,13 @@ async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
                 ),
             )
             logger.info("Automatic database backup delivered to owner (%s bytes).", len(snapshot))
+            await asyncio.sleep(BACKUP_INTERVAL_SECONDS)
         except TelegramAPIError:
-            logger.exception("Automatic database backup could not be delivered to owner.")
+            logger.exception("Automatic database backup could not be delivered to owner; retrying in one hour.")
+            await asyncio.sleep(60 * 60)
         except Exception:
-            logger.exception("Automatic database backup failed.")
+            logger.exception("Automatic database backup failed; retrying in one hour.")
+            await asyncio.sleep(60 * 60)
 
 
 async def run() -> None:
