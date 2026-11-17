@@ -200,7 +200,13 @@ def create_verification_router() -> Router:
             return
 
         state = get_verification(chat_id, user_id)
-        if not state or int(state["expires_at"]) <= int(time.time()):
+        if not state:
+            await callback.answer(
+                premium_text("This verification is no longer active. If you still need access, rejoin the group."),
+                show_alert=True,
+            )
+            return
+        if int(state["expires_at"]) <= int(time.time()):
             removed = await expire_member_verification(
                 callback.bot, chat_id, user_id
             )
