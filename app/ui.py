@@ -9,7 +9,7 @@ from aiogram.methods import (
     EditMessageCaption, EditMessageMedia, EditMessageText,
     SendAnimation, SendAudio, SendContact, SendDice, SendDocument,
     SendGame, SendInvoice, SendLocation, SendMessage, SendPhoto,
-    SendPoll, SendSticker, SendVenue, SendVideo, SendVideoNote, SendVoice,
+    SendPoll, SendVenue, SendVideo, SendVoice,
 )
 from aiogram.types import (
     CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup,
@@ -28,8 +28,8 @@ _CLOSE_BUTTON = InlineKeyboardButton(
 # because sendMediaGroup does not accept a reply keyboard.
 _REPLY_METHODS = (
     SendMessage, SendPhoto, SendVideo, SendAnimation, SendDocument,
-    SendAudio, SendVoice, SendVideoNote, SendSticker, SendLocation,
-    SendVenue, SendContact, SendPoll, SendDice, SendGame, SendInvoice,
+    SendAudio, SendVoice, SendLocation,
+    SendVenue, SendContact, SendPoll, SendGame, SendInvoice,
     EditMessageText, EditMessageCaption, EditMessageMedia,
 )
 
