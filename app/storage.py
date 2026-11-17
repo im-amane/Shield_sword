@@ -18,10 +18,63 @@ def _connect() -> sqlite3.Connection:
     return connection
 
 
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS warnings (
+    chat_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (chat_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS badword_settings (
+    chat_id INTEGER PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS badwords (
+    chat_id INTEGER NOT NULL,
+    word TEXT NOT NULL,
+    PRIMARY KEY (chat_id, word)
+);
+CREATE TABLE IF NOT EXISTS antilink_settings (
+    chat_id INTEGER PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS allowed_domains (
+    chat_id INTEGER NOT NULL,
+    domain TEXT NOT NULL,
+    PRIMARY KEY (chat_id, domain)
+);
+CREATE TABLE IF NOT EXISTS pending_verifications (
+    chat_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    correct_index INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    permissions_json TEXT NOT NULL,
+    PRIMARY KEY (chat_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS raid_joins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chat_id INTEGER NOT NULL,
+    joined_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_raid_joins_chat_time
+    ON raid_joins(chat_id, joined_at);
+CREATE TABLE IF NOT EXISTS raid_modes (
+    chat_id INTEGER PRIMARY KEY,
+    expires_at REAL NOT NULL
+);
+"""
+
+_initialized_path: Path | None = None
+
+
 @contextmanager
 def _connection():
+    global _initialized_path
     db = _connect()
     try:
+        if _initialized_path != DB_PATH:
+            db.executescript(SCHEMA_SQL)
+            _initialized_path = DB_PATH
         yield db
         db.commit()
     finally:
@@ -29,55 +82,9 @@ def _connection():
 
 
 def init_storage() -> None:
-    with _connection() as db:
-        db.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS warnings (
-                chat_id INTEGER NOT NULL,
-                user_id INTEGER NOT NULL,
-                count INTEGER NOT NULL DEFAULT 0,
-                PRIMARY KEY (chat_id, user_id)
-            );
-            CREATE TABLE IF NOT EXISTS badword_settings (
-                chat_id INTEGER PRIMARY KEY,
-                enabled INTEGER NOT NULL DEFAULT 1
-            );
-            CREATE TABLE IF NOT EXISTS badwords (
-                chat_id INTEGER NOT NULL,
-                word TEXT NOT NULL,
-                PRIMARY KEY (chat_id, word)
-            );
-            CREATE TABLE IF NOT EXISTS antilink_settings (
-                chat_id INTEGER PRIMARY KEY,
-                enabled INTEGER NOT NULL DEFAULT 1
-            );
-            CREATE TABLE IF NOT EXISTS allowed_domains (
-                chat_id INTEGER NOT NULL,
-                domain TEXT NOT NULL,
-                PRIMARY KEY (chat_id, domain)
-            );
-            CREATE TABLE IF NOT EXISTS pending_verifications (
-                chat_id INTEGER NOT NULL,
-                user_id INTEGER NOT NULL,
-                correct_index INTEGER NOT NULL,
-                expires_at INTEGER NOT NULL,
-                permissions_json TEXT NOT NULL,
-                PRIMARY KEY (chat_id, user_id)
-            );
-            CREATE TABLE IF NOT EXISTS raid_joins (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                chat_id INTEGER NOT NULL,
-                joined_at REAL NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_raid_joins_chat_time
-                ON raid_joins(chat_id, joined_at);
-            CREATE TABLE IF NOT EXISTS raid_modes (
-                chat_id INTEGER PRIMARY KEY,
-                expires_at REAL NOT NULL
-            );
-            """
-        )
-
+    """Initialize the schema; safe to call repeatedly."""
+    with _connection():
+        pass
 
 def add_warning(chat_id: int, user_id: int) -> int:
     with _connection() as db:
