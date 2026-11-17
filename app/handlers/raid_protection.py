@@ -76,9 +76,60 @@ def reset_raid_state() -> None:
     _raid_until.clear()
 
 
-def create_raid_router() -> Router:
-    """Placeholder router namespace for future owner raid controls."""
-    return Router(name="raid_protection")
+def disable_raid_mode(chat_id: int) -> bool:
+    """Disable raid mode for one chat; return whether it was active."""
+    return _raid_until.pop(chat_id, None) is not None
+
+
+def raid_status(chat_id: int, now: float | None = None) -> tuple[bool, int, int]:
+    """Return (active, joins_in_window, seconds_remaining) for one chat."""
+    timestamp = time.monotonic() if now is None else now
+    events = _join_events.get(chat_id, deque())
+    while events and timestamp - events[0] > RAID_WINDOW_SECONDS:
+        events.popleft()
+    if not events:
+        _join_events.pop(chat_id, None)
+    until = _raid_until.get(chat_id, 0.0)
+    if until <= timestamp:
+        _raid_until.pop(chat_id, None)
+        return False, len(events), 0
+    return True, len(events), max(0, int(until - timestamp))
+
+
+def create_raid_router(owner_id: int | None = None) -> Router:
+    """Create owner-only raid status and emergency disable commands."""
+    from aiogram.filters import Command
+    from aiogram.types import Message
+
+    from app.security.owner import is_owner
+
+    router = Router(name="raid_protection")
+
+    @router.message(Command("raidstatus"))
+    async def raid_status_command(message: Message) -> None:
+        if not message.from_user or not is_owner(message.from_user.id, owner_id):
+            await message.answer("⛔ Access denied. Owner-only command.")
+            return
+        active, count, remaining = raid_status(message.chat.id)
+        state = "🚨 ACTIVE" if active else "🟢 INACTIVE"
+        await message.answer(
+            "🛡️ <b>Raid Protection Status</b>\\n"
+            f"Mode: <b>{state}</b>\\n"
+            f"Human joins in last 10 minutes: <b>{count}/{RAID_JOIN_THRESHOLD}</b>\\n"
+            f"Time remaining: <b>{remaining // 60}m {remaining % 60}s</b>"
+        )
+
+    @router.message(Command("raidoff"))
+    async def raid_off_command(message: Message) -> None:
+        if not message.from_user or not is_owner(message.from_user.id, owner_id):
+            await message.answer("⛔ Access denied. Owner-only command.")
+            return
+        if disable_raid_mode(message.chat.id):
+            await message.answer("✅ Raid Mode manually disabled for this group.")
+        else:
+            await message.answer("ℹ️ Raid Mode is already inactive in this group.")
+
+    return router
 
 
 async def announce_raid_activation(
