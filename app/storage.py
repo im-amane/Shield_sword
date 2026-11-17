@@ -283,6 +283,21 @@ def delete_verification(chat_id: int, user_id: int) -> None:
                    (chat_id, user_id))
 
 
+def get_expired_verifications(now: int, limit: int = 100) -> list[dict]:
+    """Return pending challenges whose deadline has passed, without deleting them."""
+    limit = max(1, min(int(limit), 500))
+    with _connection() as db:
+        rows = db.execute(
+            """SELECT chat_id, user_id, expires_at FROM pending_verifications
+               WHERE expires_at<=? ORDER BY expires_at LIMIT ?""",
+            (now, limit),
+        ).fetchall()
+    return [
+        {"chat_id": int(row[0]), "user_id": int(row[1]), "expires_at": int(row[2])}
+        for row in rows
+    ]
+
+
 def cleanup_verifications(now: int) -> None:
     with _connection() as db:
         db.execute("DELETE FROM pending_verifications WHERE expires_at<=?", (now,))
