@@ -46,7 +46,7 @@ The bot needs these Telegram administrator permissions for the current group fea
 - Arithmetic captcha verification for every new human member.
 - Anti-spam: flood detection and temporary 60-second restrictions.
 - Automatic raid detection: activates when **500 human members join within 10 minutes**.
-- Raid mode lasts **30 minutes** and sends an alert to the group and configured owner.
+- Raid mode lasts **30 minutes** and sends an alert to the group and configured owner. The owner can use `/raidstatus` in a group to inspect it and `/raidoff` to disable it manually.
 - During raid mode, all new human members continue to face the existing verification challenge. Existing members are not restricted.
 
 Raid counters and active mode are currently held in memory, so a service restart resets the detection window and active raid state. Persistent storage is a planned hardening step before relying on this for large-scale incident response.
