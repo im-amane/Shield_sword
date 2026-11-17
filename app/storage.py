@@ -326,14 +326,35 @@ def get_audit_events(limit: int = 20) -> list[dict]:
                  action=row[3], target_id=row[4], details=row[5]) for row in rows]
 
 
+def get_database_status() -> dict:
+    """Return a non-sensitive health summary for the active database."""
+    with _connection() as db:
+        integrity = str(db.execute("PRAGMA quick_check").fetchone()[0])
+        table_count = int(db.execute(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        ).fetchone()[0])
+        journal_mode = str(db.execute("PRAGMA journal_mode").fetchone()[0])
+    size_bytes = DB_PATH.stat().st_size if DB_PATH.exists() else 0
+    return {
+        "path": str(DB_PATH),
+        "exists": DB_PATH.exists(),
+        "size_bytes": size_bytes,
+        "integrity": integrity,
+        "table_count": table_count,
+        "journal_mode": journal_mode,
+    }
+
+
 def create_database_backup() -> bytes:
-    """Create a consistent SQLite backup snapshot in memory."""
+    """Create and validate a consistent SQLite backup snapshot in memory."""
     source = _connect()
     target = sqlite3.connect(":memory:")
     try:
         source.backup(target)
+        integrity = str(target.execute("PRAGMA integrity_check").fetchone()[0])
+        if integrity != "ok":
+            raise sqlite3.DatabaseError(f"Backup integrity check failed: {integrity}")
         snapshot = BytesIO()
-        # Serialize returns the complete consistent database image.
         snapshot.write(target.serialize())
         return snapshot.getvalue()
     finally:
