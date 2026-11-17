@@ -64,6 +64,10 @@ CREATE TABLE IF NOT EXISTS raid_modes (
     chat_id INTEGER PRIMARY KEY,
     expires_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS copyright_settings (
+    chat_id INTEGER PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 1
+);
 CREATE TABLE IF NOT EXISTS security_audit (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -335,3 +339,21 @@ def create_database_backup() -> bytes:
     finally:
         target.close()
         source.close()
+
+
+def set_copyright_enabled(chat_id: int, enabled: bool) -> None:
+    with _connection() as db:
+        db.execute(
+            "INSERT INTO copyright_settings(chat_id, enabled) VALUES (?, ?) "
+            "ON CONFLICT(chat_id) DO UPDATE SET enabled=excluded.enabled",
+            (chat_id, int(enabled)),
+        )
+
+
+def is_copyright_enabled(chat_id: int) -> bool:
+    """Copyright media filtering is enabled by default for every group."""
+    with _connection() as db:
+        row = db.execute(
+            "SELECT enabled FROM copyright_settings WHERE chat_id=?", (chat_id,)
+        ).fetchone()
+    return bool(row[0]) if row else True
