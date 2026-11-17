@@ -1,6 +1,6 @@
 """Tests for public welcome message formatting and handling."""
 import unittest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from aiogram.types import User
 
@@ -56,10 +56,15 @@ class WelcomeRouterTests(unittest.IsolatedAsyncioTestCase):
         ]
         message.answer = AsyncMock()
 
-        await handler(message)
+        with patch(
+            "app.handlers.welcome.start_member_verification",
+            new_callable=AsyncMock,
+        ) as start_verification:
+            await handler(message)
 
         message.answer.assert_awaited_once()
         self.assertIn("Unlisted Community", message.answer.await_args.args[0])
+        start_verification.assert_awaited_once_with(message, message.new_chat_members)
 
     async def test_bot_accounts_are_not_welcomed(self) -> None:
         router = create_welcome_router()
