@@ -31,6 +31,7 @@ from app.handlers.copyright import create_copyright_router
 from app.handlers.utility import create_utility_router
 from app.handlers.diagnostics import create_diagnostics_router
 from app.handlers.security_status import create_security_status_router
+from app.ui import create_ui_router, install_ui_middleware
 from app.storage import (
     create_database_backup, init_storage,
     get_last_automatic_backup_at, set_last_automatic_backup_at,
@@ -83,7 +84,9 @@ async def run() -> None:
         token=settings.bot_token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML, protect_content=True),
     )
+    install_ui_middleware(bot)
     dispatcher = Dispatcher()
+    dispatcher.include_router(create_ui_router())
     dispatcher.include_router(start_router)
     dispatcher.include_router(create_utility_router())
     dispatcher.include_router(create_diagnostics_router())
