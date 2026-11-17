@@ -6,7 +6,7 @@ from aiogram.enums import ChatMemberStatus, ChatType
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message
 
-from app.storage import record_audit_event
+from app.storage import record_audit_event, record_security_incident
 
 MEDIA_TYPES = {
     "photo", "video", "animation", "document", "audio", "voice",
@@ -44,6 +44,11 @@ def create_copyright_router() -> Router:
                 None,
                 user.id,
                 f"content_type={message.content_type}",
+            )
+            record_security_incident(
+                message.chat.id, message.chat.title or "Telegram group",
+                "media_policy", "low", user.id, user.username, user.full_name,
+                f"Removed member media; type={message.content_type}",
             )
         except TelegramAPIError:
             # Permission/API failures must not crash polling or expose message contents.
