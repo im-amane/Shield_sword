@@ -6,6 +6,8 @@ from html import escape
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
+from app.handlers.typography import premium_text
+
 from aiogram.types import (
     CallbackQuery,
     InlineKeyboardButton,
@@ -18,7 +20,7 @@ router = Router(name="start")
 
 def start_text(first_name: str) -> str:
     safe_name = escape(first_name)
-    return (
+    return premium_text((
         f"Hey {safe_name}! 👋✨\n\n"
         "Welcome to <b>𝗔𝗡𝗜 𝗪𝗢𝗥𝗟𝗗 剣</b>\n\n"
         "I'm your friendly group companion, here to "
@@ -32,7 +34,7 @@ def start_text(first_name: str) -> str:
         "Need help getting started?\n"
         "Just explore the buttons below. 💫\n\n"
         "Have a wonderful time! ❤️"
-    )
+    ))
 
 
 def start_keyboard() -> InlineKeyboardMarkup:
@@ -61,7 +63,7 @@ def help_text() -> str:
         "For protection features, make sure the bot has the required "
         "administrator permissions in your group. 💬\n\n"
         "More helpful features are on the way! 🚀"
-    )
+    ))
 
 
 @router.message(CommandStart())
@@ -89,10 +91,10 @@ async def start_command(message: Message) -> None:
         "╰──────────────╯\n"
         "<i>Ready! ✨</i>",
     ]
-    sent = await message.answer(frames[0])
+    sent = await message.answer(premium_text(frames[0]))
     for frame in frames[1:]:
         await asyncio.sleep(0.55)
-        await sent.edit_text(frame)
+        await sent.edit_text(premium_text(frame))
 
     first_name = message.from_user.first_name if message.from_user else "there"
     await sent.edit_text(
