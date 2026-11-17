@@ -28,7 +28,7 @@ def render_welcome_message(chat_title: str, members: list[User]) -> str:
     joined_names = ", ".join(mentions)
     count = len(members)
     noun = "member" if count == 1 else "members"
-    return (
+    return premium_text(
         f"🌸 <b>Welcome to {safe_chat_title}!</b>\n\n"
         f"Hey {joined_names}, we're happy to welcome new members like you! ❤️\n\n"
         "Make yourself comfortable, check the group rules, "
