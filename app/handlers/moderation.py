@@ -44,7 +44,19 @@ def format_duration(seconds: int) -> str:
     return f"{seconds} seconds"
 
 
-def create_moderation_router() -> Router:
+def restored_permissions(group_permissions: ChatPermissions | None) -> ChatPermissions:
+    """Restore the group's configured defaults instead of granting every permission."""
+    if group_permissions is not None:
+        return group_permissions
+    return ChatPermissions(
+        can_send_messages=True, can_send_audios=True, can_send_documents=True,
+        can_send_photos=True, can_send_videos=True, can_send_video_notes=True,
+        can_send_voice_notes=True, can_send_polls=True, can_send_other_messages=True,
+        can_add_web_page_previews=True,
+    )
+
+
+def create_moderation_router(owner_id: int | None = None) -> Router:
     """Create admin-only moderation commands."""
     router = Router(name="moderation")
 
@@ -86,6 +98,9 @@ def create_moderation_router() -> Router:
             await message.answer(premium_text("↩️ <b>Reply Required</b>\n\nReply to the member's message and try again."))
             return None
         target = message.reply_to_message.from_user
+        if owner_id is not None and target.id == owner_id:
+            await message.answer(premium_text("👑 <b>Protected Member</b>\\n\\nThe configured bot owner is exempt from moderation actions."))
+            return None
         if target.is_bot:
             await message.answer(premium_text("🤖 I can't moderate another bot with this command."))
             return None
@@ -141,17 +156,8 @@ def create_moderation_router() -> Router:
             await message.bot.restrict_chat_member(
                 chat_id=message.chat.id,
                 user_id=target.id,
-                permissions=ChatPermissions(
-                    can_send_messages=True,
-                    can_send_audios=True,
-                    can_send_documents=True,
-                    can_send_photos=True,
-                    can_send_videos=True,
-                    can_send_video_notes=True,
-                    can_send_voice_notes=True,
-                    can_send_polls=True,
-                    can_send_other_messages=True,
-                    can_add_web_page_previews=True,
+                permissions=restored_permissions(
+                    (await message.bot.get_chat(message.chat.id)).permissions
                 ),
             )
         except Exception:
