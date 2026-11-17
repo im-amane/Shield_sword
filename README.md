@@ -35,7 +35,7 @@ $env:BOT_TOKEN="your-token"
 python -m app.main
 ```
 
-Open the bot in Telegram and send `/start`. It should reply that the core connection test succeeded.
+Open the bot in Telegram and send `/start`. It should reply that the core connection test succeeded. Set `OWNER_ID` to your numeric Telegram user ID, then use `/owner` to verify authorization and `/panel` to open the owner dashboard.
 
 ## Railway deployment
 
@@ -54,6 +54,9 @@ Open the bot in Telegram and send `/start`. It should reply that the core connec
 - [x] `/start` command
 - [ ] Automated tests
 - [ ] Live Telegram test
-- [ ] Owner authentication and dashboard
+- [x] Owner authentication command and fail-closed authorization helper
+- [x] Owner dashboard with refresh and close controls
+- [ ] Automated test suite verified in CI
+- [ ] Live owner dashboard test
 
 No moderation or group-management permissions are needed for this first milestone. Add only the permissions required by each later module.
