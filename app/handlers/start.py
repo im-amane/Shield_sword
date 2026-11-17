@@ -89,7 +89,8 @@ _HELP_SECTIONS = {
         "/start - Open the welcome menu\n"
         "/help - Open this help center\n"
         "/id - Show your ID and chat ID\n"
-        "/id (reply) - Show another member's ID"
+        "/id (reply) - Show another member's ID\n"
+        "/checkpermissions - Check Guardian's admin rights in this group"
     ),
     "moderation": (
         "🛡️ <b>Group Moderation</b>\n\n"
