@@ -99,9 +99,7 @@ def create_warning_router() -> Router:
             ))
             return
         if not await check_admin(message, needs_restrict=True):
-            # Do not consume the threshold if the bot cannot enforce it.
-            reset_warnings(message.chat.id, target.id)
-            add_warning(message.chat.id, target.id)
+            # Keep the threshold reached so an admin can retry after fixing permissions.
             return
         try:
             await message.bot.restrict_chat_member(
