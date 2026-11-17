@@ -7,14 +7,16 @@ from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import (
-    CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message,
+    BufferedInputFile, CallbackQuery, InlineKeyboardButton,
+    InlineKeyboardMarkup, Message,
 )
 
 from app.security.owner import is_owner
 from app.handlers.typography import premium_text
 from app.storage import (
-    get_database_status, get_known_groups, get_owner_security_summary,
-    get_recent_member_joins, get_recent_security_incidents,
+    create_database_backup, get_audit_events, get_database_status,
+    get_known_groups, get_owner_security_summary, get_recent_member_joins,
+    get_recent_security_incidents,
 )
 
 
@@ -44,7 +46,11 @@ def dashboard_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="🕵️ Activity", callback_data="owner_panel:activity"),
+            InlineKeyboardButton(text="📜 Audit", callback_data="owner_panel:audit"),
+        ],
+        [
             InlineKeyboardButton(text="💾 Database", callback_data="owner_panel:database"),
+            InlineKeyboardButton(text="📦 Backup Now", callback_data="owner_panel:backup"),
         ],
         [
             InlineKeyboardButton(text="🔄 Refresh", callback_data="owner_panel:refresh"),
@@ -102,6 +108,21 @@ def section_text(section: str) -> str:
             )
         lines.append("\n<i>Only public profile fields and join timestamps are stored. Message contents, phone numbers, IP addresses and device data are not collected.</i>")
         return premium_text("".join(lines)[:3900])
+    if section == "audit":
+        events = get_audit_events(15)
+        lines = ["📜 <b>Owner Audit Log</b>\\n\\n"]
+        if not events:
+            lines.append("No audit events recorded yet.")
+        for event in events:
+            actor = f"<code>{event['actor_id']}</code>" if event["actor_id"] else "System"
+            target = f" → <code>{event['target_id']}</code>" if event["target_id"] else ""
+            detail = f" · {escape(str(event['details']))}" if event["details"] else ""
+            lines.append(
+                f"• <code>{escape(event['created_at'])}</code> · "
+                f"<b>{escape(event['action'])}</b>\\n"
+                f"  Group: <code>{event['chat_id']}</code> · Actor: {actor}{target}{detail}\\n"
+            )
+        return premium_text("".join(lines)[:3900])
     if section == "database":
         db = get_database_status()
         status = "✅ Healthy" if db["integrity"] == "ok" else "⚠️ Needs attention"
@@ -144,6 +165,9 @@ def create_panel_router(owner_id: int | None) -> Router:
     @router.message(Command("panel"))
     async def panel_command(message: Message) -> None:
         user_id = message.from_user.id if message.from_user else None
+        if message.chat.type != "private":
+            await message.answer(premium_text("🔒 Open the owner panel in my private chat so security details stay private."))
+            return
         if not authorized(user_id):
             await message.answer(premium_text("🔒 <b>Private Area</b>\n\nThe owner dashboard is only available to the bot owner. 👑"))
             return
@@ -163,6 +187,12 @@ def create_panel_router(owner_id: int | None) -> Router:
         if not callback.message:
             await callback.answer()
             return
+        if callback.message.chat.type != "private":
+            await callback.answer(
+                premium_text("Open the owner panel in private chat. 🔒"),
+                show_alert=True,
+            )
+            return
         try:
             if action == "home":
                 me = await callback.bot.get_me()
@@ -170,7 +200,7 @@ def create_panel_router(owner_id: int | None) -> Router:
                     dashboard_text(me.username, me.id, owner_id or 0),
                     reply_markup=dashboard_keyboard(),
                 )
-            elif action in {"security", "groups", "activity", "database"}:
+            elif action in {"security", "groups", "activity", "audit", "database"}:
                 await callback.message.edit_text(
                     section_text(action), reply_markup=section_keyboard(action)
                 )
@@ -182,10 +212,22 @@ def create_panel_router(owner_id: int | None) -> Router:
                 )
             elif action.startswith("refresh_"):
                 current = action.removeprefix("refresh_")
-                if current not in {"security", "groups", "activity", "database"}:
+                if current not in {"security", "groups", "activity", "audit", "database"}:
                     current = "security"
                 await callback.message.edit_text(
                     section_text(current), reply_markup=section_keyboard(current)
+                )
+            elif action == "backup":
+                snapshot = create_database_backup()
+                await callback.bot.send_document(
+                    chat_id=owner_id,
+                    document=BufferedInputFile(
+                        snapshot, filename="aniworld-security-backup.sqlite3"
+                    ),
+                    caption=premium_text(
+                        "📦 <b>Manual Backup Complete</b>\\n\\n"
+                        "A verified database snapshot is attached. Keep it private. 🔐"
+                    ),
                 )
             else:
                 await callback.answer(premium_text("Unknown dashboard action. 😅"), show_alert=True)
