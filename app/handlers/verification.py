@@ -17,10 +17,10 @@ from aiogram.types import (
 )
 
 from app.handlers.typography import premium_text
+from app.storage import cleanup_verifications, delete_verification, get_verification, save_verification
 
 logger = logging.getLogger(__name__)
 CHALLENGE_TTL_SECONDS = 180
-_pending: dict[tuple[int, int], dict[str, object]] = {}
 
 _SEND_PERMISSION_FIELDS = (
     "can_send_messages",
@@ -55,9 +55,7 @@ async def start_member_verification(message: Message, members: list[User]) -> No
     """Restrict new members and send their captcha from the shared join handler."""
     chat_id = message.chat.id
     now = int(time.time())
-    for key, state in list(_pending.items()):
-        if int(state["expires_at"]) <= now:
-            _pending.pop(key, None)
+    cleanup_verifications(now)
 
     for member in members:
         if member.is_bot:
@@ -93,11 +91,13 @@ async def start_member_verification(message: Message, members: list[User]) -> No
             )
 
             question, options, correct_index = _make_challenge()
-            _pending[(chat_id, member.id)] = {
-                "correct_index": correct_index,
-                "expires_at": expires_at,
-                "permissions": original_permissions,
-            }
+            save_verification(
+                chat_id,
+                member.id,
+                correct_index,
+                expires_at,
+                original_permissions.model_dump(exclude_none=True),
+            )
             keyboard = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
@@ -145,9 +145,9 @@ def create_verification_router() -> Router:
             await callback.answer("Ye verification kisi aur member ke liye hai. 🙂", show_alert=True)
             return
 
-        state = _pending.get((chat_id, user_id))
+        state = get_verification(chat_id, user_id)
         if not state or int(state["expires_at"]) <= int(time.time()):
-            _pending.pop((chat_id, user_id), None)
+            delete_verification(chat_id, user_id)
             await callback.answer("⏳ Verification expired! Please rejoin the group to try again.", show_alert=True)
             return
 
@@ -159,9 +159,9 @@ def create_verification_router() -> Router:
             await callback.bot.restrict_chat_member(
                 chat_id=chat_id,
                 user_id=user_id,
-                permissions=state["permissions"],
+                permissions=ChatPermissions(**state["permissions"]),
             )
-            _pending.pop((chat_id, user_id), None)
+            delete_verification(chat_id, user_id)
             await callback.message.edit_text(premium_text(
                 f"✅ <a href=\"tg://user?id={user_id}\">Member</a> verified!\n\n"
                 "You're all set. Welcome to the community! 🎉"
