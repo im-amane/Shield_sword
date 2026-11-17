@@ -19,8 +19,8 @@ class WelcomeMessageTests(unittest.TestCase):
     def test_escapes_html_in_group_and_member_names(self) -> None:
         member = User(id=12345, is_bot=False, first_name="<Admin>")
         message = render_welcome_message("<Group>", [member])
-        self.assertIn("&lt;Group&gt;", message)
-        self.assertIn("&lt;Admin&gt;", message)
+        self.assertIn("&lt;𝐆𝐫𝐨𝐮𝐩&gt;", message)
+        self.assertIn("&lt;𝐀𝐝𝐦𝐢𝐧&gt;", message)
         self.assertNotIn("<Group>", message)
 
     def test_handles_multiple_members(self) -> None:
@@ -29,8 +29,8 @@ class WelcomeMessageTests(unittest.TestCase):
             User(id=2, is_bot=False, first_name="Two"),
         ]
         message = render_welcome_message("Anime Fans", members)
-        self.assertIn("One", message)
-        self.assertIn("Two", message)
+        self.assertIn("𝐎𝐧𝐞", message)
+        self.assertIn("𝐓𝐰𝐨", message)
         self.assertIn("𝐧𝐞𝐰 𝐦𝐞𝐦𝐛𝐞𝐫𝐬", message)
 
     def test_handles_missing_group_title(self) -> None:
@@ -63,7 +63,7 @@ class WelcomeRouterTests(unittest.IsolatedAsyncioTestCase):
             await handler(message)
 
         message.answer.assert_awaited_once()
-        self.assertIn("Unlisted Community", message.answer.await_args.args[0])
+        self.assertIn("𝐔𝐧𝐥𝐢𝐬𝐭𝐞𝐝 𝐂𝐨𝐦𝐦𝐮𝐧𝐢𝐭𝐲", message.answer.await_args.args[0])
         start_verification.assert_awaited_once_with(message, message.new_chat_members)
 
     async def test_bot_accounts_are_not_welcomed(self) -> None:
