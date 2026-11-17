@@ -1,4 +1,4 @@
-"""Welcome new human members in any group where the bot is added."""
+"""Welcome new human members and start their verification."""
 from __future__ import annotations
 
 import logging
@@ -6,6 +6,8 @@ from html import escape
 
 from aiogram import F, Router
 from aiogram.types import Message, User
+
+from app.handlers.verification import start_member_verification
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ def render_welcome_message(chat_title: str, members: list[User]) -> str:
 
 
 def create_welcome_router(_legacy_allowed_chat_ids: tuple[int, ...] | None = None) -> Router:
-    """Create a public welcome handler for every group the bot is added to."""
+    """Create the shared public join handler for welcome and verification."""
     router = Router(name="welcome")
 
     @router.message(F.new_chat_members)
@@ -41,8 +43,8 @@ def create_welcome_router(_legacy_allowed_chat_ids: tuple[int, ...] | None = Non
         if not members:
             return
 
-        text = render_welcome_message(message.chat.title or "", members)
-        await message.answer(text)
+        await message.answer(render_welcome_message(message.chat.title or "", members))
+        await start_member_verification(message, members)
         logger.info(
             "Welcomed %s member(s) in chat_id=%s",
             len(members),
