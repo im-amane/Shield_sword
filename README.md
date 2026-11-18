@@ -75,7 +75,8 @@ Raid counters and active mode are persisted in SQLite. The database survives pro
 
 - All bot-sent messages/documents use Telegram's protected-content flag by default to discourage forwarding and saving.
 - This does not prevent screenshots, screen recording, copying text manually, or protect user-posted content. Enable Telegram channel/group Restrict Saving Content in chat settings for stronger chat-wide controls.
-- Owner-only `/panel` opens the private control center with Overview, Security Intelligence, Groups, Member Activity, Audit Log, Database Health, and a one-tap manual backup.
+- Owner-only `/panel` opens the private control center with Overview, Security Intelligence, Groups, Member Activity, Audit Log, Database Health, Secure Configuration, Automation Monitor, Command Index, and one-tap encrypted backup.
+- The Configuration panel reports whether required secrets/settings are present and displays only a short SHA-256 fingerprint for the backup key. It never displays bot tokens, encryption keys, or other secret values in Telegram.
 - The dashboard records groups the bot observes, new-member join timestamps, public Telegram usernames/display names and user IDs, raid alerts, anti-spam, anti-link, bad-word and media-policy incidents.
 - An early-warning alert is sent to the owner when 25 human accounts join within 60 seconds. This is an alert only; it does not automatically ban or restrict members. The existing 500-joins/10-minute threshold activates Raid Mode.
 - Join history is capped at the newest 5,000 records and security incidents at 3,000. Audit events are capped at 5,000. Stored intelligence is metadata only: no message bodies, phone numbers, IP addresses, device details or bot tokens are collected.
@@ -100,7 +101,7 @@ Never commit `.env`, paste bot tokens into chats, or print secrets in logs. If a
 
 ## Encrypted database backups
 
-- Manual `/backup` and automatic weekly backups are encrypted with AES-256-GCM before they leave the service.
+- Manual `/backup`, the Owner Panel's one-tap backup, and automatic weekly backups are encrypted with AES-256-GCM before they leave the service.
 - Configure `BACKUP_ENCRYPTION_KEY` as a Railway secret/environment variable. It must be URL-safe base64 encoding of exactly 32 random bytes. The bot fails closed and will not send plaintext backups if the key is missing or invalid.
 - Keep an offline, access-controlled copy of this key separately from Telegram and Railway backups. Losing the key makes encrypted backups unrecoverable. Never commit it to GitHub or send it in chat.
 - Encrypted files use the `.sqlite3.awb` extension and the versioned `AWB1` envelope. Restore tooling must authenticate/decrypt with the same key before validating the resulting SQLite database.
