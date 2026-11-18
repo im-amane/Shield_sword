@@ -68,6 +68,10 @@ CREATE TABLE IF NOT EXISTS copyright_settings (
     chat_id INTEGER PRIMARY KEY,
     enabled INTEGER NOT NULL DEFAULT 1
 );
+CREATE TABLE IF NOT EXISTS channel_media_settings (
+    channel_id INTEGER PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 0
+);
 CREATE TABLE IF NOT EXISTS security_audit (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -563,6 +567,26 @@ def is_copyright_enabled(chat_id: int) -> bool:
             "SELECT enabled FROM copyright_settings WHERE chat_id=?", (chat_id,)
         ).fetchone()
     return bool(row[0]) if row else True
+
+
+def set_channel_media_enabled(channel_id: int, enabled: bool) -> None:
+    """Persist the channel media policy; channels are opt-in and default OFF."""
+    with _connection() as db:
+        db.execute(
+            "INSERT INTO channel_media_settings(channel_id, enabled) VALUES (?, ?) "
+            "ON CONFLICT(channel_id) DO UPDATE SET enabled=excluded.enabled",
+            (channel_id, int(enabled)),
+        )
+
+
+def is_channel_media_enabled(channel_id: int) -> bool:
+    """Return whether channel media filtering was explicitly enabled."""
+    with _connection() as db:
+        row = db.execute(
+            "SELECT enabled FROM channel_media_settings WHERE channel_id=?",
+            (channel_id,),
+        ).fetchone()
+    return bool(row[0]) if row else False
 
 
 
