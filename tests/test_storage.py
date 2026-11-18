@@ -89,15 +89,17 @@ class StorageTests(unittest.TestCase):
         self.assertEqual(restored_status["integrity"], "ok")
         self.assertGreaterEqual(restored_status["table_count"], 10)
         import sqlite3
-        restored = sqlite3.connect(":memory:")
-        try:
-            restored.deserialize(backup)
-            row = restored.execute(
-                "SELECT action, details FROM security_audit WHERE action='restore_test'"
-            ).fetchone()
-            self.assertEqual(row, ("restore_test", "round-trip"))
-        finally:
-            restored.close()
+        with tempfile.TemporaryDirectory() as restore_dir:
+            restored_path = Path(restore_dir) / "restored.sqlite3"
+            restored_path.write_bytes(backup)
+            restored = sqlite3.connect(restored_path)
+            try:
+                row = restored.execute(
+                    "SELECT action, details FROM security_audit WHERE action='restore_test'"
+                ).fetchone()
+                self.assertEqual(row, ("restore_test", "round-trip"))
+            finally:
+                restored.close()
         status = storage.get_database_status()
         self.assertEqual(status["integrity"], "ok")
         self.assertTrue(status["exists"])
