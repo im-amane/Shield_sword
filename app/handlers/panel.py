@@ -1,6 +1,7 @@
 """Owner-only operational dashboard and defensive intelligence views."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from html import escape
 
 from aiogram import F, Router
@@ -16,7 +17,8 @@ from app.handlers.typography import premium_text
 from app.storage import (
     create_database_backup, get_audit_events, get_database_status,
     get_known_groups, get_owner_security_summary, get_recent_member_joins,
-    get_recent_security_incidents,
+    get_recent_security_incidents, get_last_automatic_backup_at,
+    get_last_daily_report_at,
 )
 
 
@@ -127,6 +129,16 @@ def section_text(section: str) -> str:
         return premium_text("".join(lines)[:3900])
     if section == "database":
         db = get_database_status()
+        last_backup = get_last_automatic_backup_at()
+        last_report = get_last_daily_report_at()
+        backup_label = (
+            datetime.fromtimestamp(last_backup, timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            if last_backup is not None else "Not delivered yet"
+        )
+        report_label = (
+            datetime.fromtimestamp(last_report, timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            if last_report is not None else "Not delivered yet"
+        )
         status = "✅ Healthy" if db["integrity"] == "ok" else "⚠️ Needs attention"
         return premium_text(
             "💾 <b>Database & Backup</b>\n\n"
@@ -134,9 +146,11 @@ def section_text(section: str) -> str:
             f"Integrity: <code>{escape(db['integrity'])}</code>\n"
             f"Tables: <b>{db['table_count']}</b>\n"
             f"Size: <b>{db['size_bytes'] / (1024 * 1024):.2f} MB</b>\n"
-            f"Journal: <code>{escape(db['journal_mode'])}</code>\n\n"
+            f"Journal: <code>{escape(db['journal_mode'])}</code>\n"
+            f"Last automatic backup: <code>{backup_label}</code>\n"
+            f"Last daily report: <code>{report_label}</code>\n\n"
             "Commands: <code>/dbstatus</code> · <code>/backup</code>\n"
-            "Automatic verified backup is sent to the owner once every 7 days."
+            "Automatic verified backup runs every 7 days; the daily security report runs every 24 hours."
         )
     return "Unknown panel section."
 
