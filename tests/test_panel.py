@@ -1,5 +1,7 @@
 """Tests for the owner dashboard and security intelligence navigation."""
+import os
 import unittest
+from unittest.mock import patch
 
 from app.handlers.panel import dashboard_keyboard, dashboard_text, section_keyboard, section_text
 from app.handlers.typography import premium_text
@@ -17,7 +19,7 @@ class DashboardTests(unittest.TestCase):
         text = dashboard_text(None, 112233, 987654321)
         self.assertIn("𝐍𝐨𝐭 𝐚𝐯𝐚𝐢𝐥𝐚𝐛𝐥𝐞", text)
 
-    def test_dashboard_has_owner_sections(self) -> None:
+    def test_dashboard_has_full_owner_navigation(self) -> None:
         callbacks = [
             button.callback_data
             for row in dashboard_keyboard().inline_keyboard
@@ -28,12 +30,11 @@ class DashboardTests(unittest.TestCase):
             ["owner_panel:security", "owner_panel:groups",
              "owner_panel:activity", "owner_panel:audit",
              "owner_panel:database", "owner_panel:backup",
-             "owner_panel:refresh", "owner_panel:close"],
+             "owner_panel:configuration", "owner_panel:automation",
+             "owner_panel:commands", "owner_panel:refresh", "owner_panel:close"],
         )
 
     def test_database_health_section_shows_backup_and_report_timestamps(self) -> None:
-        from unittest.mock import patch
-
         with patch("app.handlers.panel.get_database_status", return_value={
             "integrity": "ok", "table_count": 12, "size_bytes": 1024,
             "journal_mode": "wal",
@@ -41,10 +42,32 @@ class DashboardTests(unittest.TestCase):
             "app.handlers.panel.get_last_daily_report_at", return_value=None
         ):
             text = section_text("database")
-
         self.assertIn(premium_text("Last automatic backup"), text)
         self.assertIn(premium_text("Last daily report"), text)
         self.assertIn("Not delivered yet", text)
+
+    def test_configuration_never_displays_secret_values(self) -> None:
+        secret = "DO_NOT_DISPLAY_THIS_SECRET"
+        with patch.dict(os.environ, {
+            "BOT_TOKEN": secret,
+            "OWNER_ID": "12345",
+            "DATABASE_PATH": "/data/db.sqlite3",
+            "BACKUP_ENCRYPTION_KEY": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        }, clear=True):
+            text = section_text("configuration")
+        self.assertNotIn(secret, text)
+        self.assertNotIn("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", text)
+        self.assertIn("Key fingerprint", text)
+        self.assertIn("Configured", text)
+
+    def test_configuration_reports_missing_encryption_key_without_crashing(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            text = section_text("configuration")
+        self.assertIn("Missing or invalid", text)
+
+    def test_command_index_and_automation_sections_exist(self) -> None:
+        self.assertIn("channelprotect", section_text("commands"))
+        self.assertIn("Weekly encrypted backup", section_text("automation"))
 
     def test_section_keyboard_returns_to_dashboard(self) -> None:
         callbacks = [
