@@ -57,17 +57,17 @@ class DashboardTests(unittest.TestCase):
             text = section_text("configuration")
         self.assertNotIn(secret, text)
         self.assertNotIn("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", text)
-        self.assertIn("Key fingerprint", text)
-        self.assertIn("Configured", text)
+        self.assertIn(premium_text("Key fingerprint"), text)
+        self.assertIn(premium_text("Configured"), text)
 
     def test_configuration_reports_missing_encryption_key_without_crashing(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             text = section_text("configuration")
-        self.assertIn("Missing or invalid", text)
+        self.assertIn(premium_text("Missing or invalid"), text)
 
     def test_command_index_and_automation_sections_exist(self) -> None:
         self.assertIn("channelprotect", section_text("commands"))
-        self.assertIn("Weekly encrypted backup", section_text("automation"))
+        self.assertIn(premium_text("Weekly encrypted backup"), section_text("automation"))
 
     def test_section_keyboard_returns_to_dashboard(self) -> None:
         callbacks = [
