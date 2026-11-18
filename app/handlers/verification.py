@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from html import escape
 import logging
 import secrets
 import time
@@ -160,7 +161,7 @@ async def start_member_verification(message: Message, members: list[User]) -> No
                 ]
             )
             await message.answer(premium_text(
-                f"⛩️ Hey <a href=\"tg://user?id={member.id}\">{member.full_name}</a>!\n\n"
+                f"⛩️ Hey <a href=\"tg://user?id={member.id}\">{escape(member.full_name, quote=True)}</a>!\n\n"
                 "Before joining the conversation, complete this little security challenge.\n\n"
                 f"🧩 <b>{question}</b>\n\n"
                 "⏳ You have 3 minutes to verify and unlock the chat."),
