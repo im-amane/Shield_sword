@@ -23,19 +23,21 @@ router = Router(name="start")
 def start_text(first_name: str) -> str:
     safe_name = escape(first_name)
     return premium_text((
-        f"Hey {safe_name}! 👋✨\n\n"
-        "Welcome to <b>𝗔𝗡𝗜 𝗪𝗢𝗥𝗟𝗗 剣</b>\n\n"
-        "I'm your friendly group companion, here to "
-        "keep your community safe, clean and secure. 🛡️\n\n"
-        "I can help you with:\n"
-        "» Protecting your group from spam.\n"
-        "» Verifying new members.\n"
-        "» Keeping raid attacks under control.\n"
-        "» Making group management easier.\n\n"
-        "And there's more coming soon! 🚀\n\n"
-        "Need help getting started?\n"
-        "Just explore the buttons below. 💫\n\n"
-        "Have a wonderful time! ❤️"
+        f"Welcome home, {safe_name}. 👋\n\n"
+        "⚔️ <b>𝗔𝗡𝗜 𝗪𝗢𝗥𝗟𝗗 剣</b>\n"
+        "🛡️ <b>GUARDIAN · COMMUNITY PROTECTION</b>\n\n"
+        "Think of me as the elder brother watching over this community. "
+        "I'll welcome the good ones, keep an eye on trouble, and step in "
+        "when someone puts the family at risk. 🤝\n\n"
+        "╭─ <b>MY PROMISE</b>\n"
+        "│ 🧩 Verify new members\n"
+        "│ 🌊 Stop spam and harmful links\n"
+        "│ ⚔️ Detect raid activity\n"
+        "│ ⚖️ Apply fair, consistent moderation\n"
+        "│ 🔔 Keep the owner informed\n"
+        "╰────────────────\n\n"
+        "<i>Protect the community. Respect its people. Never punish without reason.</i>\n\n"
+        "Use the buttons below to explore my systems. ❤️"
     ))
 
 
@@ -62,26 +64,26 @@ def start_keyboard(bot_username: str | None = None) -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🌐 Main Group",
+                    text="🏠 Community",
                     url=main_url,
                 ) if main_url else InlineKeyboardButton(
-                    text="🌐 Main Group", callback_data="start:group"
+                    text="🏠 Community", callback_data="start:group"
                 ),
-                InlineKeyboardButton(text="📚 Help", callback_data="start:help"),
+                InlineKeyboardButton(text="📚 Help Center", callback_data="start:help"),
             ],
             [
                 InlineKeyboardButton(
-                    text="👤 Owner", url=owner_url
+                    text="👑 Owner", url=owner_url
                 ) if owner_url else InlineKeyboardButton(
-                    text="👤 Owner", callback_data="start:owner"
+                    text="👑 Owner", callback_data="start:owner"
                 ),
-                InlineKeyboardButton(text="✨ About Me", callback_data="start:about"),
+                InlineKeyboardButton(text="🛡️ My Promise", callback_data="start:about"),
             ],
             [
                 InlineKeyboardButton(
-                    text="➕ Add Me to Your Group", url=add_url
+                    text="➕ Add Guardian to Group", url=add_url
                 ) if add_url else InlineKeyboardButton(
-                    text="➕ Add Me to Your Group", callback_data="start:addgroup"
+                    text="➕ Add Guardian to Group", callback_data="start:addgroup"
                 ),
             ],
         ]
