@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import tempfile
 from io import BytesIO
 import time
 from contextlib import contextmanager
@@ -535,34 +536,36 @@ def get_database_status() -> dict:
 
 
 def verify_database_backup(snapshot: bytes) -> dict:
-    """Restore a snapshot into an isolated in-memory database and validate it."""
+    """Restore a snapshot into an isolated temporary SQLite file and validate it."""
     if not isinstance(snapshot, bytes) or not snapshot.startswith(b"SQLite format 3"):
         raise sqlite3.DatabaseError("Backup is not a valid SQLite database image")
-    restored = sqlite3.connect(":memory:")
-    try:
-        restored.deserialize(snapshot)
-        integrity = str(restored.execute("PRAGMA integrity_check").fetchone()[0])
-        if integrity != "ok":
-            raise sqlite3.DatabaseError(f"Restored backup integrity check failed: {integrity}")
-        tables = {
-            str(row[0]) for row in restored.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-            ).fetchall()
-        }
-        required_tables = {
-            "warnings", "pending_verifications", "security_audit",
-            "security_incidents", "known_groups", "member_join_events",
-            "automatic_backup_state", "daily_report_state",
-            "channel_media_settings",
-        }
-        missing = required_tables - tables
-        if missing:
-            raise sqlite3.DatabaseError(
-                "Restored backup is missing required tables: " + ", ".join(sorted(missing))
-            )
-        return {"integrity": integrity, "table_count": len(tables)}
-    finally:
-        restored.close()
+    with tempfile.TemporaryDirectory(prefix="aniworld-restore-") as temp_dir:
+        restored_path = Path(temp_dir) / "restored.sqlite3"
+        restored_path.write_bytes(snapshot)
+        restored = sqlite3.connect(restored_path, timeout=5)
+        try:
+            integrity = str(restored.execute("PRAGMA integrity_check").fetchone()[0])
+            if integrity != "ok":
+                raise sqlite3.DatabaseError(f"Restored backup integrity check failed: {integrity}")
+            tables = {
+                str(row[0]) for row in restored.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+                ).fetchall()
+            }
+            required_tables = {
+                "warnings", "pending_verifications", "security_audit",
+                "security_incidents", "known_groups", "member_join_events",
+                "automatic_backup_state", "daily_report_state",
+                "channel_media_settings",
+            }
+            missing = required_tables - tables
+            if missing:
+                raise sqlite3.DatabaseError(
+                    "Restored backup is missing required tables: " + ", ".join(sorted(missing))
+                )
+            return {"integrity": integrity, "table_count": len(tables)}
+        finally:
+            restored.close()
 
 
 def create_database_backup() -> bytes:
