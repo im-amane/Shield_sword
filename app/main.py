@@ -14,6 +14,7 @@ from aiogram.types import BufferedInputFile
 from datetime import datetime, timezone
 
 from app.config import ConfigurationError, load_settings
+from app.backup_crypto import encrypt_backup
 from app.handlers.owner import create_owner_router
 from app.handlers.moderation import create_moderation_router
 from app.handlers.antispam import create_antispam_router
@@ -58,16 +59,16 @@ async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
         if wait_seconds:
             await asyncio.sleep(wait_seconds)
         try:
-            snapshot = create_database_backup()
+            snapshot = encrypt_backup(create_database_backup())
             stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             await bot.send_document(
                 chat_id=owner_id,
                 document=BufferedInputFile(
-                    snapshot, filename=f"aniworld-security-backup-{stamp}.sqlite3"
+                    snapshot, filename=f"aniworld-security-backup-{stamp}.sqlite3.awb"
                 ),
                 caption=premium_text(
                     "🛡️ <b>Automatic Weekly Database Backup</b>\n\n"
-                    "A verified backup snapshot is attached. The next automatic backup is scheduled in 7 days. Keep it private and safe. 🔐"
+                    "An AES-256-GCM encrypted, integrity-verified backup is attached. The next automatic backup is scheduled in 7 days. Keep it private and safe. 🔐"
                 ),
             )
             set_last_automatic_backup_at(time.time())
