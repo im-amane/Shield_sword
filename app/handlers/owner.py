@@ -63,12 +63,12 @@ def create_owner_router(owner_id: int | None) -> Router:
             size_mb = status["size_bytes"] / (1024 * 1024)
             state = "✅ Healthy" if status["integrity"] == "ok" else "⚠️ Check required"
             await message.answer(premium_text(
-                "🛡️ <b>Database Health</b>\\n\\n"
-                f"Status: {state}\\n"
-                f"Integrity: <code>{escape(status['integrity'])}</code>\\n"
-                f"Tables: <code>{status['table_count']}</code>\\n"
-                f"Size: <code>{size_mb:.2f} MB</code>\\n"
-                f"Journal: <code>{escape(status['journal_mode'])}</code>\\n"
+                "🛡️ <b>Database Health</b>\n\n"
+                f"Status: {state}\n"
+                f"Integrity: <code>{escape(status['integrity'])}</code>\n"
+                f"Tables: <code>{status['table_count']}</code>\n"
+                f"Size: <code>{size_mb:.2f} MB</code>\n"
+                f"Journal: <code>{escape(status['journal_mode'])}</code>\n"
                 f"Storage: <code>{escape(status['path'])}</code>"
             ))
         except Exception:
