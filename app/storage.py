@@ -378,7 +378,7 @@ def record_audit_event(chat_id: int, action: str, actor_id: int | None = None,
     with _connection() as db:
         db.execute(
             "INSERT INTO security_audit(chat_id, actor_id, action, target_id, details) VALUES (?, ?, ?, ?, ?)",
-            (chat_id, actor_id, action[:80], target_id, safe_details),
+            (chat_id, actor_id, _safe_log_text(action, 80), target_id, safe_details),
         )
         db.execute(
             "DELETE FROM security_audit WHERE id NOT IN "
