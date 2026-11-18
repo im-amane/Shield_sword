@@ -30,6 +30,7 @@ from app.handlers.badwords import create_badwords_router
 from app.handlers.copyright import create_copyright_router
 from app.handlers.utility import create_utility_router
 from app.handlers.diagnostics import create_diagnostics_router
+from app.handlers.permission_monitor import create_permission_monitor_router
 from app.handlers.security_status import create_security_status_router
 from app.ui import create_ui_router, install_ui_middleware
 from app.storage import (
@@ -129,6 +130,7 @@ async def run() -> None:
     dispatcher.include_router(create_utility_router())
     dispatcher.include_router(create_diagnostics_router())
     dispatcher.include_router(create_security_status_router())
+    dispatcher.include_router(create_permission_monitor_router(settings.owner_id))
     dispatcher.include_router(create_owner_router(settings.owner_id))
     dispatcher.include_router(create_panel_router(settings.owner_id))
     dispatcher.include_router(create_welcome_router(settings.welcome_chat_ids, settings.owner_id))
