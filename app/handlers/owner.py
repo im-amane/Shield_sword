@@ -7,6 +7,7 @@ from aiogram.enums import ChatType
 from aiogram.types import BufferedInputFile, Message
 
 from app.security.owner import is_owner
+from app.backup_crypto import encrypt_backup
 from app.handlers.typography import premium_text
 from app.storage import create_database_backup, get_audit_events, get_database_status
 
@@ -85,10 +86,10 @@ def create_owner_router(owner_id: int | None) -> Router:
             await message.answer(premium_text("🔒 <b>Owner Access Only</b>"))
             return
         try:
-            snapshot = create_database_backup()
+            snapshot = encrypt_backup(create_database_backup())
             await message.answer_document(
-                BufferedInputFile(snapshot, filename="aniworld-security-backup.sqlite3"),
-                caption=premium_text("🗄️ <b>Database Backup</b>\n\nConsistent SQLite snapshot created. Store it somewhere private. 🔐"),
+                BufferedInputFile(snapshot, filename="aniworld-security-backup.sqlite3.awb"),
+                caption=premium_text("🗄️ <b>Encrypted Database Backup</b>\n\nAES-256-GCM encrypted and integrity-verified snapshot created. Store it privately. 🔐"),
             )
         except Exception:
             await message.answer(premium_text("❌ <b>Backup Failed</b>\n\nCheck the service logs and database storage."))
