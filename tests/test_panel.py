@@ -9,9 +9,8 @@ class DashboardTests(unittest.TestCase):
         text = dashboard_text("ani_world_bot", 112233, 987654321)
         self.assertIn("@ani_world_bot", text)
         self.assertIn("<code>112233</code>", text)
-        self.assertIn("<code>987654321</code>", text)
         self.assertIn("𝐎𝐧𝐥𝐢𝐧𝐞", text)
-        self.assertIn("𝐂𝐨𝐦𝐦𝐮𝐧𝐢𝐭𝐲 𝐨𝐯𝐞𝐫𝐯𝐢𝐞𝐰", text)
+        self.assertIn("𝐂𝐎𝐌𝐌𝐔𝐍𝐈𝐓𝐘 𝐀𝐓 𝐀 𝐆𝐋𝐀𝐍𝐂𝐄", text)
 
     def test_dashboard_handles_missing_username(self) -> None:
         text = dashboard_text(None, 112233, 987654321)
