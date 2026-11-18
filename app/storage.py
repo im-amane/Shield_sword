@@ -130,6 +130,21 @@ _badwords_cache: dict[int, tuple[float, set[str]]] = {}
 _domains_cache: dict[int, tuple[float, set[str]]] = {}
 
 
+def _safe_log_text(value: object, limit: int) -> str:
+    """Normalize untrusted metadata before it enters audit/incident records.
+
+    Keep each event field single-line and bounded to prevent log injection and
+    unbounded storage. Presentation layers must still HTML-escape on output.
+    """
+    text = str(value or "")
+    text = "".join(
+        " " if char in "\\r\\n\\t" else char
+        for char in text
+        if char == " " or char in "\\r\\n\\t" or ord(char) >= 32
+    )
+    return " ".join(text.split())[:limit]
+
+
 def _cache_valid(entry) -> bool:
     return entry is not None and time.monotonic() - entry[0] < _CACHE_TTL
 
@@ -360,7 +375,7 @@ def clear_raid_data() -> None:
 def record_audit_event(chat_id: int, action: str, actor_id: int | None = None,
                        target_id: int | None = None, details: str = "") -> None:
     """Append a bounded, non-secret security event to the audit trail."""
-    safe_details = str(details).replace("\\x00", "")[:500]
+    safe_details = _safe_log_text(details, 500)
     with _connection() as db:
         db.execute(
             "INSERT INTO security_audit(chat_id, actor_id, action, target_id, details) VALUES (?, ?, ?, ?, ?)",
@@ -387,7 +402,7 @@ def get_audit_events(limit: int = 20) -> list[dict]:
 
 def register_group(chat_id: int, title: str) -> None:
     """Remember a group the bot has observed, without storing message content."""
-    safe_title = str(title or "Telegram group")[:200]
+    safe_title = _safe_log_text(title or "Telegram group", 200)
     with _connection() as db:
         db.execute(
             """INSERT INTO known_groups(chat_id, title, last_seen)
@@ -406,8 +421,8 @@ def record_member_join(chat_id: int, chat_title: str, user_id: int,
             """INSERT INTO member_join_events
                (chat_id, chat_title, user_id, username, display_name)
                VALUES (?, ?, ?, ?, ?)""",
-            (chat_id, str(chat_title or "Telegram group")[:200], user_id,
-             str(username or "")[:64], str(display_name or "")[:160]),
+            (chat_id, _safe_log_text(chat_title or "Telegram group", 200), user_id,
+             _safe_log_text(username, 64), _safe_log_text(display_name, 160)),
         )
         db.execute(
             "DELETE FROM member_join_events WHERE id NOT IN "
@@ -427,9 +442,10 @@ def record_security_incident(chat_id: int, chat_title: str, kind: str,
             """INSERT INTO security_incidents
                (chat_id, chat_title, kind, severity, user_id, username, display_name, details)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (chat_id, str(chat_title or "Telegram group")[:200], str(kind)[:80],
-             severity, user_id, str(username or "")[:64],
-             str(display_name or "")[:160], str(details)[:500]),
+            (chat_id, _safe_log_text(chat_title or "Telegram group", 200),
+             _safe_log_text(kind, 80), severity, user_id,
+             _safe_log_text(username, 64), _safe_log_text(display_name, 160),
+             _safe_log_text(details, 500)),
         )
         db.execute(
             "DELETE FROM security_incidents WHERE id NOT IN "
