@@ -1,13 +1,41 @@
 """Unit tests for moderation helpers."""
 import unittest
+from unittest.mock import AsyncMock
 
 from app.handlers.moderation import (
     DEFAULT_MUTE_SECONDS,
     MAX_MUTE_SECONDS,
     format_duration,
+    perform_kick,
     parse_duration,
     restored_permissions,
 )
+
+
+class KickOperationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_kick_unbans_after_successful_ban(self) -> None:
+        bot = type("BotStub", (), {})()
+        bot.ban_chat_member = AsyncMock()
+        bot.unban_chat_member = AsyncMock()
+
+        result = await perform_kick(bot, -100, 42)
+
+        self.assertTrue(result)
+        bot.ban_chat_member.assert_awaited_once_with(chat_id=-100, user_id=42)
+        bot.unban_chat_member.assert_awaited_once_with(
+            chat_id=-100, user_id=42, only_if_banned=True
+        )
+
+    async def test_partial_kick_is_reported_when_unban_fails(self) -> None:
+        bot = type("BotStub", (), {})()
+        bot.ban_chat_member = AsyncMock()
+        bot.unban_chat_member = AsyncMock(side_effect=RuntimeError("Telegram unavailable"))
+
+        result = await perform_kick(bot, -100, 42)
+
+        self.assertFalse(result)
+        bot.ban_chat_member.assert_awaited_once()
+        bot.unban_chat_member.assert_awaited_once()
 
 
 class ModerationHelperTests(unittest.TestCase):
