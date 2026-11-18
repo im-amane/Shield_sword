@@ -24,33 +24,33 @@ def dashboard_text(bot_username: str | None, bot_id: int, owner_id: int) -> str:
     username = f"@{bot_username}" if bot_username else "Not available"
     stats = get_owner_security_summary()
     return premium_text(
-        "⚙️ <b>Owner Control Center</b> 👑\n\n"
-        "🟢 <b>Bot status:</b> Online\n"
+        "🛡️ <b>ANI WORLD · GUARDIAN HQ</b> 👑\n"
+        "<i>Your community. Our watch.</i>\n\n"\n        "╭─ <b>GUARDIAN STATUS</b>\n"\n        "│ 🟢 <b>Online and protecting</b>\n"
         f"🤖 <b>Bot:</b> {escape(username)}\n"
         f"🆔 <b>Bot ID:</b> <code>{bot_id}</code>\n"
         f"🔐 <b>Owner ID:</b> <code>{owner_id}</code>\n\n"
-        "📊 <b>Community overview</b>\n"
-        f"👥 Groups monitored: <b>{stats['groups']}</b>\n"
-        f"📥 Member joins (24h): <b>{stats['joins_24h']}</b>\n"
+        "╰────────────────\n\n"\n        "🏠 <b>COMMUNITY AT A GLANCE</b>\n"
+        f"👥 Groups under watch: <b>{stats['groups']}</b>\n"
+        f"🤝 Members welcomed (24h): <b>{stats['joins_24h']}</b>\n"
         f"🚨 Security incidents (24h): <b>{stats['incidents_24h']}</b>\n"
-        f"🛡️ Active raid modes: <b>{stats['active_raids']}</b>\n\n"
-        "<i>Choose a section below to inspect your shield systems.</i>"
+        f"⚔️ Active lockdowns: <b>{stats['active_raids']}</b>\n\n"\n        "<i>Stay close. Stay kind. I'll keep watch over the family.</i>\n"
+        "<i>Select a control below.</i>"
     )
 
 
 def dashboard_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="🛡️ Security", callback_data="owner_panel:security"),
-            InlineKeyboardButton(text="👥 Groups", callback_data="owner_panel:groups"),
+            InlineKeyboardButton(text="🛡️ Protection", callback_data="owner_panel:security"),
+            InlineKeyboardButton(text="🏠 Communities", callback_data="owner_panel:groups"),
         ],
         [
-            InlineKeyboardButton(text="🕵️ Activity", callback_data="owner_panel:activity"),
-            InlineKeyboardButton(text="📜 Audit", callback_data="owner_panel:audit"),
+            InlineKeyboardButton(text="🤝 Member Watch", callback_data="owner_panel:activity"),
+            InlineKeyboardButton(text="📜 Security History", callback_data="owner_panel:audit"),
         ],
         [
-            InlineKeyboardButton(text="💾 Database", callback_data="owner_panel:database"),
-            InlineKeyboardButton(text="📦 Backup Now", callback_data="owner_panel:backup"),
+            InlineKeyboardButton(text="💾 System Health", callback_data="owner_panel:database"),
+            InlineKeyboardButton(text="📦 Secure Backup", callback_data="owner_panel:backup"),
         ],
         [
             InlineKeyboardButton(text="🔄 Refresh", callback_data="owner_panel:refresh"),
@@ -110,7 +110,7 @@ def section_text(section: str) -> str:
         return premium_text("".join(lines)[:3900])
     if section == "audit":
         events = get_audit_events(15)
-        lines = ["📜 <b>Owner Audit Log</b>\\n\\n"]
+        lines = ["📜 <b>Owner Audit Log</b>\n\n"]
         if not events:
             lines.append("No audit events recorded yet.")
         for event in events:
@@ -119,8 +119,8 @@ def section_text(section: str) -> str:
             detail = f" · {escape(str(event['details']))}" if event["details"] else ""
             lines.append(
                 f"• <code>{escape(event['created_at'])}</code> · "
-                f"<b>{escape(event['action'])}</b>\\n"
-                f"  Group: <code>{event['chat_id']}</code> · Actor: {actor}{target}{detail}\\n"
+                f"<b>{escape(event['action'])}</b>\n"
+                f"  Group: <code>{event['chat_id']}</code> · Actor: {actor}{target}{detail}\n"
             )
         return premium_text("".join(lines)[:3900])
     if section == "database":
@@ -225,7 +225,7 @@ def create_panel_router(owner_id: int | None) -> Router:
                         snapshot, filename="aniworld-security-backup.sqlite3"
                     ),
                     caption=premium_text(
-                        "📦 <b>Manual Backup Complete</b>\\n\\n"
+                        "📦 <b>Manual Backup Complete</b>\n\n"
                         "A verified database snapshot is attached. Keep it private. 🔐"
                     ),
                 )
