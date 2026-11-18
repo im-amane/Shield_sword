@@ -264,7 +264,7 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
     if action == "about":
         await callback.answer(
             premium_text(
-                "🛡️ <b>Shield 剣 · Ani World Guardian</b>\n\n"
+                "🛡️ Shield 剣 · Ani World Guardian\n\n"
                 "I protect groups with verification, anti-spam, raid defence, "
                 "link filtering and moderation tools. ✨"
             ),
