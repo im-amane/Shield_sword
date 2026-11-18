@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import time
+from html import escape
 
 from aiogram import Router
 from aiogram.exceptions import TelegramAPIError
@@ -160,7 +161,7 @@ async def announce_raid_activation(
             owner_id,
             premium_text(
                 "🚨 <b>Group Security Alert</b>\n\n"
-                f"Group: {chat_title}\n"
+                f"Group: {escape(chat_title)}\n"
                 f"Chat ID: <code>{message.chat.id}</code>\n"
                 f"Recent human joins: <b>{join_count}</b> in "
                 f"{RAID_WINDOW_SECONDS // 60} minutes\n"
