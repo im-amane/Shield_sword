@@ -8,8 +8,10 @@ class CopyrightRouterTests(unittest.TestCase):
     def test_media_policy_is_automatic_and_command_free(self) -> None:
         router = create_copyright_router()
         self.assertEqual(router.name, "copyright")
-        self.assertEqual(len(router.message.handlers), 1)
+        self.assertEqual(len(router.message.handlers), 2)  # command + group media
         self.assertEqual(len(router.edited_message.handlers), 1)
+        self.assertEqual(len(router.channel_post.handlers), 1)
+        self.assertEqual(len(router.edited_channel_post.handlers), 1)
         self.assertIn("video", MEDIA_TYPES)
         self.assertIn("document", MEDIA_TYPES)
         self.assertIn("photo", MEDIA_TYPES)
