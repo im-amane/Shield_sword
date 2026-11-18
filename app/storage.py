@@ -138,12 +138,11 @@ def _safe_log_text(value: object, limit: int) -> str:
     """
     text = str(value or "")
     text = "".join(
-        " " if char in "\\r\\n\\t" else char
+        " " if char in "\r\n\t" else char
         for char in text
-        if char == " " or char in "\\r\\n\\t" or ord(char) >= 32
+        if char == " " or char in "\r\n\t" or ord(char) >= 32
     )
     return " ".join(text.split())[:limit]
-
 
 def _cache_valid(entry) -> bool:
     return entry is not None and time.monotonic() - entry[0] < _CACHE_TTL
