@@ -1,6 +1,7 @@
 """Admin moderation commands for groups and supergroups."""
 from __future__ import annotations
 
+import logging
 import re
 from html import escape
 from datetime import datetime, timedelta, timezone
@@ -16,6 +17,27 @@ from app.storage import record_audit_event
 _DURATION = re.compile(r"^(\d+)(s|m|h|d)$", re.IGNORECASE)
 DEFAULT_MUTE_SECONDS = 10 * 60
 MAX_MUTE_SECONDS = 365 * 24 * 60 * 60
+logger = logging.getLogger(__name__)
+
+
+async def perform_kick(bot, chat_id: int, user_id: int) -> bool:
+    """Remove a member and lift the temporary ban so they may rejoin.
+
+    False means the ban succeeded but Telegram rejected the unban. The caller
+    must report that partial outcome instead of claiming the member was kicked.
+    """
+    await bot.ban_chat_member(chat_id=chat_id, user_id=user_id)
+    try:
+        await bot.unban_chat_member(
+            chat_id=chat_id, user_id=user_id, only_if_banned=True
+        )
+    except Exception:
+        logger.exception(
+            "Kick partially completed; member remains banned (chat_id=%s user_id=%s)",
+            chat_id, user_id,
+        )
+        return False
+    return True
 
 
 def parse_duration(value: str | None) -> int:
@@ -189,10 +211,25 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
         if target is None:
             return
         try:
-            await message.bot.ban_chat_member(chat_id=message.chat.id, user_id=target.id)
-            await message.bot.unban_chat_member(chat_id=message.chat.id, user_id=target.id, only_if_banned=True)
+            completed = await perform_kick(message.bot, message.chat.id, target.id)
         except Exception:
-            await message.answer(premium_text("❌ <b>Kick Failed</b>\n\nCheck my admin permissions and try again."))
+            logger.exception(
+                "Kick could not ban target (chat_id=%s user_id=%s)",
+                message.chat.id, target.id,
+            )
+            await message.answer(premium_text("❌ <b>Kick Failed</b>\n\nTelegram could not remove this member. Check my admin permissions and try again."))
+            return
+        if not completed:
+            record_audit_event(
+                message.chat.id, "kick_partial_ban",
+                message.from_user.id if message.from_user else None,
+                target.id, "ban succeeded; unban failed",
+            )
+            await message.answer(premium_text(
+                f"⚠️ <b>Member Removed, But Still Banned</b>\n\n"
+                f"👤 {escape(target.full_name)} was removed, but Telegram rejected the unban. "
+                f"Use <code>/unban {target.id}</code> after checking permissions if they should be allowed to rejoin."
+            ))
             return
         record_audit_event(message.chat.id, "kick", message.from_user.id if message.from_user else None, target.id)
         await message.answer(premium_text(f"👢 <b>Member Kicked</b>\n\n👤 {escape(target.full_name)} was removed. They can rejoin using an invite link."))
