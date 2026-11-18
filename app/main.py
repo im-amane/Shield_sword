@@ -65,7 +65,7 @@ async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
                     snapshot, filename=f"aniworld-security-backup-{stamp}.sqlite3"
                 ),
                 caption=premium_text(
-                    "🛡️ <b>Automatic Weekly Database Backup</b>\\n\\n"
+                    "🛡️ <b>Automatic Weekly Database Backup</b>\n\n"
                     "A verified backup snapshot is attached. The next automatic backup is scheduled in 7 days. Keep it private and safe. 🔐"
                 ),
             )
@@ -95,13 +95,13 @@ async def daily_security_report_loop(bot: Bot, owner_id: int) -> None:
         try:
             stats = get_owner_security_summary()
             report = (
-                "🛡️ <b>Daily Security Report</b>\\n\\n"
-                f"👥 Groups monitored: <b>{stats['groups']}</b>\\n"
-                f"🆕 New members (24h): <b>{stats['joins_24h']}</b>\\n"
-                f"🚨 Security incidents (24h): <b>{stats['incidents_24h']}</b>\\n"
-                f"⚔️ Raids detected (7d): <b>{stats['raids_7d']}</b>\\n"
-                f"🔇 Anti-spam actions (24h): <b>{stats['spam_24h']}</b>\\n"
-                f"🚧 Active raid modes: <b>{stats['active_raids']}</b>\\n\\n"
+                "🛡️ <b>Daily Security Report</b>\n\n"
+                f"👥 Groups monitored: <b>{stats['groups']}</b>\n"
+                f"🆕 New members (24h): <b>{stats['joins_24h']}</b>\n"
+                f"🚨 Security incidents (24h): <b>{stats['incidents_24h']}</b>\n"
+                f"⚔️ Raids detected (7d): <b>{stats['raids_7d']}</b>\n"
+                f"🔇 Anti-spam actions (24h): <b>{stats['spam_24h']}</b>\n"
+                f"🚧 Active raid modes: <b>{stats['active_raids']}</b>\n\n"
                 "Next report: in 24 hours. 🔐"
             )
             await bot.send_message(chat_id=owner_id, text=premium_text(report))
