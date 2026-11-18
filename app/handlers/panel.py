@@ -1,6 +1,7 @@
 """Owner-only operational dashboard and defensive intelligence views."""
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from html import escape
 
@@ -13,6 +14,7 @@ from aiogram.types import (
 )
 
 from app.security.owner import is_owner
+from app.backup_crypto import backup_key_status, encrypt_backup
 from app.handlers.typography import premium_text
 from app.storage import (
     create_database_backup, get_audit_events, get_database_status,
@@ -32,15 +34,16 @@ def dashboard_text(bot_username: str | None, bot_id: int, owner_id: int) -> str:
         "│ 🟢 <b>Online and protecting</b>\n"
         f"│ 🤖 {escape(username)}\n"
         f"│ 🆔 <code>{bot_id}</code>\n"
+        f"│ 👑 Owner: <code>{owner_id or 'Not configured'}</code>\n"
         "╰────────────────\n\n"
         "🏠 <b>COMMUNITY AT A GLANCE</b>\n"
         f"👥 Groups under watch: <b>{stats['groups']}</b>\n"
         f"🤝 Members welcomed (24h): <b>{stats['joins_24h']}</b>\n"
         f"🚨 Security incidents (24h): <b>{stats['incidents_24h']}</b>\n"
         f"⚔️ Active lockdowns: <b>{stats['active_raids']}</b>\n\n"
-        "<i>Stay close. Stay kind. I'll keep watch over the family.</i>\n"
         "<i>Select a control below.</i>"
     )
+
 
 def dashboard_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -55,6 +58,13 @@ def dashboard_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(text="💾 System Health", callback_data="owner_panel:database"),
             InlineKeyboardButton(text="📦 Secure Backup", callback_data="owner_panel:backup"),
+        ],
+        [
+            InlineKeyboardButton(text="⚙️ Configuration", callback_data="owner_panel:configuration"),
+            InlineKeyboardButton(text="🤖 Automations", callback_data="owner_panel:automation"),
+        ],
+        [
+            InlineKeyboardButton(text="📚 Command Index", callback_data="owner_panel:commands"),
         ],
         [
             InlineKeyboardButton(text="🔄 Refresh", callback_data="owner_panel:refresh"),
@@ -152,6 +162,57 @@ def section_text(section: str) -> str:
             "Commands: <code>/dbstatus</code> · <code>/backup</code>\n"
             "Automatic verified backup runs every 7 days; the daily security report runs every 24 hours."
         )
+    if section == "configuration":
+        key = backup_key_status()
+        key_state = "✅ Configured" if key["configured"] else "❌ Missing or invalid"
+        fingerprint = escape(str(key["fingerprint"]))
+        required = ("BOT_TOKEN", "OWNER_ID", "DATABASE_PATH")
+        optional = ("MAIN_GROUP_URL", "OWNER_CONTACT_URL")
+        def state(name: str) -> str:
+            return "✅ Set" if os.getenv(name, "").strip() else "⚠️ Not set"
+        lines = [
+            "⚙️ <b>Secure Configuration</b>\n\n",
+            "<b>Secret status</b>\n",
+            f"• Telegram bot token: {state('BOT_TOKEN')} (never displayed)\n",
+            f"• Owner ID: {state('OWNER_ID')}\n",
+            f"• Backup encryption: {key_state}\n",
+            f"• Key fingerprint: <code>{fingerprint}</code>\n\n",
+            "<b>Runtime settings</b>\n",
+        ]
+        lines.extend(f"• <code>{name}</code>: {state(name)}\n" for name in required + optional)
+        lines.append(
+            "\n🔐 Secret values are never sent to Telegram. The fingerprint helps identify the active backup key. "
+            "Keep an offline recovery copy. Rotate keys through your hosting provider, then retain the old key for old backups."
+        )
+        return premium_text("".join(lines))
+    if section == "automation":
+        last_backup = get_last_automatic_backup_at()
+        last_report = get_last_daily_report_at()
+        backup_label = datetime.fromtimestamp(last_backup, timezone.utc).strftime("%Y-%m-%d %H:%M UTC") if last_backup else "Pending first delivery"
+        report_label = datetime.fromtimestamp(last_report, timezone.utc).strftime("%Y-%m-%d %H:%M UTC") if last_report else "Pending first delivery"
+        return premium_text(
+            "🤖 <b>Automation Monitor</b>\n\n"
+            "• CAPTCHA expiry worker: <b>Running with bot process</b>\n"
+            "• Weekly encrypted backup: <b>Every 7 days</b>\n"
+            f"  Last success: <code>{backup_label}</code>\n"
+            "• Daily security report: <b>Every 24 hours</b>\n"
+            f"  Last success: <code>{report_label}</code>\n"
+            "• Raid protection: <b>Automatic detection</b>\n"
+            "• Permission watchdog: <b>Event-driven</b>\n\n"
+            "A timestamp confirms the last successful delivery, not merely that a task was scheduled."
+        )
+    if section == "commands":
+        return premium_text(
+            "📚 <b>Guardian Command Index</b>\n\n"
+            "<b>Owner & diagnostics</b>\n"
+            "/start · /help · /owner · /panel · /audit · /dbstatus · /backup · /security · /checkpermissions · /id\n\n"
+            "<b>Moderation</b>\n"
+            "/mute · /unmute · /ban · /unban · /kick · /purge · /warn · /warnings · /resetwarn\n\n"
+            "<b>Protection settings</b>\n"
+            "/antilink · /allowdomain · /removedomain · /badwords · /addword · /removeword\n"
+            "/raidstatus · /raidoff · /channelprotect\n\n"
+            "Only commands actually registered in this build are listed here. Group permissions and command scope still apply."
+        )
     return "Unknown panel section."
 
 
@@ -198,51 +259,42 @@ def create_panel_router(owner_id: int | None) -> Router:
         if action == "close":
             if callback.message:
                 await callback.message.delete()
-            await callback.answer(premium_text("Panel closed. Catch you later! 👋"))
+            await callback.answer(premium_text("Panel closed. 👋"))
             return
         if not callback.message:
             await callback.answer()
             return
         if callback.message.chat.type != "private":
-            await callback.answer(
-                premium_text("Open the owner panel in private chat. 🔒"),
-                show_alert=True,
-            )
+            await callback.answer(premium_text("Open the owner panel in private chat. 🔒"), show_alert=True)
             return
         try:
-            if action == "home":
+            if action == "home" or action == "refresh":
                 me = await callback.bot.get_me()
                 await callback.message.edit_text(
                     dashboard_text(me.username, me.id, owner_id or 0),
                     reply_markup=dashboard_keyboard(),
                 )
-            elif action in {"security", "groups", "activity", "audit", "database"}:
+            elif action in {"security", "groups", "activity", "audit", "database", "configuration", "automation", "commands"}:
                 await callback.message.edit_text(
                     section_text(action), reply_markup=section_keyboard(action)
                 )
-            elif action == "refresh":
-                me = await callback.bot.get_me()
-                await callback.message.edit_text(
-                    dashboard_text(me.username, me.id, owner_id or 0),
-                    reply_markup=dashboard_keyboard(),
-                )
             elif action.startswith("refresh_"):
                 current = action.removeprefix("refresh_")
-                if current not in {"security", "groups", "activity", "audit", "database"}:
+                if current not in {"security", "groups", "activity", "audit", "database", "configuration", "automation", "commands"}:
                     current = "security"
                 await callback.message.edit_text(
                     section_text(current), reply_markup=section_keyboard(current)
                 )
             elif action == "backup":
-                snapshot = create_database_backup()
+                snapshot = encrypt_backup(create_database_backup())
                 await callback.bot.send_document(
                     chat_id=owner_id,
                     document=BufferedInputFile(
-                        snapshot, filename="aniworld-security-backup.sqlite3"
+                        snapshot, filename="aniworld-security-backup.sqlite3.awb"
                     ),
                     caption=premium_text(
-                        "📦 <b>Manual Backup Complete</b>\n\n"
-                        "A verified database snapshot is attached. Keep it private. 🔐"
+                        "📦 <b>Encrypted Backup Complete</b>\n\n"
+                        "AES-256-GCM encrypted database snapshot attached. Keep it private. 🔐"
                     ),
                 )
             else:
