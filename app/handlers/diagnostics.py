@@ -1,6 +1,8 @@
 """Group security diagnostics for administrators."""
 from __future__ import annotations
 
+from html import escape
+
 from aiogram import Router
 from aiogram.enums import ChatMemberStatus, ChatType
 from aiogram.exceptions import TelegramAPIError
@@ -54,7 +56,7 @@ def create_diagnostics_router() -> Router:
         heading = "🟢 All required permissions are ready." if ready else "🟠 Some permissions are missing."
         await message.answer(premium_text(
             "🛡️ <b>Ani World · Security Diagnostics</b>\n\n"
-            f"Group: <b>{message.chat.title or 'Telegram group'}</b>\n"
+            f"Group: <b>{escape(message.chat.title or 'Telegram group')}</b>\n"
             f"Bot role: <code>{bot_member.status.value}</code>\n\n"
             + "\n".join(lines)
             + f"\n\n{heading}\n"
