@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import os
 import secrets
 
@@ -23,12 +24,23 @@ def _key() -> bytes:
             "BACKUP_ENCRYPTION_KEY is required; refusing to send a plaintext backup"
         )
     try:
-        key = base64.urlsafe_b64decode(encoded.encode("ascii"))
+        raw = encoded.encode("ascii")
+        key = base64.b64decode(raw, altchars=b"-_", validate=True)
     except Exception as exc:
         raise BackupEncryptionError("BACKUP_ENCRYPTION_KEY must be URL-safe base64") from exc
-    if len(key) != 32:
-        raise BackupEncryptionError("BACKUP_ENCRYPTION_KEY must decode to exactly 32 bytes")
+    if len(key) != 32 or base64.urlsafe_b64encode(key) != raw:
+        raise BackupEncryptionError("BACKUP_ENCRYPTION_KEY must be canonical URL-safe base64 for exactly 32 bytes")
     return key
+
+
+def backup_key_status() -> dict[str, str | bool]:
+    """Return safe key metadata only; never return the secret itself."""
+    try:
+        key = _key()
+    except BackupEncryptionError:
+        return {"configured": False, "fingerprint": "Unavailable"}
+    fingerprint = hashlib.sha256(key).hexdigest()[:12].upper()
+    return {"configured": True, "fingerprint": fingerprint}
 
 
 def encrypt_backup(snapshot: bytes) -> bytes:
