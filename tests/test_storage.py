@@ -74,6 +74,13 @@ class StorageTests(unittest.TestCase):
         storage.set_copyright_enabled(-100, True)
         self.assertTrue(storage.is_copyright_enabled(-100))
 
+    def test_channel_media_protection_is_opt_in_and_persists(self) -> None:
+        self.assertFalse(storage.is_channel_media_enabled(-100123))
+        storage.set_channel_media_enabled(-100123, True)
+        self.assertTrue(storage.is_channel_media_enabled(-100123))
+        storage.set_channel_media_enabled(-100123, False)
+        self.assertFalse(storage.is_channel_media_enabled(-100123))
+
     def test_database_backup_is_valid_sqlite(self) -> None:
         backup = storage.create_database_backup()
         self.assertTrue(backup.startswith(b"SQLite format 3"))
