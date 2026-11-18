@@ -25,18 +25,20 @@ def dashboard_text(bot_username: str | None, bot_id: int, owner_id: int) -> str:
     stats = get_owner_security_summary()
     return premium_text(
         "🛡️ <b>ANI WORLD · GUARDIAN HQ</b> 👑\n"
-        "<i>Your community. Our watch.</i>\n\n"\n        "╭─ <b>GUARDIAN STATUS</b>\n"\n        "│ 🟢 <b>Online and protecting</b>\n"
-        f"🤖 <b>Bot:</b> {escape(username)}\n"
-        f"🆔 <b>Bot ID:</b> <code>{bot_id}</code>\n"
-        f"🔐 <b>Owner ID:</b> <code>{owner_id}</code>\n\n"
-        "╰────────────────\n\n"\n        "🏠 <b>COMMUNITY AT A GLANCE</b>\n"
+        "<i>Your community. Our watch.</i>\n\n"
+        "╭─ <b>GUARDIAN STATUS</b>\n"
+        "│ 🟢 <b>Online and protecting</b>\n"
+        f"│ 🤖 {escape(username)}\n"
+        f"│ 🆔 <code>{bot_id}</code>\n"
+        "╰────────────────\n\n"
+        "🏠 <b>COMMUNITY AT A GLANCE</b>\n"
         f"👥 Groups under watch: <b>{stats['groups']}</b>\n"
         f"🤝 Members welcomed (24h): <b>{stats['joins_24h']}</b>\n"
         f"🚨 Security incidents (24h): <b>{stats['incidents_24h']}</b>\n"
-        f"⚔️ Active lockdowns: <b>{stats['active_raids']}</b>\n\n"\n        "<i>Stay close. Stay kind. I'll keep watch over the family.</i>\n"
+        f"⚔️ Active lockdowns: <b>{stats['active_raids']}</b>\n\n"
+        "<i>Stay close. Stay kind. I'll keep watch over the family.</i>\n"
         "<i>Select a control below.</i>"
     )
-
 
 def dashboard_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
