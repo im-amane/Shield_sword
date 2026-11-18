@@ -2,6 +2,7 @@
 import unittest
 
 from app.handlers.panel import dashboard_keyboard, dashboard_text, section_keyboard, section_text
+from app.handlers.typography import premium_text
 
 
 class DashboardTests(unittest.TestCase):
@@ -41,9 +42,9 @@ class DashboardTests(unittest.TestCase):
         ):
             text = section_text("database")
 
-        self.assertIn("Last automatic backup", text)
-        self.assertIn("Last daily report", text)
-        self.assertIn("Not delivered yet", text)
+        self.assertIn(premium_text("Last automatic backup"), text)
+        self.assertIn(premium_text("Last daily report"), text)
+        self.assertIn(premium_text("Not delivered yet"), text)
 
     def test_section_keyboard_returns_to_dashboard(self) -> None:
         callbacks = [
