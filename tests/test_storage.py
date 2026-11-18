@@ -68,21 +68,23 @@ class StorageTests(unittest.TestCase):
         self.assertEqual(events[0]["details"], "manual action")
 
     def test_security_metadata_is_single_line_bounded_and_safe(self) -> None:
-        hostile = "first line\\r\\nFORGED EVENT\\x00\\x01 second line"
-        storage.record_audit_event(-100, "audit\\r\\ninjection", details=hostile)
+        hostile = "first line\r\nFORGED EVENT\x00\x01 second line"
+        storage.record_audit_event(-100, "audit\r\ninjection", details=hostile)
         storage.record_security_incident(
-            -100, "Group\\r\\nFORGED", "incident\\nforged",
-            details=hostile, username="user\\r\\nforged",
+            -100, "Group\r\nFORGED", "incident\nforged",
+            details=hostile, username="user\r\nforged",
         )
         audit = storage.get_audit_events(1)[0]
         incident = storage.get_recent_security_incidents(1)[0]
-        self.assertNotIn("\\n", audit["action"])
-        self.assertNotIn("\\r", audit["details"])
-        self.assertNotIn("\\x00", audit["details"])
-        self.assertNotIn("\\x01", audit["details"])
-        self.assertNotIn("\\n", incident["chat_title"])
-        self.assertNotIn("\\n", incident["kind"])
-        self.assertNotIn("\\n", incident["username"])
+        self.assertNotIn("\n", audit["action"])
+        self.assertNotIn("\r", audit["action"])
+        self.assertNotIn("\n", audit["details"])
+        self.assertNotIn("\r", audit["details"])
+        self.assertNotIn("\x00", audit["details"])
+        self.assertNotIn("\x01", audit["details"])
+        self.assertNotIn("\n", incident["chat_title"])
+        self.assertNotIn("\n", incident["kind"])
+        self.assertNotIn("\n", incident["username"])
         self.assertLessEqual(len(audit["details"]), 500)
 
     def test_copyright_protection_defaults_on_and_can_be_toggled(self) -> None:
