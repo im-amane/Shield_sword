@@ -51,6 +51,18 @@ The bot needs these Telegram administrator permissions for the current group fea
 
 Raid counters and active mode are persisted in SQLite. The database survives process restarts only when its path is on persistent storage. On Railway, attach a Volume mounted at `/data` and set `DATABASE_PATH=/data/aniworld.sqlite3`; without that, redeploys may replace the database.
 
+## Channel media protection
+
+- Channel protection is opt-in and OFF by default, so adding the bot to a channel does not silently remove channel posts.
+- Add the bot as a channel administrator with Delete Messages permission.
+- In the bot's private chat, a channel administrator can run:
+  - `/channelprotect @channel on`
+  - `/channelprotect @channel off`
+  - `/channelprotect @channel status`
+- When enabled, photos, videos, animations, documents, audio, voice notes, video notes and stickers in channel posts are removed, including edited channel posts.
+- Important Telegram limitation: channel-post updates do not reliably identify the individual administrator who published a post. Therefore, ON mode removes media from admins too. Enable it only if that is the intended channel policy.
+- Channel settings are stored separately from group settings and persist in the Railway database volume.
+
 ## Automatic copyright-risk controls
 
 - Every group automatically blocks ordinary members from posting photos, videos, animations/GIFs, documents, audio, voice notes, video notes and stickers. No setup command is required.
