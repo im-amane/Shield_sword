@@ -96,3 +96,12 @@ Never commit `.env`, paste bot tokens into chats, or print secrets in logs. If a
 - A daily security summary is sent to the configured owner in private chat.
 - It includes monitored groups, new member joins, recent security incidents, raid detections, anti-spam actions and active raid modes.
 - Successful delivery time is persisted in SQLite, so a service restart does not cause duplicate reports. The first report is sent shortly after the first-ever startup; failed deliveries retry after one hour.
+
+
+## Encrypted database backups
+
+- Manual `/backup` and automatic weekly backups are encrypted with AES-256-GCM before they leave the service.
+- Configure `BACKUP_ENCRYPTION_KEY` as a Railway secret/environment variable. It must be URL-safe base64 encoding of exactly 32 random bytes. The bot fails closed and will not send plaintext backups if the key is missing or invalid.
+- Keep an offline, access-controlled copy of this key separately from Telegram and Railway backups. Losing the key makes encrypted backups unrecoverable. Never commit it to GitHub or send it in chat.
+- Encrypted files use the `.sqlite3.awb` extension and the versioned `AWB1` envelope. Restore tooling must authenticate/decrypt with the same key before validating the resulting SQLite database.
+- Existing backups created before this change remain unencrypted. Protect or securely dispose of those older files according to your retention needs; they are not retroactively encrypted.
