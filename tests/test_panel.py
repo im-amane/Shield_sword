@@ -44,7 +44,7 @@ class DashboardTests(unittest.TestCase):
 
         self.assertIn(premium_text("Last automatic backup"), text)
         self.assertIn(premium_text("Last daily report"), text)
-        self.assertIn(premium_text("Not delivered yet"), text)
+        self.assertIn("Not delivered yet", text)
 
     def test_section_keyboard_returns_to_dashboard(self) -> None:
         callbacks = [
