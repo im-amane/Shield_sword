@@ -82,12 +82,31 @@ class StorageTests(unittest.TestCase):
         self.assertFalse(storage.is_channel_media_enabled(-100123))
 
     def test_database_backup_is_valid_sqlite(self) -> None:
+        storage.record_audit_event(-100, "restore_test", 7, 8, "round-trip")
         backup = storage.create_database_backup()
         self.assertTrue(backup.startswith(b"SQLite format 3"))
+        restored_status = storage.verify_database_backup(backup)
+        self.assertEqual(restored_status["integrity"], "ok")
+        self.assertGreaterEqual(restored_status["table_count"], 10)
+        import sqlite3
+        restored = sqlite3.connect(":memory:")
+        try:
+            restored.deserialize(backup)
+            row = restored.execute(
+                "SELECT action, details FROM security_audit WHERE action='restore_test'"
+            ).fetchone()
+            self.assertEqual(row, ("restore_test", "round-trip"))
+        finally:
+            restored.close()
         status = storage.get_database_status()
         self.assertEqual(status["integrity"], "ok")
         self.assertTrue(status["exists"])
         self.assertGreaterEqual(status["table_count"], 10)
+
+    def test_database_backup_rejects_corrupt_snapshot(self) -> None:
+        import sqlite3
+        with self.assertRaises(sqlite3.DatabaseError):
+            storage.verify_database_backup(b"not a database")
 
     def test_owner_security_intelligence_records_group_joins_and_incidents(self) -> None:
         storage.register_group(-100, "Ani World Main")
