@@ -1,6 +1,8 @@
 """Unified per-group security status command."""
 from __future__ import annotations
 
+from html import escape
+
 from aiogram import Router
 from aiogram.enums import ChatMemberStatus, ChatType
 from aiogram.exceptions import TelegramAPIError
@@ -19,7 +21,7 @@ def security_status_text(chat_id: int, title: str) -> str:
     state = lambda enabled: "🟢 ON" if enabled else "⚪ OFF"
     return premium_text(
         "🛡️ <b>Ani World · Security Status</b>\n\n"
-        f"🏠 <b>Group:</b> {title}\n\n"
+        f"🏠 <b>Group:</b> {escape(title)}\n\n"
         f"🔗 Anti-link: <b>{state(antilink)}</b>\n"
         f"🤬 Bad-word filter: <b>{state(badwords)}</b>\n"
         f"©️ Media upload policy: <b>{state(copyright_filter)}</b>\n"
