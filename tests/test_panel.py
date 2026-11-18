@@ -1,7 +1,7 @@
 """Tests for the owner dashboard and security intelligence navigation."""
 import unittest
 
-from app.handlers.panel import dashboard_keyboard, dashboard_text, section_keyboard
+from app.handlers.panel import dashboard_keyboard, dashboard_text, section_keyboard, section_text
 
 
 class DashboardTests(unittest.TestCase):
@@ -29,6 +29,21 @@ class DashboardTests(unittest.TestCase):
              "owner_panel:database", "owner_panel:backup",
              "owner_panel:refresh", "owner_panel:close"],
         )
+
+    def test_database_health_section_shows_backup_and_report_timestamps(self) -> None:
+        from unittest.mock import patch
+
+        with patch("app.handlers.panel.get_database_status", return_value={
+            "integrity": "ok", "table_count": 12, "size_bytes": 1024,
+            "journal_mode": "wal",
+        }), patch("app.handlers.panel.get_last_automatic_backup_at", return_value=1_700_000_000), patch(
+            "app.handlers.panel.get_last_daily_report_at", return_value=None
+        ):
+            text = section_text("database")
+
+        self.assertIn("Last automatic backup", text)
+        self.assertIn("Last daily report", text)
+        self.assertIn("Not delivered yet", text)
 
     def test_section_keyboard_returns_to_dashboard(self) -> None:
         callbacks = [
