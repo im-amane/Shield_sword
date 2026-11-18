@@ -534,8 +534,39 @@ def get_database_status() -> dict:
     }
 
 
+def verify_database_backup(snapshot: bytes) -> dict:
+    """Restore a snapshot into an isolated in-memory database and validate it."""
+    if not isinstance(snapshot, bytes) or not snapshot.startswith(b"SQLite format 3"):
+        raise sqlite3.DatabaseError("Backup is not a valid SQLite database image")
+    restored = sqlite3.connect(":memory:")
+    try:
+        restored.deserialize(snapshot)
+        integrity = str(restored.execute("PRAGMA integrity_check").fetchone()[0])
+        if integrity != "ok":
+            raise sqlite3.DatabaseError(f"Restored backup integrity check failed: {integrity}")
+        tables = {
+            str(row[0]) for row in restored.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            ).fetchall()
+        }
+        required_tables = {
+            "warnings", "pending_verifications", "security_audit",
+            "security_incidents", "known_groups", "member_join_events",
+            "automatic_backup_state", "daily_report_state",
+            "channel_media_settings",
+        }
+        missing = required_tables - tables
+        if missing:
+            raise sqlite3.DatabaseError(
+                "Restored backup is missing required tables: " + ", ".join(sorted(missing))
+            )
+        return {"integrity": integrity, "table_count": len(tables)}
+    finally:
+        restored.close()
+
+
 def create_database_backup() -> bytes:
-    """Create and validate a consistent SQLite backup snapshot in memory."""
+    """Create a consistent SQLite snapshot and verify an isolated restore."""
     source = _connect()
     target = sqlite3.connect(":memory:")
     try:
@@ -543,9 +574,9 @@ def create_database_backup() -> bytes:
         integrity = str(target.execute("PRAGMA integrity_check").fetchone()[0])
         if integrity != "ok":
             raise sqlite3.DatabaseError(f"Backup integrity check failed: {integrity}")
-        snapshot = BytesIO()
-        snapshot.write(target.serialize())
-        return snapshot.getvalue()
+        snapshot = target.serialize()
+        verify_database_backup(snapshot)
+        return snapshot
     finally:
         target.close()
         source.close()
