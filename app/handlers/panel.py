@@ -108,17 +108,17 @@ def section_text(section: str, page: int = 0) -> str:
         page = min(max(int(page), 0), total_pages - 1)
         groups = get_known_groups_page(GROUPS_PAGE_SIZE, page * GROUPS_PAGE_SIZE)
         lines = [
-            "👥 <b>Monitored Communities</b>\\n\\n",
-            f"Showing {len(groups)} of {total} communities · Page {page + 1}/{total_pages}\\n\\n",
+            "👥 <b>Monitored Communities</b>\n\n",
+            f"Showing {len(groups)} of {total} communities · Page {page + 1}/{total_pages}\n\n",
         ]
         if not groups:
             lines.append("No communities have been observed yet. Add the bot to a group and allow it to see member updates.")
         else:
-            lines.append("Select a community to inspect its protection status.\\n")
+            lines.append("Select a community to inspect its protection status.\n")
             for group in groups:
                 lines.append(
-                    f"• <b>{escape(group['title'])}</b> · <code>{group['chat_id']}</code>\\n"
-                    f"  Last seen: <code>{escape(group['last_seen'])}</code>\\n"
+                    f"• <b>{escape(group['title'])}</b> · <code>{group['chat_id']}</code>\n"
+                    f"  Last seen: <code>{escape(group['last_seen'])}</code>\n"
                 )
         return premium_text("".join(lines)[:3900])
     if section == "activity":
@@ -281,22 +281,22 @@ def group_detail_text(chat_id: int) -> str | None:
     def state(enabled: bool) -> str:
         return "🟢 ON" if enabled else "🔴 OFF"
     return premium_text(
-        "🏠 <b>Community Protection Overview</b>\\n\\n"
-        f"<b>{escape(group['title'])}</b>\\n"
-        f"Chat ID: <code>{group['chat_id']}</code>\\n"
-        f"Last seen: <code>{escape(group['last_seen'])}</code>\\n\\n"
-        "<b>Protection status</b>\\n"
-        f"• Anti-link: <b>{state(group['antilink_enabled'])}</b>\\n"
-        f"• Bad-word filter: <b>{state(group['badwords_enabled'])}</b>\\n"
-        f"• Media protection: <b>{state(group['copyright_enabled'])}</b>\\n"
-        f"• Raid mode: <b>{raid_state}</b>\\n"
-        "• Join CAPTCHA: <b>Permission-dependent</b>\\n\\n"
-        "<b>Community activity</b>\\n"
-        f"• Pending verifications: <b>{group['pending_verifications']}</b>\\n"
-        f"• Bad-word entries: <b>{group['badword_count']}</b>\\n"
-        f"• Allowed domains: <b>{group['allowed_domain_count']}</b>\\n"
-        f"• New members (24h): <b>{group['joins_24h']}</b>\\n"
-        f"• Security incidents (24h): <b>{group['incidents_24h']}</b>\\n\\n"
+        "🏠 <b>Community Protection Overview</b>\n\n"
+        f"<b>{escape(group['title'])}</b>\n"
+        f"Chat ID: <code>{group['chat_id']}</code>\n"
+        f"Last seen: <code>{escape(group['last_seen'])}</code>\n\n"
+        "<b>Protection status</b>\n"
+        f"• Anti-link: <b>{state(group['antilink_enabled'])}</b>\n"
+        f"• Bad-word filter: <b>{state(group['badwords_enabled'])}</b>\n"
+        f"• Media protection: <b>{state(group['copyright_enabled'])}</b>\n"
+        f"• Raid mode: <b>{raid_state}</b>\n"
+        "• Join CAPTCHA: <b>Permission-dependent</b>\n\n"
+        "<b>Community activity</b>\n"
+        f"• Pending verifications: <b>{group['pending_verifications']}</b>\n"
+        f"• Bad-word entries: <b>{group['badword_count']}</b>\n"
+        f"• Allowed domains: <b>{group['allowed_domain_count']}</b>\n"
+        f"• New members (24h): <b>{group['joins_24h']}</b>\n"
+        f"• Security incidents (24h): <b>{group['incidents_24h']}</b>\n\n"
         "<i>Read-only view. No community settings were changed.</i>"
     )
 
