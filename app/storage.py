@@ -532,14 +532,18 @@ def get_group_protection_summary(chat_id: int) -> dict | None:
             "AND datetime(created_at) >= datetime('now', '-1 day')", (chat_id,)
         ).fetchone()[0]
 
+        antilink_enabled = enabled("antilink_settings")
+        badwords_enabled = enabled("badword_settings")
+        copyright_enabled = enabled("copyright_settings")
+
     raid_until = float(raid[0]) if raid else 0.0
     return {
         "chat_id": int(chat_id),
         "title": str(group[0]),
         "last_seen": str(group[1]),
-        "antilink_enabled": enabled("antilink_settings"),
-        "badwords_enabled": enabled("badword_settings"),
-        "copyright_enabled": enabled("copyright_settings"),
+        "antilink_enabled": antilink_enabled,
+        "badwords_enabled": badwords_enabled,
+        "copyright_enabled": copyright_enabled,
         "badword_count": int(badword_count),
         "allowed_domain_count": int(domain_count),
         "pending_verifications": int(pending_count),
