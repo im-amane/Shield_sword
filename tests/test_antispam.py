@@ -8,6 +8,7 @@ from app.handlers.antispam import (
     _duplicate_times,
     _last_action,
     _muted_permissions,
+    _is_privileged_member,
 )
 
 
@@ -36,6 +37,11 @@ class AntiSpamTests(unittest.TestCase):
         _is_flooding(-100, 123, "first", 100.0)
         _is_flooding(-100, 123, "second", 101.0)
         self.assertFalse(_is_flooding(-100, 123, "third", 110.0))
+
+    def test_privileged_member_status_supports_raw_strings(self) -> None:
+        self.assertTrue(_is_privileged_member(type("Member", (), {"status": "administrator"})()))
+        self.assertTrue(_is_privileged_member(type("Member", (), {"status": "creator"})()))
+        self.assertFalse(_is_privileged_member(type("Member", (), {"status": "member"})()))
 
     def test_mute_permissions_disable_sending(self) -> None:
         permissions = _muted_permissions()

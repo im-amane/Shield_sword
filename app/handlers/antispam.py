@@ -6,6 +6,7 @@ import time
 from collections import defaultdict, deque
 
 from aiogram import F, Router
+from aiogram.dispatcher.event.bases import SkipHandler
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import ChatPermissions, Message
 
@@ -46,6 +47,12 @@ def _muted_permissions() -> ChatPermissions:
     return ChatPermissions(**{field: False for field in _SEND_PERMISSION_FIELDS})
 
 
+def _is_privileged_member(member: object) -> bool:
+    """Handle both aiogram enum statuses and raw Telegram status strings."""
+    status = getattr(member, "status", None)
+    return getattr(status, "value", status) in {"creator", "administrator"}
+
+
 def _message_fingerprint(message: Message) -> str:
     """Create a lightweight fingerprint from text or caption."""
     value = message.text or message.caption or ""
@@ -66,7 +73,6 @@ def _is_flooding(chat_id: int, user_id: int, fingerprint: str, now: float) -> bo
         duplicates.popleft()
     duplicates.append(now)
 
-    # Sweep stale keys periodically, not on every incoming message.
     global _last_state_cleanup
     if now - _last_state_cleanup >= 30:
         _last_state_cleanup = now
@@ -98,21 +104,21 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
         register_group(message.chat.id, message.chat.title or "Telegram group")
         user = message.from_user
         if user is None or user.is_bot or is_owner(user.id, owner_id):
-            return
-        if message.text and message.text.startswith("/"):
-            return
+            raise SkipHandler
 
         try:
             member = await message.bot.get_chat_member(message.chat.id, user.id)
-            if member.status in ("creator", "administrator"):
-                return
+            if _is_privileged_member(member):
+                raise SkipHandler
+        except SkipHandler:
+            raise
         except TelegramAPIError:
             logger.exception(
                 "Anti-spam could not check member status chat_id=%s user_id=%s",
                 message.chat.id,
                 user.id,
             )
-            return
+            raise SkipHandler
 
         now = time.monotonic()
         key = (message.chat.id, user.id)
@@ -129,12 +135,18 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
             _message_fingerprint(message),
             now,
         ):
-            return
+            # Let anti-link, bad-word and media-policy handlers inspect normal messages.
+            raise SkipHandler
 
+        logger.warning(
+            "Anti-spam flood threshold reached chat_id=%s user_id=%s",
+            message.chat.id,
+            user.id,
+        )
         try:
             await message.delete()
         except TelegramAPIError:
-            logger.debug(
+            logger.exception(
                 "Could not delete spam message chat_id=%s user_id=%s",
                 message.chat.id,
                 user.id,
@@ -171,5 +183,16 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
                 message.chat.id,
                 user.id,
             )
+            try:
+                await message.answer(premium_text(
+                    "⚠️ <b>Spam detected</b>\n\n"
+                    "Your messages were removed, but Telegram rejected the temporary mute. "
+                    "An administrator has been alerted."
+                ))
+            except TelegramAPIError:
+                logger.exception(
+                    "Could not report anti-spam restriction failure chat_id=%s",
+                    message.chat.id,
+                )
 
     return router
