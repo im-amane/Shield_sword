@@ -99,11 +99,10 @@ Confirmed:
 
 The owner-panel callback handler checked the owner identity first, but processed the `close` action before verifying that the callback message was in a private chat. This did not grant access to a non-owner, but it violated the panel's private-chat-only boundary.
 
-A draft PR moves the private-chat scope check ahead of every action and adds focused unit coverage:
+PR #1 moved the private-chat scope check ahead of every action and added focused unit coverage:
 - PR: https://github.com/im-amane/Shield_sword/pull/1
-- Branch: `research/panel-callback-hardening`
-- No merge or production deployment has been performed.
-- CI must pass before this change is considered ready.
+- Merged into `main` after CI passed.
+- Railway deployment succeeded with 1/1 replica online; live Telegram button smoke testing remains a manual gate.
 
 ## 5. Implementation decisions
 
@@ -125,10 +124,10 @@ A draft PR moves the private-chat scope check ahead of every action and adds foc
 
 ## 6. Next audit and integration sequence
 
-1. Complete CI for PR #1; fix any failures before proceeding.
-2. Add a read-only per-community detail view using existing chat-scoped storage APIs. Do not add toggles yet.
-3. Add tests proving two communities cannot read or change each other's settings.
-4. Design the callback action layer with a fresh permission check, audit event and confirmation.
+1. PR #1 callback hardening is merged and CI is green.
+2. A read-only per-community detail view is being implemented on `feature/community-panel-readonly` using chat-scoped storage queries.
+3. Tests cover two-community data isolation, pagination, escaped titles and read-only navigation.
+4. After this view is verified, design the callback action layer with fresh permission checks, audit events and confirmation.
 5. Complete encrypted-backup decrypt/integrity verification in an isolated temporary database.
 6. Only then enable per-community controls in a separate implementation PR.
 7. Deploy after CI and code review; live Telegram permission testing remains a manual gate.
