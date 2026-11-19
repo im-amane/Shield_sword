@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timezone
 from html import escape
+import time
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
@@ -18,9 +19,10 @@ from app.backup_crypto import backup_key_status, encrypt_backup
 from app.handlers.typography import premium_text
 from app.storage import (
     create_database_backup, get_audit_events, get_database_status,
-    get_known_groups, get_owner_security_summary, get_recent_member_joins,
-    get_recent_security_incidents, get_last_automatic_backup_at,
-    get_last_daily_report_at,
+    get_known_groups_count, get_known_groups_page,
+    get_group_protection_summary, get_owner_security_summary,
+    get_recent_member_joins, get_recent_security_incidents,
+    get_last_automatic_backup_at, get_last_daily_report_at,
 )
 
 
@@ -73,7 +75,10 @@ def dashboard_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-def section_text(section: str) -> str:
+GROUPS_PAGE_SIZE = 8
+
+
+def section_text(section: str, page: int = 0) -> str:
     stats = get_owner_security_summary()
     if section == "security":
         incidents = get_recent_security_incidents(8)
@@ -98,16 +103,23 @@ def section_text(section: str) -> str:
             )
         return premium_text("".join(lines)[:3900])
     if section == "groups":
-        groups = get_known_groups(20)
-        lines = ["👥 <b>Monitored Groups</b>\n\n"]
+        total = get_known_groups_count()
+        total_pages = max(1, (total + GROUPS_PAGE_SIZE - 1) // GROUPS_PAGE_SIZE)
+        page = min(max(int(page), 0), total_pages - 1)
+        groups = get_known_groups_page(GROUPS_PAGE_SIZE, page * GROUPS_PAGE_SIZE)
+        lines = [
+            "👥 <b>Monitored Communities</b>\\n\\n",
+            f"Showing {len(groups)} of {total} communities · Page {page + 1}/{total_pages}\\n\\n",
+        ]
         if not groups:
-            lines.append("No groups have been observed yet. Add the bot to a group and allow it to see member updates.")
-        for group in groups:
-            lines.append(
-                f"• <b>{escape(group['title'])}</b>\n"
-                f"  ID: <code>{group['chat_id']}</code>\n"
-                f"  Last seen: <code>{escape(group['last_seen'])}</code>\n"
-            )
+            lines.append("No communities have been observed yet. Add the bot to a group and allow it to see member updates.")
+        else:
+            lines.append("Select a community to inspect its protection status.\\n")
+            for group in groups:
+                lines.append(
+                    f"• <b>{escape(group['title'])}</b> · <code>{group['chat_id']}</code>\\n"
+                    f"  Last seen: <code>{escape(group['last_seen'])}</code>\\n"
+                )
         return premium_text("".join(lines)[:3900])
     if section == "activity":
         joins = get_recent_member_joins(12)
@@ -216,11 +228,90 @@ def section_text(section: str) -> str:
     return "Unknown panel section."
 
 
-def section_keyboard(section: str) -> InlineKeyboardMarkup:
+def section_keyboard(section: str, page: int = 0) -> InlineKeyboardMarkup:
+    if section == "groups":
+        total = get_known_groups_count()
+        total_pages = max(1, (total + GROUPS_PAGE_SIZE - 1) // GROUPS_PAGE_SIZE)
+        page = min(max(int(page), 0), total_pages - 1)
+        groups = get_known_groups_page(GROUPS_PAGE_SIZE, page * GROUPS_PAGE_SIZE)
+        rows = [
+            [InlineKeyboardButton(
+                text=f"🏠 {group['title'][:30]}",
+                callback_data=f"owner_panel:group:{group['chat_id']}:{page}",
+            )]
+            for group in groups
+        ]
+        if total_pages > 1:
+            navigation = []
+            if page > 0:
+                navigation.append(InlineKeyboardButton(
+                    text="⬅️ Previous", callback_data=f"owner_panel:groups_page:{page - 1}"
+                ))
+            if page < total_pages - 1:
+                navigation.append(InlineKeyboardButton(
+                    text="Next ➡️", callback_data=f"owner_panel:groups_page:{page + 1}"
+                ))
+            if navigation:
+                rows.append(navigation)
+        rows.append([
+            InlineKeyboardButton(text="⬅️ Dashboard", callback_data="owner_panel:home"),
+            InlineKeyboardButton(text="🔄 Refresh", callback_data=f"owner_panel:refresh_groups_page:{page}"),
+        ])
+        rows.append([InlineKeyboardButton(text="✖️ Close", callback_data="owner_panel:close")])
+        return InlineKeyboardMarkup(inline_keyboard=rows)
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="⬅️ Dashboard", callback_data="owner_panel:home"),
             InlineKeyboardButton(text="🔄 Refresh", callback_data=f"owner_panel:refresh_{section}"),
+        ],
+        [InlineKeyboardButton(text="✖️ Close", callback_data="owner_panel:close")],
+    ])
+
+
+def group_detail_text(chat_id: int) -> str | None:
+    """Render a read-only overview for a known community."""
+    group = get_group_protection_summary(chat_id)
+    if group is None:
+        return None
+    raid_remaining = max(0, int(group["raid_expires_at"] - time.time()))
+    raid_state = (
+        f"🚨 ACTIVE · {raid_remaining // 60}m {raid_remaining % 60}s remaining"
+        if group["active_raid"] else "🟢 Inactive"
+    )
+    def state(enabled: bool) -> str:
+        return "🟢 ON" if enabled else "🔴 OFF"
+    return premium_text(
+        "🏠 <b>Community Protection Overview</b>\\n\\n"
+        f"<b>{escape(group['title'])}</b>\\n"
+        f"Chat ID: <code>{group['chat_id']}</code>\\n"
+        f"Last seen: <code>{escape(group['last_seen'])}</code>\\n\\n"
+        "<b>Protection status</b>\\n"
+        f"• Anti-link: <b>{state(group['antilink_enabled'])}</b>\\n"
+        f"• Bad-word filter: <b>{state(group['badwords_enabled'])}</b>\\n"
+        f"• Media protection: <b>{state(group['copyright_enabled'])}</b>\\n"
+        f"• Raid mode: <b>{raid_state}</b>\\n"
+        "• Join CAPTCHA: <b>Permission-dependent</b>\\n\\n"
+        "<b>Community activity</b>\\n"
+        f"• Pending verifications: <b>{group['pending_verifications']}</b>\\n"
+        f"• Bad-word entries: <b>{group['badword_count']}</b>\\n"
+        f"• Allowed domains: <b>{group['allowed_domain_count']}</b>\\n"
+        f"• New members (24h): <b>{group['joins_24h']}</b>\\n"
+        f"• Security incidents (24h): <b>{group['incidents_24h']}</b>\\n\\n"
+        "<i>Read-only view. No community settings were changed.</i>"
+    )
+
+
+def group_detail_keyboard(chat_id: int, page: int = 0) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="⬅️ Communities",
+                callback_data=f"owner_panel:groups_page:{max(0, page)}",
+            ),
+            InlineKeyboardButton(
+                text="🔄 Refresh",
+                callback_data=f"owner_panel:refresh_group:{chat_id}:{max(0, page)}",
+            ),
         ],
         [InlineKeyboardButton(text="✖️ Close", callback_data="owner_panel:close")],
     ])
@@ -281,13 +372,42 @@ def create_panel_router(owner_id: int | None) -> Router:
                     dashboard_text(me.username, me.id, owner_id or 0),
                     reply_markup=dashboard_keyboard(),
                 )
+            elif action.startswith("groups_page:") or action.startswith("refresh_groups_page:"):
+                raw_page = action.split(":", 1)[1]
+                try:
+                    page = max(0, int(raw_page))
+                except ValueError:
+                    await callback.answer(premium_text("Invalid community page. 🔒"), show_alert=True)
+                    return
+                await callback.message.edit_text(
+                    section_text("groups", page),
+                    reply_markup=section_keyboard("groups", page),
+                )
+            elif action.startswith("group:") or action.startswith("refresh_group:"):
+                prefix = "refresh_group:" if action.startswith("refresh_group:") else "group:"
+                parts = action.removeprefix(prefix).split(":")
+                if len(parts) != 2:
+                    await callback.answer(premium_text("Invalid community selection. 🔒"), show_alert=True)
+                    return
+                try:
+                    chat_id, page = int(parts[0]), max(0, int(parts[1]))
+                except ValueError:
+                    await callback.answer(premium_text("Invalid community selection. 🔒"), show_alert=True)
+                    return
+                detail = group_detail_text(chat_id)
+                if detail is None:
+                    await callback.answer(premium_text("This community is no longer monitored."), show_alert=True)
+                    return
+                await callback.message.edit_text(
+                    detail, reply_markup=group_detail_keyboard(chat_id, page)
+                )
             elif action in {"security", "groups", "activity", "audit", "database", "configuration", "automation", "commands"}:
                 await callback.message.edit_text(
                     section_text(action), reply_markup=section_keyboard(action)
                 )
             elif action.startswith("refresh_"):
                 current = action.removeprefix("refresh_")
-                if current not in {"security", "groups", "activity", "audit", "database", "configuration", "automation", "commands"}:
+                if current not in {"security", "activity", "audit", "database", "configuration", "automation", "commands"}:
                     current = "security"
                 await callback.message.edit_text(
                     section_text(current), reply_markup=section_keyboard(current)
