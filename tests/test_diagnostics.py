@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 from aiogram.enums import ChatMemberStatus
 
-from app.handlers.diagnostics import permission_lines
+from app.handlers.diagnostics import format_member_status, permission_lines
 
 
 class PermissionDiagnosticsTests(unittest.TestCase):
@@ -34,6 +34,13 @@ class PermissionDiagnosticsTests(unittest.TestCase):
     def test_non_admin_is_reported(self):
         member = SimpleNamespace(status=ChatMemberStatus.MEMBER)
         self.assertEqual(permission_lines(member), ["❌ Bot is not an administrator"])
+
+    def test_status_formatter_accepts_enum_and_raw_string(self):
+        self.assertEqual(format_member_status(ChatMemberStatus.ADMINISTRATOR), "administrator")
+        self.assertEqual(format_member_status("administrator"), "administrator")
+
+    def test_status_formatter_escapes_untrusted_string(self):
+        self.assertEqual(format_member_status("<admin>"), "&lt;admin&gt;")
 
 
 if __name__ == "__main__":
