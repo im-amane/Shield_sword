@@ -44,6 +44,51 @@ class StorageTests(unittest.TestCase):
         storage.remove_badword(-100, "spoiler")
         self.assertEqual(storage.get_badwords(-100), set())
 
+    def test_group_dashboard_summary_is_scoped_and_read_only(self) -> None:
+        import time
+
+        storage.register_group(-100, "Ani World")
+        storage.register_group(-200, "Other Group")
+        storage.set_feature_enabled("antilink", -100, False)
+        storage.add_badword(-100, "spoiler")
+        storage.add_allowed_domain(-100, "example.com")
+        storage.set_raid_expiry(-100, time.time() + 120)
+        storage.save_verification(-100, 7, 2, int(time.time()) + 60, {})
+        storage.record_member_join(-100, "Ani World", 7, "member", "Member")
+        storage.record_security_incident(-100, "Ani World", "anti_spam")
+
+        summary = storage.get_group_protection_summary(-100)
+        self.assertIsNotNone(summary)
+        self.assertEqual(summary["title"], "Ani World")
+        self.assertFalse(summary["antilink_enabled"])
+        self.assertTrue(summary["badwords_enabled"])
+        self.assertTrue(summary["copyright_enabled"])
+        self.assertEqual(summary["badword_count"], 1)
+        self.assertEqual(summary["allowed_domain_count"], 1)
+        self.assertEqual(summary["pending_verifications"], 1)
+        self.assertTrue(summary["active_raid"])
+        self.assertEqual(summary["joins_24h"], 1)
+        self.assertEqual(summary["incidents_24h"], 1)
+
+        other = storage.get_group_protection_summary(-200)
+        self.assertTrue(other["antilink_enabled"])
+        self.assertEqual(other["badword_count"], 0)
+        self.assertEqual(other["allowed_domain_count"], 0)
+        self.assertEqual(other["pending_verifications"], 0)
+        self.assertFalse(other["active_raid"])
+        self.assertEqual(other["joins_24h"], 0)
+        self.assertEqual(other["incidents_24h"], 0)
+        self.assertIsNone(storage.get_group_protection_summary(-300))
+
+    def test_known_group_pages_are_bounded_and_counted(self) -> None:
+        for chat_id in range(-100, -112, -1):
+            storage.register_group(chat_id, f"Group {chat_id}")
+        self.assertEqual(storage.get_known_groups_count(), 12)
+        self.assertEqual(len(storage.get_known_groups_page(5, 0)), 5)
+        self.assertEqual(len(storage.get_known_groups_page(5, 5)), 5)
+        self.assertEqual(len(storage.get_known_groups_page(5, 10)), 2)
+        self.assertEqual(storage.get_known_groups_page(5, -10), storage.get_known_groups_page(5, 0))
+
     def test_verification_challenge_persists_and_expires(self) -> None:
         permissions = {"can_send_messages": False}
         storage.save_verification(-100, 7, 2, 500, permissions)
