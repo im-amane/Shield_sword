@@ -15,7 +15,7 @@ from app.handlers.typography import premium_text
 def permission_lines(member) -> list[str]:
     """Describe the Telegram rights needed by Guardian's active protections."""
     if member.status == ChatMemberStatus.CREATOR:
-        return ["✅ Delete messages · Full rights", "✅ Restrict members · Full rights"]
+        return ["✅ Group owner: full administrator rights"]
     if member.status != ChatMemberStatus.ADMINISTRATOR:
         return ["❌ Bot is not an administrator"]
     checks = (
