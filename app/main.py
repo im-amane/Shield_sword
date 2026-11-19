@@ -67,6 +67,7 @@ async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
                 document=BufferedInputFile(
                     snapshot, filename=f"aniworld-security-backup-{stamp}.sqlite3.awb"
                 ),
+                protect_content=True,
                 caption=premium_text(
                     "🛡️ <b>Automatic Weekly Database Backup</b>\n\n"
                     "An AES-256-GCM encrypted, integrity-verified backup is attached. The next automatic backup is scheduled in 7 days. Keep it private and safe. 🔐"
@@ -123,7 +124,7 @@ async def run() -> None:
     settings = load_settings()
     bot = Bot(
         token=settings.bot_token,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML, protect_content=True),
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML, protect_content=False),
     )
     install_ui_middleware(bot)
     dispatcher = Dispatcher()
