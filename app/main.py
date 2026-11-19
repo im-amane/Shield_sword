@@ -131,7 +131,10 @@ async def run() -> None:
     # Observe every message update before router filters, including /commands.
     # This makes group discovery independent of new-member joins or anti-spam hits.
     dispatcher.message.outer_middleware(GroupRegistryMiddleware())
-    # Anti-spam runs first so media updates are checked before the media-policy\n    # router consumes them. Non-spam updates raise SkipHandler and continue.\n    dispatcher.include_router(create_antispam_router(settings.owner_id))\n    dispatcher.include_router(create_ui_router())
+    # Anti-spam runs first so media updates are checked before the media-policy
+    # router consumes them. Non-spam updates raise SkipHandler and continue.
+    dispatcher.include_router(create_antispam_router(settings.owner_id))
+    dispatcher.include_router(create_ui_router())
     dispatcher.include_router(start_router)
     dispatcher.include_router(create_utility_router())
     dispatcher.include_router(create_diagnostics_router())
@@ -147,9 +150,6 @@ async def run() -> None:
     dispatcher.include_router(create_copyright_router())
     dispatcher.include_router(create_antilink_router())
     dispatcher.include_router(create_raid_router(settings.owner_id))
-    # Anti-spam is deliberately last: its broad group-message filter must not
-    # swallow updates before the more specific link/content protection routers.
-    dispatcher.include_router(create_antispam_router(settings.owner_id))
 
     backup_task = (
         asyncio.create_task(automatic_backup_loop(bot, settings.owner_id))
