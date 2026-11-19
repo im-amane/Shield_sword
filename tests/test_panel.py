@@ -3,11 +3,21 @@ import os
 import unittest
 from unittest.mock import patch
 
-from app.handlers.panel import dashboard_keyboard, dashboard_text, section_keyboard, section_text
+from app.handlers.panel import (
+    can_access_panel_callback, dashboard_keyboard, dashboard_text,
+    section_keyboard, section_text,
+)
 from app.handlers.typography import premium_text
 
 
 class DashboardTests(unittest.TestCase):
+    def test_panel_callbacks_require_owner_and_private_chat(self) -> None:
+        self.assertTrue(can_access_panel_callback(987654321, 987654321, "private"))
+        self.assertFalse(can_access_panel_callback(987654321, 987654321, "group"))
+        self.assertFalse(can_access_panel_callback(123, 987654321, "private"))
+        self.assertFalse(can_access_panel_callback(None, 987654321, "private"))
+        self.assertFalse(can_access_panel_callback(987654321, None, "private"))
+
     def test_dashboard_includes_runtime_identity_and_security_stats(self) -> None:
         text = dashboard_text("ani_world_bot", 112233, 987654321)
         self.assertIn("@ani_world_bot", text)

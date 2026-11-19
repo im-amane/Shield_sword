@@ -226,6 +226,13 @@ def section_keyboard(section: str) -> InlineKeyboardMarkup:
     ])
 
 
+def can_access_panel_callback(
+    user_id: int | None, owner_id: int | None, chat_type: str
+) -> bool:
+    """Allow owner-panel callbacks only from the configured owner in private chat."""
+    return chat_type == "private" and is_owner(user_id, owner_id)
+
+
 def create_panel_router(owner_id: int | None) -> Router:
     router = Router(name="owner_panel")
 
@@ -252,20 +259,20 @@ def create_panel_router(owner_id: int | None) -> Router:
 
     @router.callback_query(F.data.startswith("owner_panel:"))
     async def panel_callback(callback: CallbackQuery) -> None:
-        if not authorized(callback.from_user.id if callback.from_user else None):
-            await callback.answer(premium_text("Access denied. 🔒"), show_alert=True)
-            return
-        action = (callback.data or "").split(":", 1)[1]
-        if action == "close":
-            if callback.message:
-                await callback.message.delete()
-            await callback.answer(premium_text("Panel closed. 👋"))
-            return
         if not callback.message:
             await callback.answer()
             return
-        if callback.message.chat.type != "private":
-            await callback.answer(premium_text("Open the owner panel in private chat. 🔒"), show_alert=True)
+        user_id = callback.from_user.id if callback.from_user else None
+        if not can_access_panel_callback(user_id, owner_id, callback.message.chat.type):
+            await callback.answer(
+                premium_text("Access denied. Open the owner panel in private chat. 🔒"),
+                show_alert=True,
+            )
+            return
+        action = (callback.data or "").split(":", 1)[1]
+        if action == "close":
+            await callback.message.delete()
+            await callback.answer(premium_text("Panel closed. 👋"))
             return
         try:
             if action == "home" or action == "refresh":
