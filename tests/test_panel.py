@@ -97,7 +97,7 @@ class DashboardTests(unittest.TestCase):
         self.assertIn("owner_panel:group:-100:1", callbacks)
         self.assertIn("owner_panel:groups_page:0", callbacks)
         self.assertIn("owner_panel:refresh_groups_page:1", callbacks)
-        self.assertIn("Page 2/2", text)
+        self.assertIn(premium_text("Page 2/2"), text)
 
     def test_community_detail_is_read_only_and_escapes_title(self) -> None:
         with patch("app.handlers.panel.get_group_protection_summary", return_value={
@@ -110,9 +110,9 @@ class DashboardTests(unittest.TestCase):
         }):
             text = group_detail_text(-100)
             markup = group_detail_keyboard(-100, page=2)
-        self.assertIn("&lt;Group&gt;", text)
-        self.assertIn("Permission-dependent", text)
-        self.assertIn("Read-only view", text)
+        self.assertIn(premium_text("&lt;Group&gt;"), text)
+        self.assertIn(premium_text("Permission-dependent"), text)
+        self.assertIn(premium_text("Read-only view"), text)
         callbacks = [
             button.callback_data
             for row in markup.inline_keyboard
