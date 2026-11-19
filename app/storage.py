@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS pending_verifications (
     correct_index INTEGER NOT NULL,
     expires_at INTEGER NOT NULL,
     permissions_json TEXT NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (chat_id, user_id)
 );
 CREATE TABLE IF NOT EXISTS raid_joins (
@@ -157,6 +158,9 @@ def _connection():
             db.execute("PRAGMA journal_mode=WAL")
             db.execute("PRAGMA synchronous=NORMAL")
             db.executescript(SCHEMA_SQL)
+            columns = {row[1] for row in db.execute("PRAGMA table_info(pending_verifications)")}
+            if "attempts" not in columns:
+                db.execute("ALTER TABLE pending_verifications ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0")
             _initialized_path = DB_PATH
         yield db
         db.commit()
@@ -281,7 +285,8 @@ def save_verification(chat_id: int, user_id: int, correct_index: int,
                ON CONFLICT(chat_id, user_id) DO UPDATE SET
                  correct_index=excluded.correct_index,
                  expires_at=excluded.expires_at,
-                 permissions_json=excluded.permissions_json""",
+                 permissions_json=excluded.permissions_json,
+                 attempts=0""",
             (chat_id, user_id, correct_index, expires_at,
              json.dumps(permissions, separators=(",", ":"))),
         )
@@ -290,14 +295,28 @@ def save_verification(chat_id: int, user_id: int, correct_index: int,
 def get_verification(chat_id: int, user_id: int) -> dict | None:
     with _connection() as db:
         row = db.execute(
-            """SELECT correct_index, expires_at, permissions_json
+            """SELECT correct_index, expires_at, permissions_json, attempts
                FROM pending_verifications WHERE chat_id=? AND user_id=?""",
             (chat_id, user_id),
         ).fetchone()
     if not row:
         return None
     return {"correct_index": int(row[0]), "expires_at": int(row[1]),
-            "permissions": json.loads(row[2])}
+            "permissions": json.loads(row[2]), "attempts": int(row[3])}
+
+
+def increment_verification_attempt(chat_id: int, user_id: int) -> int:
+    """Atomically count a wrong CAPTCHA answer for one member in one chat."""
+    with _connection() as db:
+        db.execute(
+            "UPDATE pending_verifications SET attempts=attempts+1 WHERE chat_id=? AND user_id=?",
+            (chat_id, user_id),
+        )
+        row = db.execute(
+            "SELECT attempts FROM pending_verifications WHERE chat_id=? AND user_id=?",
+            (chat_id, user_id),
+        ).fetchone()
+    return int(row[0]) if row else 0
 
 
 def delete_verification(chat_id: int, user_id: int) -> None:
