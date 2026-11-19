@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from app.handlers.panel import (
     can_access_panel_callback, dashboard_keyboard, dashboard_text,
-    section_keyboard, section_text,
+    group_detail_keyboard, group_detail_text, section_keyboard, section_text,
 )
 from app.handlers.typography import premium_text
 
@@ -78,6 +78,53 @@ class DashboardTests(unittest.TestCase):
     def test_command_index_and_automation_sections_exist(self) -> None:
         self.assertIn("channelprotect", section_text("commands"))
         self.assertIn(premium_text("Weekly encrypted backup"), section_text("automation"))
+
+    def test_community_list_has_pagination_and_scoped_buttons(self) -> None:
+        groups = [
+            {"chat_id": -100 - index, "title": f"Group {index}", "last_seen": "now"}
+            for index in range(8)
+        ]
+        with patch("app.handlers.panel.get_known_groups_count", return_value=16), patch(
+            "app.handlers.panel.get_known_groups_page", return_value=groups
+        ):
+            markup = section_keyboard("groups", page=1)
+            text = section_text("groups", page=1)
+        callbacks = [
+            button.callback_data
+            for row in markup.inline_keyboard
+            for button in row
+        ]
+        self.assertIn("owner_panel:group:-100:1", callbacks)
+        self.assertIn("owner_panel:groups_page:0", callbacks)
+        self.assertIn("owner_panel:refresh_groups_page:1", callbacks)
+        self.assertIn(premium_text("Page 2/2"), text)
+
+    def test_community_detail_is_read_only_and_escapes_title(self) -> None:
+        with patch("app.handlers.panel.get_group_protection_summary", return_value={
+            "chat_id": -100, "title": "<Group>", "last_seen": "today",
+            "antilink_enabled": True, "badwords_enabled": False,
+            "copyright_enabled": True, "badword_count": 2,
+            "allowed_domain_count": 1, "pending_verifications": 3,
+            "active_raid": False, "raid_expires_at": 0,
+            "joins_24h": 4, "incidents_24h": 1,
+        }):
+            text = group_detail_text(-100)
+            markup = group_detail_keyboard(-100, page=2)
+        self.assertIn(premium_text("&lt;Group&gt;"), text)
+        self.assertIn(premium_text("Permission-dependent"), text)
+        self.assertIn(premium_text("Read-only view"), text)
+        callbacks = [
+            button.callback_data
+            for row in markup.inline_keyboard
+            for button in row
+        ]
+        self.assertIn("owner_panel:groups_page:2", callbacks)
+        self.assertIn("owner_panel:refresh_group:-100:2", callbacks)
+        self.assertFalse(any(":toggle:" in item for item in callbacks))
+
+    def test_unknown_community_has_no_detail_view(self) -> None:
+        with patch("app.handlers.panel.get_group_protection_summary", return_value=None):
+            self.assertIsNone(group_detail_text(-999))
 
     def test_section_keyboard_returns_to_dashboard(self) -> None:
         callbacks = [

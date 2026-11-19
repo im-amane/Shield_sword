@@ -477,6 +477,83 @@ def get_known_groups(limit: int = 20) -> list[dict]:
     return [dict(chat_id=row[0], title=row[1], last_seen=row[2]) for row in rows]
 
 
+def get_known_groups_page(limit: int = 8, offset: int = 0) -> list[dict]:
+    """Return one bounded page of monitored communities."""
+    limit = max(1, min(int(limit), 20))
+    offset = max(0, int(offset))
+    with _connection() as db:
+        rows = db.execute(
+            "SELECT chat_id, title, last_seen FROM known_groups "
+            "ORDER BY last_seen DESC, chat_id LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+    return [dict(chat_id=row[0], title=row[1], last_seen=row[2]) for row in rows]
+
+
+def get_known_groups_count() -> int:
+    with _connection() as db:
+        row = db.execute("SELECT COUNT(*) FROM known_groups").fetchone()
+    return int(row[0])
+
+
+def get_group_protection_summary(chat_id: int) -> dict | None:
+    """Return read-only, chat-scoped protection status for a known community."""
+    with _connection() as db:
+        group = db.execute(
+            "SELECT title, last_seen FROM known_groups WHERE chat_id=?", (chat_id,)
+        ).fetchone()
+        if group is None:
+            return None
+
+        def enabled(table: str) -> bool:
+            row = db.execute(
+                f"SELECT enabled FROM {table} WHERE chat_id=?", (chat_id,)
+            ).fetchone()
+            return bool(row[0]) if row else True
+
+        badword_count = db.execute(
+            "SELECT COUNT(*) FROM badwords WHERE chat_id=?", (chat_id,)
+        ).fetchone()[0]
+        domain_count = db.execute(
+            "SELECT COUNT(*) FROM allowed_domains WHERE chat_id=?", (chat_id,)
+        ).fetchone()[0]
+        pending_count = db.execute(
+            "SELECT COUNT(*) FROM pending_verifications WHERE chat_id=?", (chat_id,)
+        ).fetchone()[0]
+        raid = db.execute(
+            "SELECT expires_at FROM raid_modes WHERE chat_id=?", (chat_id,)
+        ).fetchone()
+        joins_24h = db.execute(
+            "SELECT COUNT(*) FROM member_join_events WHERE chat_id=? "
+            "AND datetime(joined_at) >= datetime('now', '-1 day')", (chat_id,)
+        ).fetchone()[0]
+        incidents_24h = db.execute(
+            "SELECT COUNT(*) FROM security_incidents WHERE chat_id=? "
+            "AND datetime(created_at) >= datetime('now', '-1 day')", (chat_id,)
+        ).fetchone()[0]
+
+        antilink_enabled = enabled("antilink_settings")
+        badwords_enabled = enabled("badword_settings")
+        copyright_enabled = enabled("copyright_settings")
+
+    raid_until = float(raid[0]) if raid else 0.0
+    return {
+        "chat_id": int(chat_id),
+        "title": str(group[0]),
+        "last_seen": str(group[1]),
+        "antilink_enabled": antilink_enabled,
+        "badwords_enabled": badwords_enabled,
+        "copyright_enabled": copyright_enabled,
+        "badword_count": int(badword_count),
+        "allowed_domain_count": int(domain_count),
+        "pending_verifications": int(pending_count),
+        "active_raid": raid_until > time.time(),
+        "raid_expires_at": raid_until,
+        "joins_24h": int(joins_24h),
+        "incidents_24h": int(incidents_24h),
+    }
+
+
 def get_owner_security_summary() -> dict:
     """Return aggregated security counters for the owner dashboard."""
     with _connection() as db:
