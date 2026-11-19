@@ -21,12 +21,14 @@ from aiogram.types import (
 from app.handlers.typography import premium_text
 from app.storage import (
     delete_verification, get_expired_verifications, get_verification,
-    record_audit_event, record_security_incident, save_verification,
+    increment_verification_attempt, record_audit_event,
+    record_security_incident, save_verification,
 )
 
 logger = logging.getLogger(__name__)
 CHALLENGE_TTL_SECONDS = 180
 EXPIRY_CHECK_INTERVAL_SECONDS = 10
+MAX_WRONG_ATTEMPTS = 5
 
 _SEND_PERMISSION_FIELDS = (
     "can_send_messages",
@@ -224,7 +226,47 @@ def create_verification_router() -> Router:
             return
 
         if selected_index != int(state["correct_index"]):
-            await callback.answer(premium_text("Not quite! Give it another try. 😊"), show_alert=True)
+            attempts = increment_verification_attempt(chat_id, user_id)
+            if attempts >= MAX_WRONG_ATTEMPTS:
+                try:
+                    await callback.bot.ban_chat_member(
+                        chat_id=chat_id, user_id=user_id, revoke_messages=False
+                    )
+                    await callback.bot.unban_chat_member(
+                        chat_id=chat_id, user_id=user_id, only_if_banned=True
+                    )
+                    delete_verification(chat_id, user_id)
+                    record_audit_event(
+                        chat_id, "captcha_attempt_limit_removal", None, user_id,
+                        f"Removed after {attempts} incorrect CAPTCHA answers",
+                    )
+                    record_security_incident(
+                        chat_id, "Telegram group", "captcha_attempt_limit",
+                        "medium", user_id,
+                        details=f"Member removed after {attempts} incorrect CAPTCHA answers",
+                    )
+                    await callback.answer(
+                        premium_text("⛔ Too many incorrect answers. You have been removed; rejoin to try again."),
+                        show_alert=True,
+                    )
+                    await callback.message.edit_text(premium_text(
+                        "⛔ Verification failed. The member was removed after too many incorrect answers."
+                    ))
+                except TelegramAPIError:
+                    logger.exception(
+                        "Could not remove member after CAPTCHA attempt limit user_id=%s chat_id=%s",
+                        user_id, chat_id,
+                    )
+                    await callback.answer(
+                        premium_text("⛔ Too many incorrect answers. Removal failed; please contact a group admin."),
+                        show_alert=True,
+                    )
+                return
+            remaining = MAX_WRONG_ATTEMPTS - attempts
+            await callback.answer(
+                premium_text(f"Not quite! Try again. {remaining} attempt(s) remaining. 😊"),
+                show_alert=True,
+            )
             return
 
         try:

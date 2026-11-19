@@ -94,14 +94,20 @@ class StorageTests(unittest.TestCase):
         storage.save_verification(-100, 7, 2, 500, permissions)
         self.assertEqual(
             storage.get_verification(-100, 7),
-            {"correct_index": 2, "expires_at": 500, "permissions": permissions},
+            {"correct_index": 2, "expires_at": 500, "permissions": permissions, "attempts": 0},
         )
         self.assertEqual(
             storage.get_expired_verifications(500),
             [{"chat_id": -100, "user_id": 7, "expires_at": 500}],
         )
         self.assertEqual(storage.get_expired_verifications(499), [])
-        storage.cleanup_verifications(500)
+        self.assertEqual(storage.increment_verification_attempt(-100, 7), 1)
+        self.assertEqual(storage.increment_verification_attempt(-100, 7), 2)
+        self.assertEqual(storage.increment_verification_attempt(-200, 7), 0)
+        self.assertEqual(storage.get_verification(-100, 7)["attempts"], 2)
+        storage.save_verification(-100, 7, 1, 600, permissions)
+        self.assertEqual(storage.get_verification(-100, 7)["attempts"], 0)
+        storage.cleanup_verifications(600)
         self.assertIsNone(storage.get_verification(-100, 7))
 
     def test_security_audit_is_bounded_and_readable(self) -> None:
