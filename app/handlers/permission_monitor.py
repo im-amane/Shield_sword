@@ -8,7 +8,7 @@ from aiogram.enums import ChatMemberStatus, ChatType
 from aiogram.types import ChatMemberUpdated
 
 from app.handlers.typography import premium_text
-from app.storage import record_audit_event, record_security_incident
+from app.storage import record_audit_event, record_security_incident, register_group
 
 
 _REQUIRED_RIGHTS = (
@@ -64,6 +64,8 @@ def create_permission_monitor_router(owner_id: int | None) -> Router:
     async def bot_membership_changed(update: ChatMemberUpdated) -> None:
         if update.chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP, ChatType.CHANNEL):
             return
+        if update.chat.type in (ChatType.GROUP, ChatType.SUPERGROUP):
+            register_group(update.chat.id, update.chat.title or "Telegram group")
         changes = permission_change_summary(update)
         if not changes:
             return

@@ -40,6 +40,7 @@ from app.storage import (
     get_last_daily_report_at, set_last_daily_report_at, get_owner_security_summary,
 )
 from app.handlers.typography import premium_text
+from app.group_registry import GroupRegistryMiddleware
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 BACKUP_INTERVAL_SECONDS = 7 * 24 * 60 * 60
@@ -126,6 +127,9 @@ async def run() -> None:
     )
     install_ui_middleware(bot)
     dispatcher = Dispatcher()
+    # Observe every message update before router filters, including /commands.
+    # This makes group discovery independent of new-member joins or anti-spam hits.
+    dispatcher.message.outer_middleware(GroupRegistryMiddleware())
     dispatcher.include_router(create_ui_router())
     dispatcher.include_router(start_router)
     dispatcher.include_router(create_utility_router())
