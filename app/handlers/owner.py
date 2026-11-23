@@ -1,5 +1,6 @@
-"""Owner-only identity check command."""
+"""Owner-only identity, audit, database and backup commands."""
 from html import escape
+from io import BytesIO
 
 from aiogram import Router
 from aiogram.filters import Command
@@ -7,9 +8,12 @@ from aiogram.enums import ChatType
 from aiogram.types import BufferedInputFile, Message
 
 from app.security.owner import is_owner
-from app.backup_crypto import encrypt_backup
+from app.backup_crypto import decrypt_backup, encrypt_backup
 from app.handlers.typography import premium_text
-from app.storage import create_database_backup, get_audit_events, get_database_status
+from app.storage import (
+    create_database_backup, get_audit_events, get_database_status,
+    verify_database_backup,
+)
 
 
 def create_owner_router(owner_id: int | None) -> Router:
@@ -93,6 +97,56 @@ def create_owner_router(owner_id: int | None) -> Router:
             )
         except Exception:
             await message.answer(premium_text("❌ <b>Backup Failed</b>\n\nCheck the service logs and database storage."))
+            raise
+
+    @router.message(Command("backupverify"))
+    async def backup_verify_command(message: Message) -> None:
+        if message.chat.type != ChatType.PRIVATE:
+            await message.answer(premium_text("🔒 Use /backupverify in my private chat."))
+            return
+        user_id = message.from_user.id if message.from_user else None
+        if not is_owner(user_id, owner_id):
+            await message.answer(premium_text("🔒 <b>Owner Access Only</b>"))
+            return
+
+        document = message.reply_to_message.document if message.reply_to_message else None
+        if document is None:
+            await message.answer(premium_text(
+                "🔐 <b>Backup Recovery Check</b>\n\n"
+                "Forward or upload your encrypted <code>.awb</code> backup here, then reply to that file with /backupverify. "
+                "The file will be decrypted and restored only into an isolated temporary database. The live database will not be changed."
+            ))
+            return
+        if document.file_size is not None and document.file_size > 20 * 1024 * 1024:
+            await message.answer(premium_text("❌ Backup file exceeds Telegram's 20 MB download limit."))
+            return
+        filename = (document.file_name or "").lower()
+        if not filename.endswith(".awb"):
+            await message.answer(premium_text("❌ Expected an encrypted .awb backup file."))
+            return
+
+        try:
+            telegram_file = await message.bot.get_file(document.file_id)
+            if not telegram_file.file_path:
+                raise ValueError("Telegram did not provide a download path")
+            buffer = BytesIO()
+            await message.bot.download_file(telegram_file.file_path, destination=buffer)
+            plaintext = decrypt_backup(buffer.getvalue())
+            result = verify_database_backup(plaintext)
+            await message.answer(premium_text(
+                "✅ <b>Backup Recovery Verification: PASS</b>\n\n"
+                "🔐 AES-256-GCM authentication: passed\n"
+                f"🗄️ SQLite integrity: <code>{escape(result['integrity'])}</code>\n"
+                f"📚 Tables restored: <code>{result['table_count']}</code>\n"
+                "🧪 Isolated restore: successful\n"
+                "🛡️ Live database: unchanged"
+            ))
+        except Exception:
+            await message.answer(premium_text(
+                "❌ <b>Backup Recovery Verification: FAILED</b>\n\n"
+                "The file could not be authenticated or restored. The live database was not modified. "
+                "Check that the correct backup key is configured and the file is intact."
+            ))
             raise
 
     return router
