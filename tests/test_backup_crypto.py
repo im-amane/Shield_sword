@@ -50,13 +50,13 @@ class BackupCryptoTests(unittest.TestCase):
             self.assertEqual(decrypt_backup(legacy_payload), SNAPSHOT)
             self.assertEqual(decrypt_backup(encrypt_backup(SNAPSHOT)), SNAPSHOT)
 
-    def test_previous_key_alone_cannot_encrypt_new_backups(self):
+    def test_previous_key_alone_can_decrypt_but_not_encrypt(self):
+        with patch.dict(os.environ, {"BACKUP_ENCRYPTION_KEY": KEY_A}, clear=True):
+            legacy_payload = encrypt_backup(SNAPSHOT)
         with patch.dict(os.environ, {"BACKUP_ENCRYPTION_KEY_PREVIOUS": KEY_A}, clear=True):
+            self.assertEqual(decrypt_backup(legacy_payload), SNAPSHOT)
             with self.assertRaises(BackupEncryptionError):
                 encrypt_backup(SNAPSHOT)
-            self.assertEqual(decrypt_backup(
-                b"AWB1" + b"\x00" * 12 + b"not-a-valid-tag"
-            ) if False else True, True)
 
     def test_malformed_previous_key_fails_closed(self):
         with patch.dict(os.environ, {
