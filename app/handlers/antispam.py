@@ -12,6 +12,7 @@ from aiogram.types import ChatPermissions, Message
 
 from app.security.owner import is_owner
 from app.handlers.typography import premium_text
+from app.handlers.card_helpers import send_category_card
 from app.storage import (
     claim_antispam_mute,
     clear_antispam_mute,
@@ -149,6 +150,7 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
                 user.id,
             )
             try:
+                await send_category_card(message, "warning", "Anti-spam Alert", "Automatic flood protection")
                 await message.answer(premium_text(
                     "⚠️ <b>Spam detected</b>\n\n"
                     "Your messages were removed, but Telegram rejected the temporary mute. "
