@@ -1,7 +1,7 @@
 """Unit tests for NVIDIA NIM safety parsing and request limits."""
 import unittest
 
-from app.ai_guard import AiScanLimiter, parse_safety_result
+from app.ai_guard import AiScanLimiter, NimSafetyClient, parse_safety_result
 
 
 class AiGuardTests(unittest.TestCase):
@@ -24,6 +24,10 @@ class AiGuardTests(unittest.TestCase):
         self.assertIsNone(parse_safety_result("unsafe"))
         self.assertIsNone(parse_safety_result('{"User Safety":"maybe"}'))
         self.assertIsNone(parse_safety_result('{"User Safety":"unsafe"'))
+
+    def test_safety_client_allows_eight_second_timeout_and_caps_it(self):
+        self.assertEqual(NimSafetyClient("key", timeout=8.0).timeout, 8.0)
+        self.assertEqual(NimSafetyClient("key", timeout=12.0).timeout, 8.0)
 
     def test_scan_limiter_enforces_user_chat_and_global_limits(self):
         limiter = AiScanLimiter()
