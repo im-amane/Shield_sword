@@ -40,6 +40,18 @@ class AiGuardTests(unittest.TestCase):
         self.assertTrue(limiter.allow(-100, 2, now=10.3))
         self.assertTrue(limiter.allow(-200, 3, now=10.6))
 
+    def test_channel_posts_are_not_subject_to_per_user_eight_second_throttle(self):
+        limiter = AiScanLimiter()
+        self.assertTrue(limiter.allow_channel_post(-100, now=20.0))
+        self.assertTrue(limiter.allow_channel_post(-100, now=20.3))
+        self.assertTrue(limiter.allow_channel_post(-100, now=20.6))
+
+    def test_channel_post_still_obeys_global_pacing(self):
+        limiter = AiScanLimiter()
+        self.assertTrue(limiter.allow_channel_post(-100, now=30.0))
+        self.assertFalse(limiter.allow_channel_post(-200, now=30.1))
+        self.assertTrue(limiter.allow_channel_post(-200, now=30.3))
+
     def test_safety_client_retries_transient_gateway_failure_once(self):
         client = NimSafetyClient("guardian-key")
         error = urllib.error.HTTPError(
