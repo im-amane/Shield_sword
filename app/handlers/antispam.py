@@ -1,6 +1,7 @@
 """Basic anti-spam and flood protection for group chats."""
 from __future__ import annotations
 
+import hashlib
 import logging
 import time
 
@@ -28,7 +29,6 @@ MAX_MESSAGES_IN_WINDOW = 6
 DUPLICATE_WINDOW_SECONDS = 20
 MAX_IDENTICAL_MESSAGES = 3
 MUTE_SECONDS = 60
-STATE_TTL_SECONDS = 120
 
 _SEND_PERMISSION_FIELDS = (
     "can_send_messages",
@@ -55,9 +55,9 @@ def _is_privileged_member(member: object) -> bool:
 
 
 def _message_fingerprint(message: Message) -> str:
-    """Create a lightweight fingerprint from text or caption."""
-    value = message.text or message.caption or ""
-    return " ".join(value.casefold().split())[:500]
+    """Hash normalized text so duplicate detection never persists message content."""
+    value = " ".join((message.text or message.caption or "").casefold().split())[:500]
+    return hashlib.sha256(value.encode("utf-8")).hexdigest() if value else ""
 
 
 def create_antispam_router(owner_id: int | None = None) -> Router:
