@@ -109,7 +109,7 @@ def start_keyboard(bot_username: str | None = None) -> InlineKeyboardMarkup:
                 ) if owner_url else InlineKeyboardButton(
                     text="👑 Owner", callback_data="start:owner"
                 ),
-                InlineKeyboardButton(text="🛡️ My Promise", callback_data="start:about"),
+                InlineKeyboardButton(text="🛡️ About Sentinel", callback_data="start:about"),
             ],
             [
                 InlineKeyboardButton(
