@@ -3,7 +3,9 @@ import os
 import unittest
 from unittest.mock import patch
 
-from app.handlers.start import (\n    _public_url, group_start_keyboard, group_start_text, start_keyboard, start_text,\n)
+from app.handlers.start import (
+    _public_url, group_start_keyboard, group_start_text, start_keyboard, start_text,
+)
 
 
 class StartMenuTests(unittest.TestCase):
