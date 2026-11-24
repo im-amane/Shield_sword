@@ -24,6 +24,16 @@ class LoadSettingsTests(unittest.TestCase):
             settings = load_settings()
         self.assertEqual(settings.owner_id, 987654)
 
+    def test_ai_chat_can_be_enabled_independently(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"BOT_TOKEN": "123:abc", "AI_CHAT_ENABLED": "true", "AI_GUARD_ENABLED": "false"},
+            clear=True,
+        ):
+            settings = load_settings()
+        self.assertTrue(settings.ai_chat_enabled)
+        self.assertFalse(settings.ai_guard_enabled)
+
     def test_welcome_is_not_limited_by_environment_allowlist(self) -> None:
         with patch.dict(
             os.environ,
