@@ -128,7 +128,7 @@ def help_text() -> str:
         "Sentinel ke group security, moderation aur owner controls yahan milenge.\n\n"
         "🛡️ Automated protection · 🧠 AI safety checks\n"
         "👮 Moderation · 👑 Owner control center\n\n"
-        "AI Guard scans text and captions when enabled. Normal media is not blanket-deleted.\n\n"
+        "AI Guard checks group messages and channel posts containing text or captions when enabled. Normal media is not blanket-deleted.\n\n"
         "<i>Har section mein command usage aur required permissions di gayi hain.</i>"
     )
 
