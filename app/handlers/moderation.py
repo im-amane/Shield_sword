@@ -12,6 +12,7 @@ from aiogram.filters import Command
 from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
+from app.handlers.card_helpers import send_category_card
 from app.storage import record_audit_event
 
 _DURATION = re.compile(r"^(\d+)(s|m|h|d)$", re.IGNORECASE)
@@ -137,6 +138,7 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
         return target
 
     @router.message(Command("mute"))
+    await send_category_card(message, "moderation", "/mute", "Member moderation and admin actions")
     async def mute_command(message: Message) -> None:
         if not await require_admin(message):
             return
@@ -168,6 +170,7 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
         ))
 
     @router.message(Command("unmute"))
+    await send_category_card(message, "moderation", "/unmute", "Member moderation and admin actions")
     async def unmute_command(message: Message) -> None:
         if not await require_admin(message):
             return
@@ -189,6 +192,7 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
         await message.answer(premium_text(f"🔊 <b>Member Unmuted</b>\n\n👤 {escape(target.full_name)} can chat again. 💬"))
 
     @router.message(Command("ban"))
+    await send_category_card(message, "moderation", "/ban", "Member moderation and admin actions")
     async def ban_command(message: Message) -> None:
         if not await require_admin(message):
             return
@@ -204,6 +208,7 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
         await message.answer(premium_text(f"⛔ <b>Member Banned</b>\n\n👤 {escape(target.full_name)} has been removed from the group."))
 
     @router.message(Command("kick"))
+    await send_category_card(message, "moderation", "/kick", "Member moderation and admin actions")
     async def kick_command(message: Message) -> None:
         if not await require_admin(message):
             return
@@ -235,6 +240,7 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
         await message.answer(premium_text(f"👢 <b>Member Kicked</b>\n\n👤 {escape(target.full_name)} was removed. They can rejoin using an invite link."))
 
     @router.message(Command("unban"))
+    await send_category_card(message, "moderation", "/unban", "Member moderation and admin actions")
     async def unban_command(message: Message) -> None:
         if not await require_admin(message):
             return
@@ -254,6 +260,7 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
         await message.answer(premium_text(f"✅ <b>Ban Removed</b>\n\nUser <code>{raw_id}</code> can rejoin the group."))
 
     @router.message(Command("purge"))
+    await send_category_card(message, "moderation", "/purge", "Member moderation and admin actions")
     async def purge_command(message: Message) -> None:
         if not await require_admin(message, delete=True):
             return
