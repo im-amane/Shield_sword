@@ -8,7 +8,6 @@
 ## Railway variables
 - `NVIDIA_NIM_CHAT_API_KEY`: secret used only for chat generation.
 - `NVIDIA_NIM_GUARDIAN_API_KEY`: separate secret used for input/output safety classification and optional automatic AI Guard.
-- `NVIDIA_NIM_API_KEY`: temporary legacy fallback when a role-specific key is not supplied. Configure both dedicated keys, then remove the legacy variable.
 - `NVIDIA_NIM_CHAT_MODEL`: optional chat model override.
 - `NVIDIA_NIM_MODEL`: optional Guardian safety model override.
 - `AI_CHAT_ENABLED`: enables mention/reply-driven group conversations.
