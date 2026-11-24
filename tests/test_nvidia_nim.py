@@ -25,7 +25,8 @@ class NvidiaNimTests(unittest.TestCase):
         self.assertEqual(result.text, "hello")
         self.assertIsNone(result.error)
         args, kwargs = mocked.call_args
-        self.assertNotIn("secret", repr(args[0].headers))
+        self.assertEqual(args[0].get_header("Authorization"), "Bearer secret")
+        self.assertNotIn("secret", repr(result))
         self.assertLessEqual(kwargs["timeout"], 8.0)
 
     @patch("app.nvidia_nim.urllib.request.urlopen")
@@ -37,6 +38,7 @@ class NvidiaNimTests(unittest.TestCase):
         result = request_nim_completion("secret", "model", [{"role": "user", "content": "hi"}])
         self.assertEqual(result.error, "http_429")
         self.assertIsNone(result.text)
+        self.assertNotIn("secret", repr(result))
 
     @patch("app.nvidia_nim.urllib.request.urlopen")
     def test_invalid_response_is_rejected(self, mocked):
