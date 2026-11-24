@@ -26,7 +26,7 @@ class SecurityStatusTests(unittest.TestCase):
         text = security_status_text(-200, "Test Group")
         self.assertIn(premium_text("Anti-link:"), text)
         self.assertIn(premium_text("Bad-word filter:"), text)
-        self.assertIn(premium_text("Media upload policy:"), text)
+        self.assertIn(premium_text("Normal media:"), text)
 
 
 if __name__ == "__main__":
