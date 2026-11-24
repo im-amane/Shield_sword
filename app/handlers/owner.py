@@ -12,7 +12,6 @@ from aiogram.types import BufferedInputFile, Message
 from app.security.owner import is_owner
 from app.backup_crypto import decrypt_backup, encrypt_backup
 from app.handlers.typography import premium_text
-from app.handlers.card_helpers import send_category_card
 from app.storage import (
     create_database_backup, get_audit_events, get_database_status,
     verify_database_backup,
@@ -48,7 +47,6 @@ def create_owner_router(
             ))
             return
 
-        await send_category_card(message, "ai", "AI Guard Diagnostics", "NVIDIA safety classifier test")
         status = await message.answer(premium_text(
             "🧪 <b>Sentinel · AI Guard diagnostics</b>\n\nTesting the safety classifier…"
         ))
@@ -82,7 +80,6 @@ def create_owner_router(
 
     @router.message(Command("owner"))
     async def owner_command(message: Message) -> None:
-        await send_category_card(message, "owner", "Owner Access", "Identity and control permissions")
         user_id = message.from_user.id if message.from_user else None
         if not is_owner(user_id, owner_id):
             await message.answer(premium_text("🔒 <b>Owner Access</b>\n\nThis area is reserved for the bot owner.\nAuthorization required. 👑"))
@@ -96,7 +93,6 @@ def create_owner_router(
 
     @router.message(Command("audit"))
     async def audit_command(message: Message) -> None:
-        await send_category_card(message, "owner", "Security Audit", "Recent security events")
         if message.chat.type != ChatType.PRIVATE:
             await message.answer(premium_text("🔒 Use /audit in my private chat to keep security records private."))
             return
@@ -118,7 +114,6 @@ def create_owner_router(
 
     @router.message(Command("dbstatus"))
     async def dbstatus_command(message: Message) -> None:
-        await send_category_card(message, "system", "Database Health", "Storage integrity diagnostics")
         if message.chat.type != ChatType.PRIVATE:
             await message.answer(premium_text("🔒 Use /dbstatus in my private chat to keep storage details private."))
             return
@@ -145,7 +140,6 @@ def create_owner_router(
 
     @router.message(Command("backup"))
     async def backup_command(message: Message) -> None:
-        await send_category_card(message, "system", "Encrypted Backup", "Private database recovery")
         if message.chat.type != ChatType.PRIVATE:
             await message.answer(premium_text("🔒 Use /backup in my private chat. Database files must never be posted in a group."))
             return
@@ -165,7 +159,6 @@ def create_owner_router(
 
     @router.message(Command("backupverify"))
     async def backup_verify_command(message: Message) -> None:
-        await send_category_card(message, "system", "Backup Verification", "Isolated recovery test")
         if message.chat.type != ChatType.PRIVATE:
             await message.answer(premium_text("🔒 Use /backupverify in my private chat."))
             return
