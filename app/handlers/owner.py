@@ -1,5 +1,4 @@
 """Owner-only identity, audit, database and backup commands."""
-import asyncio
 import time
 from html import escape
 from io import BytesIO
@@ -16,16 +15,13 @@ from app.storage import (
     create_database_backup, get_audit_events, get_database_status,
     verify_database_backup,
 )
-from app.ai_chat import DEFAULT_NIM_CHAT_MODEL, NimChatClient
 from app.ai_guard import DEFAULT_NIM_MODEL, NimSafetyClient
 
 
 def create_owner_router(
     owner_id: int | None,
-    chat_api_key: str = "",
     guardian_api_key: str = "",
     safety_model: str = DEFAULT_NIM_MODEL,
-    chat_model: str = DEFAULT_NIM_CHAT_MODEL,
 ) -> Router:
     """Create owner command handlers bound to the configured owner ID."""
     router = Router(name="owner")
@@ -41,42 +37,31 @@ def create_owner_router(
         if not authorized_private_owner(message):
             await message.answer(premium_text("🔒 <b>Owner-only</b> · Use /aitest in my private chat."))
             return
-        if not chat_api_key or not guardian_api_key:
+        if not guardian_api_key:
             await message.answer(premium_text(
-                "❌ <b>AI engine keys missing</b>\n\n"
-                "Configure NVIDIA_NIM_CHAT_API_KEY and NVIDIA_NIM_GUARDIAN_API_KEY in Railway Variables."
+                "❌ <b>AI Guard key missing</b>\n\n"
+                "Configure NVIDIA_NIM_GUARDIAN_API_KEY in Railway Variables."
             ))
             return
 
         status = await message.answer(premium_text(
-            "🧪 <b>Guardian AI engine diagnostics</b>\n\nTesting independent chat and Guardian credentials…"
+            "🧪 <b>Guardian AI Guard diagnostics</b>\n\nTesting the safety classifier…"
         ))
-        chat_result = await asyncio.to_thread(
-            NimChatClient(chat_api_key, chat_model).generate,
-            "Reply with exactly: Guardian chat test passed.",
-        )
         safety_started = time.monotonic()
         safety_result = await NimSafetyClient(
             guardian_api_key, safety_model, timeout=20.0
         ).classify("Hello everyone, hope you are having a good day!")
         safety_latency = int((time.monotonic() - safety_started) * 1000)
-        chat_ok = bool(chat_result.text and chat_result.error is None)
         safety_ok = bool(safety_result is not None and not safety_result["unsafe"])
-        def line(label: str, ok: bool, latency: int, error: str | None = None) -> str:
-            detail = f" · {latency} ms"
-            if error:
-                detail += f" · {escape(error)}"
-            return f"{'✅' if ok else '❌'} <b>{label}:</b> {'PASS' if ok else 'FAIL'}{detail}"
-        preview = escape((chat_result.text or "")[:220])
+
+        detail = f" · {safety_latency} ms"
         report = (
-            "🧪 <b>Guardian AI engine diagnostics</b>\n\n"
-            + line("Chat engine", chat_ok, chat_result.latency_ms, chat_result.error) + "\n"
-            + f"<code>{escape(chat_model)}</code>\n\n"
-            + line("Guardian engine", safety_ok, safety_latency, None if safety_ok else "classification_failed") + "\n"
+            "🧪 <b>Guardian AI Guard diagnostics</b>\n\n"
+            + f"{'✅' if safety_ok else '❌'} <b>AI Guard:</b> "
+            + f"{'PASS' if safety_ok else 'FAIL'}{detail}\n"
             + f"<code>{escape(safety_model)}</code>\n\n"
-            + (f"<b>Chat sample:</b> {preview}\n\n" if preview else "")
-            + ("Both independent engines responded correctly." if chat_ok and safety_ok else
-               "At least one engine needs attention. Feature flags were not changed.")
+            + ("Safety classifier responded correctly." if safety_ok else
+               "AI Guard needs attention. Feature flags were not changed.")
         )
         await status.edit_text(premium_text(report[:3900]))
 

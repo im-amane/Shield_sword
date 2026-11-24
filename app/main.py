@@ -34,7 +34,6 @@ from app.handlers.diagnostics import create_diagnostics_router
 from app.handlers.permission_monitor import create_permission_monitor_router
 from app.handlers.security_status import create_security_status_router
 from app.handlers.ai_guard import create_ai_guard_router
-from app.handlers.ai_chat import create_ai_chat_router
 from app.ui import create_ui_router, install_ui_middleware
 from app.storage import (
     create_database_backup, init_storage,
@@ -144,10 +143,8 @@ async def run() -> None:
     dispatcher.include_router(create_permission_monitor_router(settings.owner_id))
     dispatcher.include_router(create_owner_router(
         settings.owner_id,
-        settings.nvidia_nim_chat_api_key,
         settings.nvidia_nim_guardian_api_key,
         settings.nvidia_nim_model,
-        settings.nvidia_nim_chat_model,
     ))
     dispatcher.include_router(create_panel_router(settings.owner_id))
     dispatcher.include_router(create_welcome_router(settings.welcome_chat_ids, settings.owner_id))
@@ -158,21 +155,6 @@ async def run() -> None:
     dispatcher.include_router(create_copyright_router())
     dispatcher.include_router(create_antilink_router())
     dispatcher.include_router(create_raid_router(settings.owner_id))
-
-    if settings.ai_chat_enabled and settings.nvidia_nim_chat_api_key and settings.nvidia_nim_guardian_api_key:
-        dispatcher.include_router(create_ai_chat_router(
-            settings.nvidia_nim_chat_api_key,
-            settings.nvidia_nim_guardian_api_key,
-            settings.nvidia_nim_chat_model,
-            settings.nvidia_nim_model,
-        ))
-        logging.getLogger(__name__).info(
-            "Guardian AI Chat engine enabled with independent chat and safety credentials."
-        )
-    elif settings.ai_chat_enabled:
-        logging.getLogger(__name__).warning(
-            "AI_CHAT_ENABLED is true but one or both NIM engine keys are missing; AI Chat remains disabled."
-        )
 
     if settings.ai_guard_enabled and settings.nvidia_nim_guardian_api_key:
         dispatcher.include_router(create_ai_guard_router(
