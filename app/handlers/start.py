@@ -167,7 +167,8 @@ _HELP_SECTIONS = {
         "/raidstatus - Check raid shield status\n"
         "/raidoff - Disable active raid mode\n"
         "/audit - View recent security events\n"
-        "/backup - Send a private database backup\n\n"
+        "/backup - Send a private database backup\n"
+        "/aitest - Test NVIDIA chat and safety model endpoints (private chat)\n\n"
         "<i>These commands are restricted to the configured bot owner.</i>"
     ),
     "permissions": (
