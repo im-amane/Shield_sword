@@ -19,7 +19,6 @@ from aiogram.types import (
 )
 
 from app.handlers.typography import premium_text
-from app.handlers.card_helpers import send_category_card
 from app.storage import (
     delete_verification, get_expired_verifications, get_verification,
     increment_verification_attempt, record_audit_event,
@@ -163,7 +162,6 @@ async def start_member_verification(message: Message, members: list[User]) -> No
                     ]
                 ]
             )
-            await send_category_card(message, "verification", "Member Verification", "Complete the security challenge")
             await message.answer(premium_text(
                 f"⛩️ Hey <a href=\"tg://user?id={member.id}\">{escape(member.full_name, quote=True)}</a>!\n\n"
                 "Before joining the conversation, complete this little security challenge.\n\n"
