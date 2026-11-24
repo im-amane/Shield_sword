@@ -10,7 +10,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from app.handlers.typography import premium_text
-from app.storage import is_copyright_enabled, is_feature_enabled
+from app.storage import is_feature_enabled
 
 
 def security_status_text(chat_id: int, title: str) -> str:
