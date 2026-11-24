@@ -181,6 +181,22 @@ class StorageTests(unittest.TestCase):
         with self.assertRaises(sqlite3.DatabaseError):
             storage.verify_database_backup(b"not a database")
 
+    def test_database_backup_rejects_missing_application_table(self) -> None:
+        import sqlite3
+        snapshot = storage.create_database_backup()
+        with tempfile.TemporaryDirectory() as restore_dir:
+            restored_path = Path(restore_dir) / "incomplete.sqlite3"
+            restored_path.write_bytes(snapshot)
+            restored = sqlite3.connect(restored_path)
+            try:
+                restored.execute("PRAGMA journal_mode=DELETE")
+                restored.execute("DROP TABLE badwords")
+                restored.commit()
+            finally:
+                restored.close()
+            with self.assertRaisesRegex(sqlite3.DatabaseError, "badwords"):
+                storage.verify_database_backup(restored_path.read_bytes())
+
     def test_owner_security_intelligence_records_group_joins_and_incidents(self) -> None:
         storage.register_group(-100, "Ani World Main")
         storage.record_member_join(-100, "Ani World Main", 7, "sample_user", "Sample User")
