@@ -13,6 +13,7 @@ from aiogram.filters import Command
 from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
+from app.handlers.card_helpers import send_category_card
 from app.handlers.warnings import WARN_LIMIT, add_warning, reset_warnings
 from app.storage import (record_audit_event, record_security_incident, add_allowed_domain, get_allowed_domains, is_feature_enabled, remove_allowed_domain, set_feature_enabled)
 
@@ -91,6 +92,7 @@ def create_antilink_router() -> Router:
         return True
 
     @router.message(Command("antilink"))
+    await send_category_card(message, "security", "/antilink", "Anti-link protection settings")
     async def antilink_command(message: Message) -> None:
         if not await require_admin(message):
             return
@@ -122,6 +124,7 @@ def create_antilink_router() -> Router:
         await message.answer(premium_text(response))
 
     @router.message(Command("allowdomain"))
+    await send_category_card(message, "security", "/allowdomain", "Anti-link protection settings")
     async def allow_domain_command(message: Message) -> None:
         if not await require_admin(message):
             return
@@ -139,6 +142,7 @@ def create_antilink_router() -> Router:
         await message.answer(premium_text(f"✅ <b>Domain Trusted</b>\n\n<code>{escape(domain)}</code> and its subdomains are allowed."))
 
     @router.message(Command("removedomain"))
+    await send_category_card(message, "security", "/removedomain", "Anti-link protection settings")
     async def remove_domain_command(message: Message) -> None:
         if not await require_admin(message):
             return
