@@ -33,52 +33,61 @@ def render_user_profile_card(*, display_name: str, username: str, user_id: int,
     first_name: str, last_name: str, bio: str, current_chat_id: int,
     group_title: str | None, group_id: int | None, avatar: bytes | None = None,
     name_history: Iterable[str] = ()) -> bytes:
-    """Render Telegram-visible profile fields and observed name history."""
-    rows = [("USERNAME", username or "Not set"), ("USER ID", str(user_id)),
+    """Render a high-contrast, mobile-readable profile card."""
+    rows = [
+        ("USER ID", str(user_id)),
         ("CHAT ID", str(current_chat_id)),
-        ("FIRST NAME", first_name or "Not available"), ("LAST NAME", last_name or "Not set"),
-        ("BIO", bio or "Not available")]
+        ("USERNAME", username or "Not set"),
+        ("FIRST NAME", first_name or "Not available"),
+        ("LAST NAME", last_name or "Not set"),
+        ("BIO", bio or "Not available"),
+    ]
     if group_id is not None:
-        rows.extend((("GROUP", group_title or "Telegram group"), ("GROUP CHAT ID", str(group_id))))
+        rows.append(("GROUP", group_title or "Telegram group"))
     history = list(name_history)
     rows.append(("PREVIOUS OBSERVED NAME", " / ".join(history[:3]) if history else
                  "No earlier name has been observed by Sentinel"))
-    label_font, value_font = _font(20), _font(25)
-    title_font, small_font = _font(42), _font(18)
+
+    width = 1000
+    label_font, value_font = _font(30), _font(38)
+    title_font, small_font = _font(48), _font(22)
     measure = ImageDraw.Draw(Image.new("RGB", (10, 10)))
-    heights = [max(58, len(_wrap(measure, value, value_font, 700)) * 34 + 22)
-               for _, value in rows]
-    height = 240 + sum(heights) + 65
-    image = Image.new("RGB", (_WIDTH, height), "#08111f")
+    row_heights = [
+        max(112, 58 + len(_wrap(measure, value, value_font, 850)) * 48)
+        for _, value in rows
+    ]
+    height = 300 + sum(row_heights) + 80
+    image = Image.new("RGB", (width, height), "#080b19")
     draw = ImageDraw.Draw(image)
     for y in range(height):
         blend = y / max(1, height - 1)
-        draw.line((0, y, _WIDTH, y), fill=(int(8+5*blend), int(17+9*blend), int(31+18*blend)))
-    draw.rounded_rectangle((24,24,_WIDTH-24,height-24), radius=34, outline="#2d4967", width=3)
-    draw.rounded_rectangle((52,52,_WIDTH-52,190), radius=26, fill="#10243a")
-    draw.text((82,76), "SENTINEL  /  USER PROFILE", font=small_font, fill="#65d7e8")
-    draw.text((82,111), (display_name or "Telegram user")[:34], font=title_font, fill="#f4f7fb")
-    draw.ellipse((850,62,1010,222), fill="#203b56", outline="#65d7e8", width=5)
+        draw.line((0, y, width, y), fill=(int(8 + 10 * blend), int(11 + 4 * blend), int(25 + 30 * blend)))
+    draw.rounded_rectangle((22, 22, width-22, height-22), radius=34, outline="#7545c8", width=4)
+    draw.rounded_rectangle((48, 48, width-48, 252), radius=28, fill="#17132e", outline="#5835a1", width=2)
+    draw.text((82, 72), "SENTINEL  /  USER PROFILE", font=small_font, fill="#c9a7ff")
+    draw.text((82, 116), (display_name or "Telegram user")[:24], font=title_font, fill="#ffffff")
+    draw.ellipse((760, 72, 940, 252), fill="#29204a", outline="#b58aff", width=5)
     if avatar:
         try:
-            photo = ImageOps.fit(Image.open(BytesIO(avatar)).convert("RGB"), (148,148), centering=(0.5,0.35))
-            mask = Image.new("L", (148,148), 0)
-            ImageDraw.Draw(mask).ellipse((0,0,147,147), fill=255)
-            image.paste(photo, (856,68), mask)
-            draw.ellipse((850,62,1010,222), outline="#65d7e8", width=5)
+            photo = ImageOps.fit(Image.open(BytesIO(avatar)).convert("RGB"), (168, 168), centering=(0.5, 0.35))
+            mask = Image.new("L", (168, 168), 0)
+            ImageDraw.Draw(mask).ellipse((0, 0, 167, 167), fill=255)
+            image.paste(photo, (766, 78), mask)
+            draw.ellipse((760, 72, 940, 252), outline="#b58aff", width=5)
         except (OSError, ValueError):
             pass
-    y = 220
-    for (label,value), row_height in zip(rows,heights):
-        draw.rounded_rectangle((52,y,_WIDTH-52,y+row_height-8), radius=16, fill="#102033")
-        draw.text((78,y+12), label, font=label_font, fill="#65d7e8")
-        for index,line in enumerate(_wrap(draw,value,value_font,700)):
-            draw.text((360,y+8+index*34),line,font=value_font,fill="#f4f7fb")
+
+    y = 276
+    for (label, value), row_height in zip(rows, row_heights):
+        draw.rounded_rectangle((48, y, width-48, y+row_height-10), radius=20,
+                               fill="#17172d", outline="#30264f", width=2)
+        draw.text((78, y+14), label, font=label_font, fill="#c9a7ff")
+        for index, line in enumerate(_wrap(draw, value, value_font, 850)):
+            draw.text((78, y+52+index*48), line, font=value_font, fill="#ffffff")
         y += row_height
-    draw.text((60,height-62),"Only Telegram-visible public profile details are shown.",
-              font=small_font,fill="#91a8bf")
-    output=BytesIO()
-    image.save(output,format="PNG",optimize=True)
+    draw.text((58, height-58), "Telegram-visible profile details · Sentinel", font=small_font, fill="#a99bc4")
+    output = BytesIO()
+    image.save(output, format="PNG", optimize=True)
     return output.getvalue()
 
 def render_category_card(category: str, title: str, subtitle: str = "") -> bytes:
