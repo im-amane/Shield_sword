@@ -12,7 +12,6 @@ from aiogram.filters import Command
 from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
-from app.handlers.card_helpers import send_category_card
 from app.storage import record_audit_event
 
 _DURATION = re.compile(r"^(\d+)(s|m|h|d)$", re.IGNORECASE)
@@ -139,7 +138,6 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
 
     @router.message(Command("mute"))
     async def mute_command(message: Message) -> None:
-        await send_category_card(message, "moderation", "/mute", "Member moderation and admin actions")
         if not await require_admin(message):
             return
         target = await replied_target(message)
@@ -171,7 +169,6 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
 
     @router.message(Command("unmute"))
     async def unmute_command(message: Message) -> None:
-        await send_category_card(message, "moderation", "/unmute", "Member moderation and admin actions")
         if not await require_admin(message):
             return
         target = await replied_target(message)
@@ -193,7 +190,6 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
 
     @router.message(Command("ban"))
     async def ban_command(message: Message) -> None:
-        await send_category_card(message, "moderation", "/ban", "Member moderation and admin actions")
         if not await require_admin(message):
             return
         target = await replied_target(message)
@@ -209,7 +205,6 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
 
     @router.message(Command("kick"))
     async def kick_command(message: Message) -> None:
-        await send_category_card(message, "moderation", "/kick", "Member moderation and admin actions")
         if not await require_admin(message):
             return
         target = await replied_target(message)
@@ -241,7 +236,6 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
 
     @router.message(Command("unban"))
     async def unban_command(message: Message) -> None:
-        await send_category_card(message, "moderation", "/unban", "Member moderation and admin actions")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
@@ -261,7 +255,6 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
 
     @router.message(Command("purge"))
     async def purge_command(message: Message) -> None:
-        await send_category_card(message, "moderation", "/purge", "Member moderation and admin actions")
         if not await require_admin(message, delete=True):
             return
         if not message.reply_to_message:

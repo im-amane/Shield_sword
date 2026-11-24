@@ -13,7 +13,6 @@ from aiogram.filters import Command
 from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
-from app.handlers.card_helpers import send_category_card
 from app.handlers.warnings import WARN_LIMIT, add_warning, reset_warnings
 from app.storage import (record_audit_event, record_security_incident, add_allowed_domain, get_allowed_domains, is_feature_enabled, remove_allowed_domain, set_feature_enabled)
 
@@ -93,7 +92,6 @@ def create_antilink_router() -> Router:
 
     @router.message(Command("antilink"))
     async def antilink_command(message: Message) -> None:
-        await send_category_card(message, "security", "/antilink", "Anti-link protection settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
@@ -125,7 +123,6 @@ def create_antilink_router() -> Router:
 
     @router.message(Command("allowdomain"))
     async def allow_domain_command(message: Message) -> None:
-        await send_category_card(message, "security", "/allowdomain", "Anti-link protection settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
@@ -143,7 +140,6 @@ def create_antilink_router() -> Router:
 
     @router.message(Command("removedomain"))
     async def remove_domain_command(message: Message) -> None:
-        await send_category_card(message, "security", "/removedomain", "Anti-link protection settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)

@@ -12,7 +12,6 @@ from aiogram.types import ChatPermissions, Message
 
 from app.ai_guard import AiScanLimiter, NimSafetyClient
 from app.handlers.typography import premium_text
-from app.handlers.card_helpers import send_category_card
 from app.handlers.warnings import WARN_LIMIT, add_warning, reset_warnings
 from app.security.owner import is_owner
 from app.storage import record_audit_event, record_security_incident
@@ -89,7 +88,6 @@ def create_ai_guard_router(owner_id: int | None, api_key: str, model: str) -> Ro
                 )
             else:
                 reset_warnings(message.chat.id, user.id)
-                await send_category_card(message, "ai", "AI Safety Action", "Unsafe text moderation")
                 await message.answer(premium_text(
                     f"🔇 <b>AI Safety · Member Muted</b>\n\n"
                     f"👤 {escape(user.full_name)}\n"
@@ -98,7 +96,6 @@ def create_ai_guard_router(owner_id: int | None, api_key: str, model: str) -> Ro
                 ))
                 return
 
-        await send_category_card(message, "ai", "AI Safety Action", "Unsafe text moderation")
         await message.answer(premium_text(
             f"🛡️ <b>AI Safety Filter</b>\n\n"
             f"👤 {escape(user.full_name)}\n"

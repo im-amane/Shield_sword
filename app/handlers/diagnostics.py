@@ -10,7 +10,6 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from app.handlers.typography import premium_text
-from app.handlers.card_helpers import send_category_card
 
 
 def permission_lines(member) -> list[str]:
@@ -66,7 +65,6 @@ def create_diagnostics_router() -> Router:
             ready = bool(bot_member.can_delete_messages and bot_member.can_restrict_members)
 
         heading = "🟢 All required permissions are ready." if ready else "🟠 Missing permissions detected."
-        await send_category_card(message, "security", "Permission Check", "Telegram administrator rights")
         await message.answer(premium_text(
             "🛡️ <b>Sentinel · Security Check</b>\n"
             f"<b>{escape(message.chat.title or 'Telegram group')}</b> · <code>{format_member_status(bot_member.status)}</code>\n\n"

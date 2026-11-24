@@ -1,4 +1,4 @@
-"""Tests for Telegram user profile card lookup."""
+"""Tests for plain-text Telegram ID lookup."""
 import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
@@ -7,8 +7,8 @@ from aiogram.enums import ChatType
 from app.handlers.utility import create_utility_router
 
 
-class UtilityProfileCardTests(unittest.IsolatedAsyncioTestCase):
-    async def test_id_command_builds_profile_card_with_group_context(self):
+class UtilityIdTests(unittest.IsolatedAsyncioTestCase):
+    async def test_id_command_returns_user_chat_and_group_ids_as_text(self):
         router = create_utility_router()
         handler = router.message.handlers[0].callback
         member = SimpleNamespace(
@@ -21,21 +21,18 @@ class UtilityProfileCardTests(unittest.IsolatedAsyncioTestCase):
             bot=SimpleNamespace(get_chat=AsyncMock(return_value=SimpleNamespace(
                 bio="Community member", first_name="Ari", last_name="Example", username="ari"
             ))),
-            answer=AsyncMock(), answer_photo=AsyncMock(),
+            answer=AsyncMock(),
         )
-        with patch("app.handlers.utility.record_member_profile") as record, \
-             patch("app.handlers.utility.get_member_profile_history", return_value=[
-                 {"first_name":"Ari","last_name":"Example","username":"ari"}
-             ]), patch("app.handlers.utility._profile_photo", new=AsyncMock(return_value=None)), \
-             patch("app.handlers.utility.render_user_profile_card", return_value=b"png-data") as render:
+        with patch("app.handlers.utility.record_member_profile") as record:
             await handler(message)
         record.assert_called_once_with(-100987, 12345, "Ari", "Example", "ari")
-        render.assert_called_once()
-        args = render.call_args.kwargs
-        self.assertEqual(args["user_id"], 12345)
-        self.assertEqual(args["current_chat_id"], -100987)
-        self.assertEqual(args["group_id"], -100987)
-        message.answer_photo.assert_awaited_once()
+        message.answer.assert_awaited_once()
+        text = message.answer.await_args.args[0]
+        self.assertIn("User ID:", text)
+        self.assertIn("12345", text)
+        self.assertIn("Chat ID:", text)
+        self.assertIn("-100987", text)
+        self.assertIn("Group ID:", text)
 
 
 if __name__ == "__main__":

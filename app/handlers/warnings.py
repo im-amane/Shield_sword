@@ -10,7 +10,6 @@ from aiogram.filters import Command
 from aiogram.types import (CallbackQuery, ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup, Message)
 
 from app.handlers.typography import premium_text
-from app.handlers.card_helpers import send_category_card
 from app.storage import record_audit_event
 
 WARN_LIMIT = 3
@@ -85,7 +84,6 @@ def create_warning_router() -> Router:
                 ),
                 InlineKeyboardButton(text="✖️ Close", callback_data="ui:close"),
             ]])
-            await send_category_card(message, "warning", "Warning Issued", "Member moderation record")
             await message.answer(premium_text(
                 f"⚠️ <b>Warning Issued</b>\n\n"
                 f"👤 {escape(target.full_name)}\n"
@@ -108,7 +106,6 @@ def create_warning_router() -> Router:
             return
         reset_warnings(message.chat.id, target.id)
         record_audit_event(message.chat.id, "auto_mute", message.from_user.id if message.from_user else None, target.id, "warnings threshold reached")
-        await send_category_card(message, "warning", "Warning Limit Reached", "Automatic temporary mute")
         await message.answer(premium_text(
             f"🔇 <b>Warning Limit Reached</b>\n\n"
             f"👤 {escape(target.full_name)}\n"
@@ -131,7 +128,6 @@ def create_warning_router() -> Router:
                 callback_data=f"warnings:unwarn:{message.chat.id}:{target.id}",
             )
         ]]) if count > 0 else None
-        await send_category_card(message, "warning", "Warning Record", "Member warning history")
         await message.answer(premium_text(
             f"📋 <b>Warning Record</b>\n\n"
             f"👤 {escape(target.full_name)}\n"
@@ -151,7 +147,6 @@ def create_warning_router() -> Router:
             message.from_user.id if message.from_user else None,
             target.id, f"remaining={remaining}",
         )
-        await send_category_card(message, "warning", "Warning Updated", "One warning removed")
         await message.answer(premium_text(
             f"➖ <b>One Warning Removed</b>\n\n"
             f"👤 {escape(target.full_name)}\n"
@@ -214,7 +209,6 @@ def create_warning_router() -> Router:
             return
         reset_warnings(message.chat.id, target.id)
         record_audit_event(message.chat.id, "reset_warnings", message.from_user.id if message.from_user else None, target.id)
-        await send_category_card(message, "warning", "Warnings Cleared", "Member warning history reset")
         await message.answer(premium_text(
             f"✅ <b>Warnings Cleared</b>\n\n"
             f"👤 {escape(target.full_name)}\n"
