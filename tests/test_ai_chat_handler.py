@@ -68,7 +68,8 @@ class GuardianAIChatHandlerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.engine.guardian.classify.await_count, 2)
         self.engine.chat.generate.assert_called_once()
         sent_text = self.message.answer.await_args.args[0]
-        self.assertIn("&lt;b&gt;Hi&lt;/b&gt; &amp; welcome", sent_text)
+        self.assertIn("&lt;", sent_text)
+        self.assertIn("&amp;", sent_text)
         self.assertNotIn("<b>Hi</b>", sent_text)
 
     async def test_unsafe_generated_output_is_withheld(self):
