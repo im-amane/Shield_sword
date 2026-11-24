@@ -327,7 +327,6 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
 
     if action == "help" and callback.message:
         await callback.message.delete()
-        await send_category_card(callback.message, "help", "Help Center", "Commands and navigation")
         await callback.message.answer(help_text(), reply_markup=help_keyboard())
         await callback.answer()
         return
