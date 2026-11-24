@@ -25,9 +25,10 @@ class AiGuardTests(unittest.TestCase):
         self.assertIsNone(parse_safety_result('{"User Safety":"maybe"}'))
         self.assertIsNone(parse_safety_result('{"User Safety":"unsafe"'))
 
-    def test_safety_client_allows_eight_second_timeout_and_caps_it(self):
-        self.assertEqual(NimSafetyClient("key", timeout=8.0).timeout, 8.0)
-        self.assertEqual(NimSafetyClient("key", timeout=12.0).timeout, 8.0)
+    def test_safety_client_allows_twenty_second_timeout_and_caps_it(self):
+        self.assertEqual(NimSafetyClient("key", timeout=20.0).timeout, 20.0)
+        self.assertEqual(NimSafetyClient("key", timeout=30.0).timeout, 20.0)
+        self.assertEqual(NimSafetyClient("key").timeout, 20.0)
 
     def test_scan_limiter_enforces_user_chat_and_global_limits(self):
         limiter = AiScanLimiter()
