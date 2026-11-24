@@ -15,6 +15,9 @@ class Settings:
     owner_id: int | None
     # Kept as an empty compatibility field for existing deployments; welcome is public.
     welcome_chat_ids: tuple[int, ...] = ()
+    nvidia_nim_api_key: str = ""
+    nvidia_nim_model: str = "nvidia/llama-3.1-nemotron-safety-guard-8b-v3"
+    ai_guard_enabled: bool = False
 
 
 def load_settings() -> Settings:
@@ -33,4 +36,19 @@ def load_settings() -> Settings:
         if owner_id <= 0:
             raise ConfigurationError("OWNER_ID must be a positive Telegram user ID.")
 
-    return Settings(bot_token=token, owner_id=owner_id)
+    ai_guard_enabled = os.getenv("AI_GUARD_ENABLED", "false").strip().casefold() in {
+        "1", "true", "yes", "on",
+    }
+    nvidia_nim_api_key = os.getenv("NVIDIA_NIM_API_KEY", "").strip()
+    nvidia_nim_model = os.getenv(
+        "NVIDIA_NIM_MODEL",
+        "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+    ).strip()
+
+    return Settings(
+        bot_token=token,
+        owner_id=owner_id,
+        nvidia_nim_api_key=nvidia_nim_api_key,
+        nvidia_nim_model=nvidia_nim_model or "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+        ai_guard_enabled=ai_guard_enabled,
+    )

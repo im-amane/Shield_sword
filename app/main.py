@@ -33,6 +33,7 @@ from app.handlers.utility import create_utility_router
 from app.handlers.diagnostics import create_diagnostics_router
 from app.handlers.permission_monitor import create_permission_monitor_router
 from app.handlers.security_status import create_security_status_router
+from app.handlers.ai_guard import create_ai_guard_router
 from app.ui import create_ui_router, install_ui_middleware
 from app.storage import (
     create_database_backup, init_storage,
@@ -154,6 +155,22 @@ async def run() -> None:
     dispatcher.include_router(create_copyright_router())
     dispatcher.include_router(create_antilink_router())
     dispatcher.include_router(create_raid_router(settings.owner_id))
+
+    # Keep AI moderation opt-in and last in router order so deterministic filters
+    # retain priority. Missing credentials never prevent normal bot startup.
+    if settings.ai_guard_enabled and settings.nvidia_nim_api_key:
+        dispatcher.include_router(create_ai_guard_router(
+            settings.owner_id,
+            settings.nvidia_nim_api_key,
+            settings.nvidia_nim_model,
+        ))
+        logging.getLogger(__name__).info(
+            "NVIDIA NIM AI Guard enabled with model %s.", settings.nvidia_nim_model
+        )
+    elif settings.ai_guard_enabled:
+        logging.getLogger(__name__).warning(
+            "AI_GUARD_ENABLED is true but NVIDIA_NIM_API_KEY is missing; AI Guard remains disabled."
+        )
 
     backup_task = (
         asyncio.create_task(automatic_backup_loop(bot, settings.owner_id))
