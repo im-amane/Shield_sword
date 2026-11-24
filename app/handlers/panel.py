@@ -219,7 +219,7 @@ def section_text(section: str, page: int = 0) -> str:
             "<b>Owner & diagnostics</b>\n"
             "/start · /help · /owner · /panel · /audit · /dbstatus · /backup · /security · /checkpermissions · /id\n\n"
             "<b>Moderation</b>\n"
-            "/mute · /unmute · /ban · /unban · /kick · /purge · /warn · /warnings · /resetwarn\n\n"
+            "/mute · /unmute · /ban · /unban · /kick · /purge · /warn · /warnings · /unwarn · /resetwarn\n\n"
             "<b>Protection settings</b>\n"
             "/antilink · /allowdomain · /removedomain · /badwords · /addword · /removeword\n"
             "/raidstatus · /raidoff · /channelprotect\n\n"
