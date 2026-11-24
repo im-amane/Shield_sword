@@ -115,37 +115,11 @@ def create_copyright_router() -> Router:
         ))
 
     async def inspect_media(message: Message) -> None:
-        if message.chat.type in (ChatType.GROUP, ChatType.SUPERGROUP):
-            if not is_copyright_enabled(message.chat.id):
-                return
-            user = message.from_user
-            if not user or user.is_bot:
-                return
-            try:
-                member = await message.bot.get_chat_member(message.chat.id, user.id)
-                if member.status in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
-                    return
-                bot_user = await message.bot.get_me()
-                bot_member = await message.bot.get_chat_member(message.chat.id, bot_user.id)
-                if (
-                    bot_member.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR)
-                    or not getattr(bot_member, "can_delete_messages", False)
-                ):
-                    return
-                await message.delete()
-                record_audit_event(
-                    message.chat.id, "copyright_media_removed", None, user.id,
-                    f"content_type={message.content_type}",
-                )
-                record_security_incident(
-                    message.chat.id, message.chat.title or "Telegram group",
-                    "media_policy", "low", user.id, user.username, user.full_name,
-                    f"Removed member media; type={message.content_type}",
-                )
-            except TelegramAPIError:
-                return
-            return
-
+        # Group media is deliberately never blanket-deleted. Group safety is
+        # enforced by the dedicated anti-link, bad-word and anti-spam handlers,
+        # which inspect captions as well as text. This channel-only path remains
+        # explicit opt-in because Telegram channel updates do not reliably
+        # identify the individual poster.
         if message.chat.type != ChatType.CHANNEL or not is_channel_media_enabled(message.chat.id):
             return
         try:
@@ -169,8 +143,6 @@ def create_copyright_router() -> Router:
             # Permission/API failures must not crash polling or expose message contents.
             return
 
-    router.message.register(inspect_media, F.content_type.in_(MEDIA_TYPES))
-    router.edited_message.register(inspect_media, F.content_type.in_(MEDIA_TYPES))
     router.channel_post.register(inspect_media, F.content_type.in_(MEDIA_TYPES))
     router.edited_channel_post.register(inspect_media, F.content_type.in_(MEDIA_TYPES))
     return router
