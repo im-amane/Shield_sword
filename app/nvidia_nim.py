@@ -52,6 +52,8 @@ def request_nim_completion(
         with urllib.request.urlopen(request, timeout=max(1.0, min(timeout, 8.0))) as response:
             status = response.status
             payload = json.loads(response.read(64_000).decode("utf-8"))
+        if not isinstance(payload, dict):
+            return NimResponse(None, int((time.monotonic() - started) * 1000), "invalid_response", status)
         choices = payload.get("choices")
         if not isinstance(choices, list) or not choices:
             return NimResponse(None, int((time.monotonic() - started) * 1000), "invalid_response", status)
