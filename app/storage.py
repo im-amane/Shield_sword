@@ -322,6 +322,30 @@ def reset_warnings(chat_id: int, user_id: int) -> None:
         db.execute("DELETE FROM warnings WHERE chat_id=? AND user_id=?", (chat_id, user_id))
 
 
+def remove_one_warning(chat_id: int, user_id: int) -> int:
+    """Remove exactly one warning atomically; never produce a negative count."""
+    with _connection() as db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute(
+            "SELECT count FROM warnings WHERE chat_id=? AND user_id=?",
+            (chat_id, user_id),
+        ).fetchone()
+        if row is None:
+            return 0
+        remaining = max(0, int(row[0]) - 1)
+        if remaining:
+            db.execute(
+                "UPDATE warnings SET count=? WHERE chat_id=? AND user_id=?",
+                (remaining, chat_id, user_id),
+            )
+        else:
+            db.execute(
+                "DELETE FROM warnings WHERE chat_id=? AND user_id=?",
+                (chat_id, user_id),
+            )
+        return remaining
+
+
 def set_feature_enabled(feature: str, chat_id: int, enabled: bool) -> None:
     table = {"badwords": "badword_settings", "antilink": "antilink_settings"}.get(feature)
     if table is None:
