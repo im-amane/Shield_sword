@@ -11,6 +11,7 @@ from aiogram.types import BufferedInputFile, Message
 from app.security.owner import is_owner
 from app.backup_crypto import decrypt_backup, encrypt_backup
 from app.handlers.typography import premium_text
+from app.handlers.card_helpers import send_category_card
 from app.storage import (
     create_database_backup, get_audit_events, get_database_status,
     verify_database_backup,
@@ -44,6 +45,7 @@ def create_owner_router(
             ))
             return
 
+        await send_category_card(message, "ai", "AI Guard Diagnostics", "NVIDIA safety classifier test")
         status = await message.answer(premium_text(
             "🧪 <b>Sentinel · AI Guard diagnostics</b>\n\nTesting the safety classifier…"
         ))
