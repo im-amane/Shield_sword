@@ -93,7 +93,7 @@ def create_antilink_router() -> Router:
 
     @router.message(Command("antilink"))
     async def antilink_command(message: Message) -> None:
-    await send_category_card(message, "security", "/antilink", "Anti-link protection settings")
+        await send_category_card(message, "security", "/antilink", "Anti-link protection settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
@@ -125,7 +125,7 @@ def create_antilink_router() -> Router:
 
     @router.message(Command("allowdomain"))
     async def allow_domain_command(message: Message) -> None:
-    await send_category_card(message, "security", "/allowdomain", "Anti-link protection settings")
+        await send_category_card(message, "security", "/allowdomain", "Anti-link protection settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
@@ -143,7 +143,7 @@ def create_antilink_router() -> Router:
 
     @router.message(Command("removedomain"))
     async def remove_domain_command(message: Message) -> None:
-    await send_category_card(message, "security", "/removedomain", "Anti-link protection settings")
+        await send_category_card(message, "security", "/removedomain", "Anti-link protection settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
