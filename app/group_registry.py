@@ -5,7 +5,7 @@ from typing import Any, Awaitable, Callable
 
 from aiogram import BaseMiddleware
 from aiogram.enums import ChatType
-from app.storage import register_group
+from app.storage import record_member_profile, register_group
 
 
 class GroupRegistryMiddleware(BaseMiddleware):
@@ -24,4 +24,10 @@ class GroupRegistryMiddleware(BaseMiddleware):
         chat = getattr(event, "chat", None)
         if chat is not None and chat.type in (ChatType.GROUP, ChatType.SUPERGROUP):
             register_group(chat.id, chat.title or "Telegram group")
+            member = getattr(event, "from_user", None)
+            if member is not None and not getattr(member, "is_bot", False):
+                record_member_profile(
+                    chat.id, member.id, member.first_name or "",
+                    member.last_name or "", member.username or "",
+                )
         return await handler(event, data)
