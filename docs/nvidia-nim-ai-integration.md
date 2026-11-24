@@ -23,7 +23,7 @@ Use `/aitest` in the bot's private chat. It sends fixed, harmless test prompts t
 - Chat replies are escaped as plain text before Telegram delivery.
 
 ## Safety and rollout
-- API requests have an 8-second maximum timeout; safety checks use a 4-second timeout.
+- API requests have an 8-second maximum timeout; safety checks use an 8-second timeout so transient model latency does not silently suppress normal chat; uncertain or failed checks still fail closed.
 - Provider response bodies and credentials are not exposed in diagnostic messages or logs.
 - A successful model response proves endpoint access only; it does not certify moderation quality.
 - Automatic AI moderation and AI Chat remain opt-in. Verify both models with `/aitest` before enabling the corresponding flag.
