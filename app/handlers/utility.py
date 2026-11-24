@@ -107,9 +107,14 @@ def create_utility_router() -> Router:
             avatar=avatar,
             name_history=_previous_names(history),
         )
+        caption = (
+            "🪪 <b>Sentinel · User Profile</b>\\n"
+            f"<b>Chat ID:</b> <code>{message.chat.id}</code>\\n"
+            f"<b>User ID:</b> <code>{target.id}</code>"
+        )
         await message.answer_photo(
             BufferedInputFile(card, filename=f"sentinel-user-{target.id}.png"),
-            caption="🪪 <b>Sentinel · User Profile Card</b>",
+            caption=caption,
         )
 
     return router
