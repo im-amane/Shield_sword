@@ -31,7 +31,7 @@ Required:
 - `BOT_TOKEN`
 - `OWNER_ID`
 
-AI Guard (optional, enabled when both settings are present):
+AI Guard (optional; runs only when explicitly enabled and the guardian key is configured):
 - `AI_GUARD_ENABLED=true`
 - `NVIDIA_NIM_GUARDIAN_API_KEY`
 - Optional `NVIDIA_NIM_MODEL`; defaults to `nvidia/llama-3.1-nemotron-safety-guard-8b-v3`
@@ -51,15 +51,15 @@ There is no conversational AI Chat feature or chat-model API configuration. AI G
 - Anti-spam detects flood behavior and applies temporary 60-second restrictions.
 - Raid mode activates at 500 human joins within 10 minutes, lasts 30 minutes, and alerts the group and owner. The owner can inspect with `/raidstatus` and disable with `/raidoff`.
 - An early-warning owner alert is sent when 25 human accounts join within 60 seconds. This alert does not itself ban or restrict members.
-- AI Guard checks group and channel text/media captions for defined high-risk safety categories. Channel posts are classified without attempting to identify the channel poster. It exempts the owner, admins, bots and commands; ambiguous content is treated as safe by the classifier. Provider or member-lookup failures do not trigger AI deletion.
+- AI Guard checks group messages and channel posts that contain text or captions for high-risk safety categories. In groups, it exempts the owner, admins, bots and commands. Channel posts are moderated at the post level without attempting to identify an individual poster. Provider or group member-lookup failures do not trigger AI deletion.
 - Existing anti-link, bad-word and anti-spam filters remain active.
 
 ## Media policy and copyright limitations
 
 - Ordinary group photos, videos, GIFs, documents, audio, voice notes, video notes and stickers are allowed. Group media is not blanket-deleted.
 - Text and captions remain subject to the relevant group safety filters.
-- Channel media protection is opt-in and OFF by default. Add the bot as a channel administrator with Delete Messages permission, then use `/channelprotect @channel on|off|status` in private chat.
-- When channel protection is ON, all media posts are removed, including posts by channel administrators. Telegram channel-post updates do not reliably identify the individual poster.
+- Channel posts containing text or captions are checked by AI Guard when it is enabled. Posts with no text/caption are not scanned or deleted by this feature.
+- No blanket channel-media deletion or `/channelprotect` command is implemented. Ordinary media is not deleted merely because of its file type.
 - The bot does not verify copyright ownership or detect visual copyright infringement. No copyright-related deletion is performed on ordinary group media. Handle rights-holder complaints through review and use licensed/official sources.
 
 ## Moderation and management
