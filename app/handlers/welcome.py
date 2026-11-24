@@ -34,14 +34,14 @@ def render_welcome_message(chat_title: str, members: list[User]) -> str:
     count = len(members)
     noun = "member" if count == 1 else "members"
     return premium_text(
-        f"🌸 <b>Welcome to {safe_chat_title}!</b>\\n\\n"
-        f"Hello {joined_names}! Welcome to the community. ❤️\\n\\n"
+        f"🌸 <b>Welcome to {safe_chat_title}!</b>\n\n"
+        f"Hello {joined_names}! Welcome to the community. ❤️\n\n"
         "Please take a moment to read the group rules, respect other members "
-        "and keep conversations safe and on-topic.\\n\\n"
-        "🛡️ <b>Sentinel is protecting this community.</b>\\n"
+        "and keep conversations safe and on-topic.\n\n"
+        "🛡️ <b>Sentinel is protecting this community.</b>\n"
         "New members must complete the verification challenge before chatting. "
-        "Spam, harmful links and unsafe text may be moderated automatically.\\n\\n"
-        "<i>Normal photos, videos and other media are not blanket-deleted.</i>\\n"
+        "Spam, harmful links and unsafe text may be moderated automatically.\n\n"
+        "<i>Normal photos, videos and other media are not blanket-deleted.</i>\n"
         "⚔️ <b>Ani World 剣</b>"
     )
 
