@@ -79,8 +79,8 @@ def create_badwords_router() -> Router:
         return True
 
     @router.message(Command("badwords"))
-    await send_category_card(message, "security", "/badwords", "Bad-word filter settings")
     async def badwords_command(message: Message) -> None:
+    await send_category_card(message, "security", "/badwords", "Bad-word filter settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
@@ -109,8 +109,8 @@ def create_badwords_router() -> Router:
         await message.answer(premium_text(response))
 
     @router.message(Command("addword"))
-    await send_category_card(message, "security", "/addword", "Bad-word filter settings")
     async def addword_command(message: Message) -> None:
+    await send_category_card(message, "security", "/addword", "Bad-word filter settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
@@ -125,8 +125,8 @@ def create_badwords_router() -> Router:
         await message.answer(premium_text(f"✅ Added <code>{escape(word)}</code> to the bad-words list."))
 
     @router.message(Command("removeword"))
-    await send_category_card(message, "security", "/removeword", "Bad-word filter settings")
     async def removeword_command(message: Message) -> None:
+    await send_category_card(message, "security", "/removeword", "Bad-word filter settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
