@@ -17,7 +17,6 @@ from aiogram.types import (
 from app.security.owner import is_owner
 from app.backup_crypto import backup_key_status, encrypt_backup
 from app.handlers.typography import premium_text
-from app.handlers.card_helpers import send_category_card
 from app.storage import (
     create_database_backup, get_audit_events, get_database_status,
     get_known_groups_count, get_known_groups_page,
@@ -333,7 +332,6 @@ def create_panel_router(owner_id: int | None) -> Router:
 
     async def render_home(message: Message) -> None:
         me = await message.bot.get_me()
-        await send_category_card(message, "owner", "Sentinel Control Center", "Owner dashboard and community controls")
         await message.answer(
             dashboard_text(me.username, me.id, owner_id or 0),
             reply_markup=dashboard_keyboard(),
