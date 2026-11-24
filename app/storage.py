@@ -122,6 +122,25 @@ CREATE TABLE IF NOT EXISTS daily_report_state (
 );
 CREATE INDEX IF NOT EXISTS idx_security_incidents_time
     ON security_incidents(created_at DESC);
+CREATE TABLE IF NOT EXISTS antispam_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chat_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    fingerprint TEXT NOT NULL DEFAULT '',
+    created_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_antispam_messages_member_time
+    ON antispam_messages(chat_id, user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_antispam_messages_duplicate
+    ON antispam_messages(chat_id, user_id, fingerprint, created_at);
+CREATE INDEX IF NOT EXISTS idx_antispam_messages_created_at
+    ON antispam_messages(created_at);
+CREATE TABLE IF NOT EXISTS antispam_mutes (
+    chat_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    muted_until REAL NOT NULL,
+    PRIMARY KEY (chat_id, user_id)
+);
 """
 
 # Every application-owned table must be present before a backup is considered
@@ -132,6 +151,7 @@ _REQUIRED_BACKUP_TABLES = frozenset({
     "copyright_settings", "channel_media_settings", "security_audit",
     "known_groups", "member_join_events", "security_incidents",
     "automatic_backup_state", "daily_report_state",
+    "antispam_messages", "antispam_mutes",
 })
 
 _initialized_path: Path | None = None
@@ -182,6 +202,97 @@ def init_storage() -> None:
     """Initialize the schema; safe to call repeatedly."""
     with _connection():
         pass
+
+
+def record_antispam_message(
+    chat_id: int,
+    user_id: int,
+    fingerprint: str,
+    now: float,
+    window_seconds: int,
+    duplicate_window_seconds: int,
+    max_messages: int,
+    max_identical: int,
+) -> bool:
+    """Atomically persist a member's recent message and evaluate flood thresholds.
+
+    Only a short rolling window is retained. Message content is never stored;
+    fingerprint is a bounded normalized digest input supplied by the handler.
+    """
+    window_seconds = max(1, min(int(window_seconds), 300))
+    duplicate_window_seconds = max(1, min(int(duplicate_window_seconds), 600))
+    max_messages = max(1, int(max_messages))
+    max_identical = max(1, int(max_identical))
+    fingerprint = str(fingerprint or "")[:500]
+    cutoff = float(now) - max(window_seconds, duplicate_window_seconds)
+    with _connection() as db:
+        db.execute("BEGIN IMMEDIATE")
+        db.execute(
+            "DELETE FROM antispam_messages WHERE created_at<?",
+            (float(now) - 600.0,),
+        )
+        db.execute(
+            "DELETE FROM antispam_mutes WHERE muted_until<=?",
+            (float(now),),
+        )
+        db.execute(
+            "DELETE FROM antispam_messages WHERE chat_id=? AND user_id=? AND created_at<?",
+            (chat_id, user_id, cutoff),
+        )
+        db.execute(
+            "INSERT INTO antispam_messages(chat_id, user_id, fingerprint, created_at) VALUES (?, ?, ?, ?)",
+            (chat_id, user_id, fingerprint, float(now)),
+        )
+        rate_row = db.execute(
+            "SELECT COUNT(*) FROM antispam_messages WHERE chat_id=? AND user_id=? AND created_at>=?",
+            (chat_id, user_id, float(now) - window_seconds),
+        ).fetchone()
+        duplicate_row = db.execute(
+            """SELECT COUNT(*) FROM antispam_messages
+               WHERE chat_id=? AND user_id=? AND fingerprint=? AND fingerprint<>''
+                 AND created_at>=?""",
+            (chat_id, user_id, fingerprint, float(now) - duplicate_window_seconds),
+        ).fetchone()
+        return int(rate_row[0]) > max_messages or int(duplicate_row[0]) >= max_identical
+
+
+def get_antispam_mute_until(chat_id: int, user_id: int) -> float:
+    """Return a persisted anti-spam mute deadline, or zero when absent."""
+    with _connection() as db:
+        row = db.execute(
+            "SELECT muted_until FROM antispam_mutes WHERE chat_id=? AND user_id=?",
+            (chat_id, user_id),
+        ).fetchone()
+    return float(row[0]) if row else 0.0
+
+
+def claim_antispam_mute(chat_id: int, user_id: int, now: float, duration: int) -> bool:
+    """Atomically claim one mute action, preventing duplicate concurrent restrictions."""
+    duration = max(1, min(int(duration), 3600))
+    with _connection() as db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute(
+            "SELECT muted_until FROM antispam_mutes WHERE chat_id=? AND user_id=?",
+            (chat_id, user_id),
+        ).fetchone()
+        if row and float(row[0]) > float(now):
+            return False
+        db.execute(
+            """INSERT INTO antispam_mutes(chat_id, user_id, muted_until) VALUES (?, ?, ?)
+               ON CONFLICT(chat_id, user_id) DO UPDATE SET muted_until=excluded.muted_until""",
+            (chat_id, user_id, float(now) + duration),
+        )
+        return True
+
+
+def clear_antispam_mute(chat_id: int, user_id: int, expected_until: float) -> None:
+    """Release a failed mute claim without clearing a newer concurrent claim."""
+    with _connection() as db:
+        db.execute(
+            "DELETE FROM antispam_mutes WHERE chat_id=? AND user_id=? AND muted_until=?",
+            (chat_id, user_id, float(expected_until)),
+        )
+
 
 def add_warning(chat_id: int, user_id: int) -> int:
     with _connection() as db:
