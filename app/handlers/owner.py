@@ -56,10 +56,9 @@ def create_owner_router(
             "Reply with exactly: Guardian chat test passed.",
         )
         safety_started = time.monotonic()
-        safety_result = await asyncio.to_thread(
-            NimSafetyClient(guardian_api_key, safety_model, timeout=20.0).classify,
-            "Hello everyone, hope you are having a good day!",
-        )
+        safety_result = await NimSafetyClient(
+            guardian_api_key, safety_model, timeout=20.0
+        ).classify("Hello everyone, hope you are having a good day!")
         safety_latency = int((time.monotonic() - safety_started) * 1000)
         chat_ok = bool(chat_result.text and chat_result.error is None)
         safety_ok = bool(safety_result is not None and not safety_result["unsafe"])
