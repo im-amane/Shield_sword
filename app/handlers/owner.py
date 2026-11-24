@@ -1,5 +1,4 @@
 """Owner-only identity, audit, database and backup commands."""
-import asyncio
 import time
 from html import escape
 from io import BytesIO
@@ -16,16 +15,13 @@ from app.storage import (
     create_database_backup, get_audit_events, get_database_status,
     verify_database_backup,
 )
-from app.ai_chat import DEFAULT_NIM_CHAT_MODEL, NimChatClient
 from app.ai_guard import DEFAULT_NIM_MODEL, NimSafetyClient
 
 
 def create_owner_router(
     owner_id: int | None,
-    chat_api_key: str = "",
     guardian_api_key: str = "",
     safety_model: str = DEFAULT_NIM_MODEL,
-    chat_model: str = DEFAULT_NIM_CHAT_MODEL,
 ) -> Router:
     """Create owner command handlers bound to the configured owner ID."""
     router = Router(name="owner")
@@ -60,23 +56,18 @@ def create_owner_router(
             guardian_api_key, safety_model, timeout=20.0
         ).classify("Hello everyone, hope you are having a good day!")
         safety_latency = int((time.monotonic() - safety_started) * 1000)
-        chat_ok = bool(chat_result.text and chat_result.error is None)
         safety_ok = bool(safety_result is not None and not safety_result["unsafe"])
         def line(label: str, ok: bool, latency: int, error: str | None = None) -> str:
             detail = f" · {latency} ms"
             if error:
                 detail += f" · {escape(error)}"
             return f"{'✅' if ok else '❌'} <b>{label}:</b> {'PASS' if ok else 'FAIL'}{detail}"
-        preview = escape((chat_result.text or "")[:220])
         report = (
-            "🧪 <b>Guardian AI engine diagnostics</b>\n\n"
-            + line("Chat engine", chat_ok, chat_result.latency_ms, chat_result.error) + "\n"
-            + f"<code>{escape(chat_model)}</code>\n\n"
-            + line("Guardian engine", safety_ok, safety_latency, None if safety_ok else "classification_failed") + "\n"
+            "🧪 <b>Guardian AI Guard diagnostics</b>\n\n"
+            + line("AI Guard", safety_ok, safety_latency, None if safety_ok else "classification_failed") + "\n"
             + f"<code>{escape(safety_model)}</code>\n\n"
-            + (f"<b>Chat sample:</b> {preview}\n\n" if preview else "")
-            + ("Both independent engines responded correctly." if chat_ok and safety_ok else
-               "At least one engine needs attention. Feature flags were not changed.")
+            + ("Safety classifier responded correctly." if safety_ok else
+               "AI Guard needs attention. Feature flags were not changed.")
         )
         await status.edit_text(premium_text(report[:3900]))
 
