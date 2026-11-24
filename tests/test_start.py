@@ -11,10 +11,10 @@ class StartMenuTests(unittest.TestCase):
         private = start_text("Ari")
         group = group_start_text("Anime Fans")
         self.assertIn("𝐖𝐞𝐥𝐜𝐨𝐦𝐞", private)
-        self.assertIn("Ari", private)
+        self.assertIn("𝐀𝐫𝐢", private)
         self.assertIn("𝐒𝐞𝐧𝐭𝐢𝐧𝐞𝐥", private)
         self.assertIn("𝐒𝐞𝐧𝐭𝐢𝐧𝐞𝐥 𝐢𝐬 𝐨𝐧𝐥𝐢𝐧𝐞", group)
-        self.assertIn("Anime Fans", group)
+        self.assertIn("𝐀𝐧𝐢𝐦𝐞 𝐅𝐚𝐧𝐬", group)
         self.assertNotEqual(private, group)
 
     def test_group_start_keyboard_has_help_and_about(self):
