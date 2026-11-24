@@ -41,6 +41,7 @@ from app.storage import (
 )
 from app.handlers.typography import premium_text
 from app.group_registry import GroupRegistryMiddleware
+from app.rate_limit import RequestLimitMiddleware
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 BACKUP_INTERVAL_SECONDS = 7 * 24 * 60 * 60
@@ -131,6 +132,8 @@ async def run() -> None:
     # Observe every message update before router filters, including /commands.
     # This makes group discovery independent of new-member joins or anti-spam hits.
     dispatcher.message.outer_middleware(GroupRegistryMiddleware())
+    dispatcher.message.outer_middleware(RequestLimitMiddleware(settings.owner_id))
+    dispatcher.callback_query.outer_middleware(RequestLimitMiddleware(settings.owner_id))
     # Anti-spam runs first so media updates are checked before the media-policy
     # router consumes them. Non-spam updates raise SkipHandler and continue.
     dispatcher.include_router(create_antispam_router(settings.owner_id))
