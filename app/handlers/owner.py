@@ -1,4 +1,5 @@
 """Owner-only identity, audit, database and backup commands."""
+import asyncio
 from html import escape
 from io import BytesIO
 
@@ -14,11 +15,74 @@ from app.storage import (
     create_database_backup, get_audit_events, get_database_status,
     verify_database_backup,
 )
+from app.ai_chat import DEFAULT_NIM_CHAT_MODEL, NimChatClient
+from app.ai_guard import DEFAULT_NIM_MODEL, parse_safety_result
+from app.nvidia_nim import request_nim_completion
 
 
-def create_owner_router(owner_id: int | None) -> Router:
+def create_owner_router(
+    owner_id: int | None,
+    nvidia_api_key: str = "",
+    safety_model: str = DEFAULT_NIM_MODEL,
+    chat_model: str = DEFAULT_NIM_CHAT_MODEL,
+) -> Router:
     """Create owner command handlers bound to the configured owner ID."""
     router = Router(name="owner")
+
+    def authorized_private_owner(message: Message) -> bool:
+        return (
+            message.chat.type == ChatType.PRIVATE
+            and is_owner(message.from_user.id if message.from_user else None, owner_id)
+        )
+
+    @router.message(Command("aitest"))
+    async def ai_test_command(message: Message) -> None:
+        if not authorized_private_owner(message):
+            await message.answer(premium_text("🔒 <b>Owner-only</b> · Use /aitest in my private chat."))
+            return
+        if not nvidia_api_key:
+            await message.answer(premium_text("❌ <b>NVIDIA NIM key missing</b>\n\nConfigure NVIDIA_NIM_API_KEY in Railway Variables."))
+            return
+
+        status = await message.answer(premium_text("🧪 <b>NVIDIA NIM diagnostics</b>\n\nChecking chat and safety models…"))
+        chat_result = await asyncio.to_thread(
+            NimChatClient(nvidia_api_key, chat_model).generate,
+            "Reply with exactly: Guardian chat test passed.",
+        )
+        safety_result = await asyncio.to_thread(
+            request_nim_completion,
+            nvidia_api_key,
+            safety_model,
+            [
+                {"role": "system", "content": (
+                    'Classify the supplied harmless test message. Return JSON only: '
+                    '{"User Safety":"safe" or "unsafe","Safety Categories":"short string"}.'
+                )},
+                {"role": "user", "content": "Hello everyone, hope you are having a good day!"},
+            ],
+            timeout=8.0,
+            max_tokens=100,
+        )
+        parsed_safety = parse_safety_result(safety_result.text or "")
+        chat_ok = bool(chat_result.text and chat_result.error is None)
+        safety_ok = bool(parsed_safety is not None and not parsed_safety["unsafe"])
+        def line(label: str, ok: bool, result) -> str:
+            detail = f" · {result.latency_ms} ms"
+            if result.error:
+                detail += f" · {escape(result.error)}"
+            return f"{'✅' if ok else '❌'} <b>{label}:</b> {'PASS' if ok else 'FAIL'}{detail}"
+        preview = escape((chat_result.text or "")[:220])
+        report = (
+            "🧪 <b>NVIDIA NIM diagnostics</b>\n\n"
+            + line("Chat model", chat_ok, chat_result) + "\n"
+            + f"<code>{escape(chat_model)}</code>\n\n"
+            + line("Safety model", safety_ok, safety_result) + "\n"
+            + f"<code>{escape(safety_model)}</code>\n\n"
+            + (f"<b>Chat sample:</b> {preview}\n\n" if preview else "")
+            + ("Both endpoints responded correctly." if chat_ok and safety_ok else
+               "At least one endpoint needs attention. Existing moderation settings were not changed.")
+        )
+        await status.edit_text(premium_text(report[:3900]))
 
     @router.message(Command("owner"))
     async def owner_command(message: Message) -> None:

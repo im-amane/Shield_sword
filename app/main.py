@@ -34,6 +34,7 @@ from app.handlers.diagnostics import create_diagnostics_router
 from app.handlers.permission_monitor import create_permission_monitor_router
 from app.handlers.security_status import create_security_status_router
 from app.handlers.ai_guard import create_ai_guard_router
+from app.handlers.ai_chat import create_ai_chat_router
 from app.ui import create_ui_router, install_ui_middleware
 from app.storage import (
     create_database_backup, init_storage,
@@ -43,6 +44,7 @@ from app.storage import (
 from app.handlers.typography import premium_text
 from app.group_registry import GroupRegistryMiddleware
 from app.rate_limit import RequestLimitMiddleware
+
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 BACKUP_INTERVAL_SECONDS = 7 * 24 * 60 * 60
@@ -55,7 +57,6 @@ async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
     while True:
         last_success = get_last_automatic_backup_at()
         if last_success is None:
-            # Preserve the initial first-run backup, but persist its success below.
             wait_seconds = 60
         else:
             wait_seconds = max(0, BACKUP_INTERVAL_SECONDS - (time.time() - last_success))
@@ -130,14 +131,10 @@ async def run() -> None:
     )
     install_ui_middleware(bot)
     dispatcher = Dispatcher()
-    # Observe every message update before router filters, including /commands.
-    # This makes group discovery independent of new-member joins or anti-spam hits.
     dispatcher.message.outer_middleware(GroupRegistryMiddleware())
     request_limiter = RequestLimitMiddleware(settings.owner_id)
     dispatcher.message.outer_middleware(request_limiter)
     dispatcher.callback_query.outer_middleware(request_limiter)
-    # Anti-spam runs first so media updates are checked before the media-policy
-    # router consumes them. Non-spam updates raise SkipHandler and continue.
     dispatcher.include_router(create_antispam_router(settings.owner_id))
     dispatcher.include_router(create_ui_router())
     dispatcher.include_router(start_router)
@@ -145,7 +142,12 @@ async def run() -> None:
     dispatcher.include_router(create_diagnostics_router())
     dispatcher.include_router(create_security_status_router())
     dispatcher.include_router(create_permission_monitor_router(settings.owner_id))
-    dispatcher.include_router(create_owner_router(settings.owner_id))
+    dispatcher.include_router(create_owner_router(
+        settings.owner_id,
+        settings.nvidia_nim_api_key,
+        settings.nvidia_nim_model,
+        settings.nvidia_nim_chat_model,
+    ))
     dispatcher.include_router(create_panel_router(settings.owner_id))
     dispatcher.include_router(create_welcome_router(settings.welcome_chat_ids, settings.owner_id))
     dispatcher.include_router(create_verification_router())
@@ -156,13 +158,23 @@ async def run() -> None:
     dispatcher.include_router(create_antilink_router())
     dispatcher.include_router(create_raid_router(settings.owner_id))
 
-    # Keep AI moderation opt-in and last in router order so deterministic filters
-    # retain priority. Missing credentials never prevent normal bot startup.
+    if settings.ai_chat_enabled and settings.nvidia_nim_api_key:
+        dispatcher.include_router(create_ai_chat_router(
+            settings.nvidia_nim_api_key,
+            settings.nvidia_nim_chat_model,
+            settings.nvidia_nim_model,
+        ))
+        logging.getLogger(__name__).info(
+            "NVIDIA NIM AI Chat enabled with model %s.", settings.nvidia_nim_chat_model
+        )
+    elif settings.ai_chat_enabled:
+        logging.getLogger(__name__).warning(
+            "AI_CHAT_ENABLED is true but NVIDIA_NIM_API_KEY is missing; AI Chat remains disabled."
+        )
+
     if settings.ai_guard_enabled and settings.nvidia_nim_api_key:
         dispatcher.include_router(create_ai_guard_router(
-            settings.owner_id,
-            settings.nvidia_nim_api_key,
-            settings.nvidia_nim_model,
+            settings.owner_id, settings.nvidia_nim_api_key, settings.nvidia_nim_model,
         ))
         logging.getLogger(__name__).info(
             "NVIDIA NIM AI Guard enabled with model %s.", settings.nvidia_nim_model
@@ -191,8 +203,7 @@ async def run() -> None:
                 "OWNER_ID is not configured; owner-only commands are locked."
             )
         await dispatcher.start_polling(
-            bot,
-            allowed_updates=dispatcher.resolve_used_update_types(),
+            bot, allowed_updates=dispatcher.resolve_used_update_types(),
             tasks_concurrency_limit=32,
         )
     finally:

@@ -4,6 +4,9 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from app.ai_chat import DEFAULT_NIM_CHAT_MODEL
+from app.ai_guard import DEFAULT_NIM_MODEL
+
 
 class ConfigurationError(RuntimeError):
     """Raised when required application configuration is missing or invalid."""
@@ -13,11 +16,12 @@ class ConfigurationError(RuntimeError):
 class Settings:
     bot_token: str
     owner_id: int | None
-    # Kept as an empty compatibility field for existing deployments; welcome is public.
     welcome_chat_ids: tuple[int, ...] = ()
     nvidia_nim_api_key: str = ""
-    nvidia_nim_model: str = "nvidia/llama-3.1-nemotron-safety-guard-8b-v3"
+    nvidia_nim_model: str = DEFAULT_NIM_MODEL
+    nvidia_nim_chat_model: str = DEFAULT_NIM_CHAT_MODEL
     ai_guard_enabled: bool = False
+    ai_chat_enabled: bool = False
 
 
 def load_settings() -> Settings:
@@ -39,16 +43,21 @@ def load_settings() -> Settings:
     ai_guard_enabled = os.getenv("AI_GUARD_ENABLED", "false").strip().casefold() in {
         "1", "true", "yes", "on",
     }
+    ai_chat_enabled = os.getenv("AI_CHAT_ENABLED", "false").strip().casefold() in {
+        "1", "true", "yes", "on",
+    }
     nvidia_nim_api_key = os.getenv("NVIDIA_NIM_API_KEY", "").strip()
-    nvidia_nim_model = os.getenv(
-        "NVIDIA_NIM_MODEL",
-        "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+    nvidia_nim_model = os.getenv("NVIDIA_NIM_MODEL", DEFAULT_NIM_MODEL).strip()
+    nvidia_nim_chat_model = os.getenv(
+        "NVIDIA_NIM_CHAT_MODEL", DEFAULT_NIM_CHAT_MODEL
     ).strip()
 
     return Settings(
         bot_token=token,
         owner_id=owner_id,
         nvidia_nim_api_key=nvidia_nim_api_key,
-        nvidia_nim_model=nvidia_nim_model or "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+        nvidia_nim_model=nvidia_nim_model or DEFAULT_NIM_MODEL,
+        nvidia_nim_chat_model=nvidia_nim_chat_model or DEFAULT_NIM_CHAT_MODEL,
         ai_guard_enabled=ai_guard_enabled,
+        ai_chat_enabled=ai_chat_enabled,
     )
