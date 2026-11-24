@@ -222,7 +222,7 @@ def section_text(section: str, page: int = 0) -> str:
             "/mute · /unmute · /ban · /unban · /kick · /purge · /warn · /warnings · /unwarn · /resetwarn\n\n"
             "<b>Protection settings</b>\n"
             "/antilink · /allowdomain · /removedomain · /badwords · /addword · /removeword\n"
-            "/raidstatus · /raidoff · /channelprotect\n\n"
+            "/raidstatus · /raidoff\n\n"
             "Only commands actually registered in this build are listed here. Group permissions and command scope still apply."
         )
     return "Unknown panel section."

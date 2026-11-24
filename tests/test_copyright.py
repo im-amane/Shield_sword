@@ -1,21 +1,17 @@
-"""Tests that normal group media is not blanket-deleted."""
+"""Regression tests for the non-destructive media policy."""
 import unittest
 
-from app.handlers.copyright import MEDIA_TYPES, create_copyright_router
+from app.handlers.copyright import create_copyright_router
 
 
 class CopyrightRouterTests(unittest.TestCase):
-    def test_group_media_is_not_registered_for_blanket_deletion(self) -> None:
+    def test_no_group_or_channel_media_deletion_handlers_are_registered(self):
         router = create_copyright_router()
-        self.assertEqual(router.name, "copyright")
-        self.assertEqual(len(router.message.handlers), 1)  # private /channelprotect command only
+        self.assertEqual(router.name, "media_policy")
+        self.assertEqual(len(router.message.handlers), 0)
         self.assertEqual(len(router.edited_message.handlers), 0)
-        self.assertEqual(len(router.channel_post.handlers), 1)
-        self.assertEqual(len(router.edited_channel_post.handlers), 1)
-        self.assertIn("video", MEDIA_TYPES)
-        self.assertIn("document", MEDIA_TYPES)
-        self.assertIn("photo", MEDIA_TYPES)
-        self.assertNotIn("text", MEDIA_TYPES)
+        self.assertEqual(len(router.channel_post.handlers), 0)
+        self.assertEqual(len(router.edited_channel_post.handlers), 0)
 
 
 if __name__ == "__main__":

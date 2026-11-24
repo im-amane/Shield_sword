@@ -1,4 +1,4 @@
-"""Optional NVIDIA NIM AI moderation layer for Telegram group text."""
+"""NVIDIA NIM AI moderation for group messages and channel posts."""
 from __future__ import annotations
 
 import logging
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_ai_guard_router(owner_id: int | None, api_key: str, model: str) -> Router:
-    """Create an opt-in AI router. API failures always fail open to existing filters."""
+    """Create AI moderation; provider failures fail open to deterministic filters."""
     router = Router(name="nvidia_nim_ai_guard")
     client = NimSafetyClient(api_key, model)
     limiter = AiScanLimiter()
@@ -36,8 +36,6 @@ def create_ai_guard_router(owner_id: int | None, api_key: str, model: str) -> Ro
             return
         if content.lstrip().startswith("/") or is_owner(user.id, owner_id):
             return
-
-        # Apply the local scan budget before any extra Telegram API lookup.
         if not limiter.allow(message.chat.id, user.id):
             return
         try:
@@ -54,7 +52,6 @@ def create_ai_guard_router(owner_id: int | None, api_key: str, model: str) -> Ro
         result = await client.classify(content)
         if not result or not result["unsafe"]:
             return
-
         try:
             await message.delete()
         except TelegramAPIError:
@@ -66,7 +63,10 @@ def create_ai_guard_router(owner_id: int | None, api_key: str, model: str) -> Ro
 
         categories = escape(result.get("categories") or "community safety policy")
         count = add_warning(message.chat.id, user.id)
-        record_audit_event(message.chat.id, "ai_guard_removed", None, user.id, f"categories={categories[:120]}; warning={count}")
+        record_audit_event(
+            message.chat.id, "ai_guard_removed", None, user.id,
+            f"categories={categories[:120]}; warning={count}",
+        )
         record_security_incident(
             message.chat.id, message.chat.title or "Telegram group",
             "ai_guard", "medium", user.id, user.username, user.full_name,
@@ -103,4 +103,44 @@ def create_ai_guard_router(owner_id: int | None, api_key: str, model: str) -> Ro
             f"📊 Warning: {count}/{WARN_LIMIT}"
         ))
 
+    async def inspect_channel_post(message: Message) -> None:
+        """Classify channel text/captions; never blanket-delete media."""
+        content = message.text or message.caption or ""
+        if message.chat.type != ChatType.CHANNEL or not content.strip():
+            return
+        # Channel post updates generally do not expose the individual poster.
+        # Therefore no member warning/mute is attempted; only unsafe post removal
+        # and an attributable-to-channel audit/incident record are made.
+        if not limiter.allow(message.chat.id, message.message_id):
+            return
+        result = await client.classify(content)
+        if not result or not result["unsafe"]:
+            return
+        try:
+            await message.delete()
+        except TelegramAPIError:
+            logger.warning(
+                "AI Guard flagged channel post but deletion failed chat_id=%s message_id=%s",
+                message.chat.id, message.message_id,
+            )
+            return
+        categories = escape(result.get("categories") or "community safety policy")
+        record_audit_event(
+            message.chat.id, "ai_guard_channel_post_removed", None, None,
+            f"message_id={message.message_id}; categories={categories[:120]}",
+        )
+        record_security_incident(
+            message.chat.id, message.chat.title or "Telegram channel",
+            "ai_guard_channel_post", "medium", details=(
+                f"AI safety classification; message_id={message.message_id}; "
+                f"categories={categories[:120]}"
+            ),
+        )
+        logger.warning(
+            "AI Guard removed unsafe channel post chat_id=%s message_id=%s categories=%s",
+            message.chat.id, message.message_id, categories[:120],
+        )
+
+    router.channel_post.register(inspect_channel_post, F.text | F.caption)
+    router.edited_channel_post.register(inspect_channel_post, F.text | F.caption)
     return router

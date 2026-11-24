@@ -51,7 +51,7 @@ There is no conversational AI Chat feature or chat-model API configuration. AI G
 - Anti-spam detects flood behavior and applies temporary 60-second restrictions.
 - Raid mode activates at 500 human joins within 10 minutes, lasts 30 minutes, and alerts the group and owner. The owner can inspect with `/raidstatus` and disable with `/raidoff`.
 - An early-warning owner alert is sent when 25 human accounts join within 60 seconds. This alert does not itself ban or restrict members.
-- AI Guard checks group text and media captions for defined high-risk safety categories. It exempts the owner, admins, bots and commands; ambiguous content is treated as safe by the classifier. Provider or member-lookup failures do not trigger AI deletion.
+- AI Guard checks group and channel text/media captions for defined high-risk safety categories. Channel posts are classified without attempting to identify the channel poster. It exempts the owner, admins, bots and commands; ambiguous content is treated as safe by the classifier. Provider or member-lookup failures do not trigger AI deletion.
 - Existing anti-link, bad-word and anti-spam filters remain active.
 
 ## Media policy and copyright limitations
@@ -82,7 +82,7 @@ There is no conversational AI Chat feature or chat-model API configuration. AI G
 ## Telegram permissions
 
 The bot needs only the administrator permissions required for the enabled features:
-- Delete Messages: moderation cleanup and channel protection.
+- Delete Messages: removal of content explicitly classified unsafe by moderation.
 - Restrict Members: CAPTCHA and temporary anti-spam/AI-warning mutes.
 - Ban Users: member removal and verification expiry.
 
