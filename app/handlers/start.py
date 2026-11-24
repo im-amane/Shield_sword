@@ -305,9 +305,8 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
     if action == "about":
         await callback.answer(
             premium_text(
-                "🛡️ Sentinel🛡️剣 · Ani World Guardian\n\n"
-                "I protect groups with verification, anti-spam, raid defence, "
-                "link filtering and moderation tools. ✨"
+                "🛡️ Sentinel🛡️剣 · Ani World\n\n"
+                "Automated group and channel security: verification, anti-spam, AI safety checks for text/captions, raid monitoring and moderation. Normal media stays allowed."
             ),
             show_alert=True,
         )
@@ -316,7 +315,7 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
     missing_links = {
         "group": ("MAIN_GROUP_URL", "Main Group link is not configured yet. 🔗"),
         "owner": ("OWNER_CONTACT_URL", "Owner contact link is not configured yet. 👤"),
-        "addgroup": ("", "Use the Add Me button after opening /start again. ➕"),
+        "addgroup": ("", "Open /start in private chat to access the add-to-group link. ➕"),
     }
     if action in missing_links:
         variable, message_text = missing_links[action]
