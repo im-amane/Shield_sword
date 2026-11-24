@@ -3,10 +3,28 @@ import os
 import unittest
 from unittest.mock import patch
 
-from app.handlers.start import _public_url, start_keyboard
+from app.handlers.start import (\n    _public_url, group_start_keyboard, group_start_text, start_keyboard, start_text,\n)
 
 
 class StartMenuTests(unittest.TestCase):
+    def test_private_and_group_start_messages_are_distinct(self):
+        private = start_text("Ari")
+        group = group_start_text("Anime Fans")
+        self.assertIn("Welcome", private)
+        self.assertIn("Ari", private)
+        self.assertIn("Sentinel", private)
+        self.assertIn("Sentinel is online", group)
+        self.assertIn("Anime Fans", group)
+        self.assertNotEqual(private, group)
+
+    def test_group_start_keyboard_has_help_and_about(self):
+        callbacks = [
+            button.callback_data
+            for row in group_start_keyboard().inline_keyboard
+            for button in row
+        ]
+        self.assertEqual(callbacks, ["start:help", "start:about"])
+
     def test_rejects_non_https_or_malformed_links(self):
         with patch.dict(os.environ, {"MAIN_GROUP_URL": "http://example.com"}):
             self.assertIsNone(_public_url("MAIN_GROUP_URL"))
