@@ -124,6 +124,16 @@ CREATE INDEX IF NOT EXISTS idx_security_incidents_time
     ON security_incidents(created_at DESC);
 """
 
+# Every application-owned table must be present before a backup is considered
+# recoverable. Keep this set aligned with SCHEMA_SQL migrations.
+_REQUIRED_BACKUP_TABLES = frozenset({
+    "warnings", "badword_settings", "badwords", "antilink_settings",
+    "allowed_domains", "pending_verifications", "raid_joins", "raid_modes",
+    "copyright_settings", "channel_media_settings", "security_audit",
+    "known_groups", "member_join_events", "security_incidents",
+    "automatic_backup_state", "daily_report_state",
+})
+
 _initialized_path: Path | None = None
 _CACHE_TTL = 15.0
 _feature_cache: dict[tuple[str, int], tuple[float, bool]] = {}
@@ -663,13 +673,7 @@ def verify_database_backup(snapshot: bytes) -> dict:
                     "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
                 ).fetchall()
             }
-            required_tables = {
-                "warnings", "pending_verifications", "security_audit",
-                "security_incidents", "known_groups", "member_join_events",
-                "automatic_backup_state", "daily_report_state",
-                "channel_media_settings",
-            }
-            missing = required_tables - tables
+            missing = _REQUIRED_BACKUP_TABLES - tables
             if missing:
                 raise sqlite3.DatabaseError(
                     "Restored backup is missing required tables: " + ", ".join(sorted(missing))
