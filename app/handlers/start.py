@@ -7,6 +7,7 @@ from html import escape
 from urllib.parse import urlsplit
 
 from aiogram import F, Router
+from aiogram.enums import ChatType
 from aiogram.filters import Command, CommandStart
 from app.handlers.typography import premium_text
 
@@ -21,24 +22,55 @@ router = Router(name="start")
 
 
 def start_text(first_name: str) -> str:
-    safe_name = escape(first_name)
+    """Private welcome for an individual user."""
+    safe_name = escape(first_name, quote=True)
     return premium_text((
-        f"Welcome home, {safe_name}. 👋\n\n"
-        "⚔️ <b>𝗔𝗡𝗜 𝗪𝗢𝗥𝗟𝗗 剣</b>\n"
-        "🛡️ <b>GUARDIAN · COMMUNITY PROTECTION</b>\n\n"
-        "Think of me as the elder brother watching over this community. "
-        "I'll welcome the good ones, keep an eye on trouble, and step in "
-        "when someone puts the family at risk. 🤝\n\n"
-        "╭─ <b>MY PROMISE</b>\n"
-        "│ 🧩 Verify new members\n"
-        "│ 🌊 Stop spam and harmful links\n"
-        "│ ⚔️ Detect raid activity\n"
-        "│ ⚖️ Apply fair, consistent moderation\n"
-        "│ 🔔 Keep the owner informed\n"
-        "╰────────────────\n\n"
-        "<i>Protect the community. Respect its people. Never punish without reason.</i>\n\n"
-        "Use the buttons below to explore my systems. ❤️"
+        f"Welcome, {safe_name}. 👋\n\n"
+        "🛡️ <b>Sentinel · Ani World 剣</b>\n"
+        "<i>Autonomous Community Security & Management</i>\n\n"
+        "I am Sentinel, the security and management system built for Ani World communities. "
+        "I work quietly in the background to help keep groups and channels safer.\n\n"
+        "╭─ <b>SECURITY SYSTEMS</b>\n"
+        "│ 🧩 New-member verification\n"
+        "│ 🚫 Anti-spam and link protection\n"
+        "│ 🧠 AI safety checks for text and captions\n"
+        "│ ⚔️ Raid and unusual-join monitoring\n"
+        "│ ⚖️ Moderation and security audit logs\n"
+        "│ 🔐 Owner reports and encrypted backups\n"
+        "╰──────────────────\n\n"
+        "普通 photos, videos, GIFs, documents and other normal media are not blanket-deleted. "
+        "AI Guard checks text and captions; it does not verify visual copyright ownership.\n\n"
+        "<i>Protection with control. Moderation with context.</i>\n\n"
+        "Choose a section below to explore Sentinel."
     ))
+
+
+def group_start_text(chat_title: str) -> str:
+    """A separate introduction intended for a group or supergroup."""
+    safe_title = escape(chat_title or "this community", quote=True)
+    return premium_text((
+        f"🛡️ <b>Sentinel is online in {safe_title}</b>\n"
+        "<i>Ani World 剣 · Community Security & Management</i>\n\n"
+        "This group is connected to Sentinel's automated protection system. "
+        "I monitor suspicious activity and apply the configured safety rules.\n\n"
+        "╭─ <b>ACTIVE PROTECTION</b>\n"
+        "│ 🧩 New-member verification\n"
+        "│ 🚫 Anti-spam and link filtering\n"
+        "│ 🧠 AI safety checks for text and captions\n"
+        "│ ⚔️ Raid and join-surge monitoring\n"
+        "│ ⚖️ Moderation and incident logging\n"
+        "╰──────────────────\n\n"
+        "Admins: use /security to review protection status and /checkpermissions "
+        "to verify Sentinel's Telegram permissions. Use /help for the command guide.\n\n"
+        "<i>Normal photos, videos and other media are not blanket-deleted.</i>"
+    ))
+
+
+def group_start_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="📚 Help Center", callback_data="start:help"),
+        InlineKeyboardButton(text="🛡️ About Sentinel", callback_data="start:about"),
+    ]])
 
 
 def _public_url(name: str) -> str | None:
@@ -81,7 +113,7 @@ def start_keyboard(bot_username: str | None = None) -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="➕ Add Guardian to Group", url=add_url
+                    text="➕ Add Sentinel to Group", url=add_url
                 ) if add_url else InlineKeyboardButton(
                     text="➕ Add Guardian to Group", callback_data="start:addgroup"
                 ),
@@ -192,7 +224,15 @@ def help_section_keyboard() -> InlineKeyboardMarkup:
 
 @router.message(CommandStart())
 async def start_command(message: Message) -> None:
-    # Telegram text reveal/loading animation before the actual welcome message.
+    bot_identity = await message.bot.get_me()
+    if message.chat.type in (ChatType.GROUP, ChatType.SUPERGROUP):
+        await message.answer(
+            group_start_text(message.chat.title or "this community"),
+            reply_markup=group_start_keyboard(),
+        )
+        return
+
+    # Keep the short loading animation in private chat only.
     frames = [
         "╭──────────────╮\n"
         "   ⚔️ <b>ANI WORLD</b>\n"
@@ -215,7 +255,6 @@ async def start_command(message: Message) -> None:
         "╰──────────────╯\n"
         "<i>Ready! ✨</i>",
     ]
-    bot_identity = await message.bot.get_me()
     sent = await message.answer(premium_text(frames[0]))
     for frame in frames[1:]:
         await asyncio.sleep(0.55)
