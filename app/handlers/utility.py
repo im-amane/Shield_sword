@@ -5,29 +5,9 @@ from aiogram import Router
 from aiogram.enums import ChatType
 from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import Command
-from aiogram.types import BufferedInputFile, Message
+from aiogram.types import Message
 
 from app.storage import get_member_profile_history, record_member_profile
-from app.ui_cards import render_user_profile_card
-
-
-async def _profile_photo(bot, user_id: int) -> bytes | None:
-    try:
-        photos = await bot.get_user_profile_photos(user_id, limit=1)
-        if not photos.photos:
-            return None
-        photo = photos.photos[0][-1]
-        file = await bot.get_file(photo.file_id)
-        if not file.file_path:
-            return None
-        stream = await bot.download_file(file.file_path)
-        if stream is None:
-            return None
-        if hasattr(stream, "getvalue"):
-            return stream.getvalue()
-        return stream.read()
-    except (TelegramAPIError, OSError, ValueError):
-        return None
 
 
 def _previous_names(history: list[dict]) -> list[str]:
@@ -93,23 +73,14 @@ def create_utility_router() -> Router:
         )
         history = get_member_profile_history(target.id, limit=6)
         group_chat = message.chat.type in (ChatType.GROUP, ChatType.SUPERGROUP)
-        avatar = await _profile_photo(message.bot, target.id)
-        card = render_user_profile_card(
-            display_name=" ".join(part for part in (first_name, last_name) if part),
-            username=f"@{username}" if username else "Not set",
-            user_id=target.id,
-            first_name=first_name,
-            last_name=last_name,
-            bio=bio,
-            current_chat_id=message.chat.id,
-            group_title=message.chat.title if group_chat else None,
-            group_id=message.chat.id if group_chat else None,
-            avatar=avatar,
-            name_history=_previous_names(history),
-        )
-        await message.answer_photo(
-            BufferedInputFile(card, filename=f"sentinel-user-{target.id}.png"),
-            caption="🪪 <b>Sentinel · User Profile Card</b>",
-        )
+        lines = [
+            "🪪 <b>Telegram ID</b>",
+            f"👤 <b>User ID:</b> <code>{target.id}</code>",
+            f"💬 <b>Chat ID:</b> <code>{message.chat.id}</code>",
+        ]
+        if group_chat:
+            lines.insert(0, f"👥 <b>Group:</b> {message.chat.title or 'Telegram group'}")
+            lines.append(f"🆔 <b>Group ID:</b> <code>{message.chat.id}</code>")
+        await message.answer("\\n".join(lines))
 
     return router
