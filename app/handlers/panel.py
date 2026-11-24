@@ -70,7 +70,7 @@ def dashboard_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="🔄 Refresh", callback_data="owner_panel:refresh"),
-            InlineKeyboardButton(text="✖️ Close", callback_data="owner_panel:close"),
+            InlineKeyboardButton(text="✖️ Cancel", callback_data="owner_panel:close"),
         ],
     ])
 
@@ -257,14 +257,14 @@ def section_keyboard(section: str, page: int = 0) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="⬅️ Back", callback_data="owner_panel:home"),
             InlineKeyboardButton(text="🔄 Refresh", callback_data=f"owner_panel:refresh_groups_page:{page}"),
         ])
-        rows.append([InlineKeyboardButton(text="✖️ Close", callback_data="owner_panel:close")])
+        rows.append([InlineKeyboardButton(text="✖️ Cancel", callback_data="owner_panel:close")])
         return InlineKeyboardMarkup(inline_keyboard=rows)
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="⬅️ Back", callback_data="owner_panel:home"),
             InlineKeyboardButton(text="🔄 Refresh", callback_data=f"owner_panel:refresh_{section}"),
         ],
-        [InlineKeyboardButton(text="✖️ Close", callback_data="owner_panel:close")],
+        [InlineKeyboardButton(text="✖️ Cancel", callback_data="owner_panel:close")],
     ])
 
 
@@ -313,7 +313,7 @@ def group_detail_keyboard(chat_id: int, page: int = 0) -> InlineKeyboardMarkup:
                 callback_data=f"owner_panel:refresh_group:{chat_id}:{max(0, page)}",
             ),
         ],
-        [InlineKeyboardButton(text="✖️ Close", callback_data="owner_panel:close")],
+        [InlineKeyboardButton(text="✖️ Cancel", callback_data="owner_panel:close")],
     ])
 
 

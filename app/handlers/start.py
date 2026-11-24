@@ -67,10 +67,13 @@ def group_start_text(chat_title: str) -> str:
 
 
 def group_start_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="📚 Help Center", callback_data="start:help"),
-        InlineKeyboardButton(text="🛡️ About Sentinel", callback_data="start:about"),
-    ]])
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📚 Help Center", callback_data="start:help"),
+            InlineKeyboardButton(text="🛡️ About Sentinel", callback_data="start:about"),
+        ],
+        [InlineKeyboardButton(text="✖️ Cancel", callback_data="ui:cancel")],
+    ])
 
 
 def _public_url(name: str) -> str | None:
@@ -118,6 +121,7 @@ def start_keyboard(bot_username: str | None = None) -> InlineKeyboardMarkup:
                     text="➕ Add Sentinel to Group", callback_data="start:addgroup"
                 ),
             ],
+            [InlineKeyboardButton(text="✖️ Cancel", callback_data="ui:cancel")],
         ]
     )
 
@@ -146,6 +150,10 @@ def help_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(text="👑 Owner", callback_data="help:owner"),
             InlineKeyboardButton(text="⚙️ Permissions", callback_data="help:permissions"),
+        ],
+        [
+            InlineKeyboardButton(text="⬅️ Main Menu", callback_data="help:menu"),
+            InlineKeyboardButton(text="✖️ Cancel", callback_data="ui:cancel"),
         ],
     ])
 
@@ -217,9 +225,13 @@ _HELP_SECTIONS = {
 
 
 def help_section_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="⬅️ All Help Sections", callback_data="help:home")
-    ]])
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="⬅️ Help Center", callback_data="help:home"),
+            InlineKeyboardButton(text="✖️ Cancel", callback_data="ui:cancel"),
+        ],
+        [InlineKeyboardButton(text="🏠 Main Menu", callback_data="help:menu")],
+    ])
 
 
 @router.message(CommandStart())
@@ -282,6 +294,17 @@ async def help_section_callback(callback: CallbackQuery) -> None:
         await callback.message.edit_text(premium_text(help_text()), reply_markup=help_keyboard())
         await callback.answer()
         return
+    if section == "menu":
+        if callback.message.chat.type in (ChatType.GROUP, ChatType.SUPERGROUP):
+            text = group_start_text(callback.message.chat.title or "this community")
+            keyboard = group_start_keyboard()
+        else:
+            identity = await callback.bot.get_me()
+            text = start_text(callback.from_user.first_name or "there")
+            keyboard = start_keyboard(identity.username)
+        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.answer("Main menu")
+        return
     content = _HELP_SECTIONS.get(section)
     if content is None:
         await callback.answer(premium_text("That help section is unavailable. Please reopen /help."), show_alert=True)
@@ -326,3 +349,11 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
         return
 
     await callback.answer(premium_text("This menu action is unavailable. Please reopen /start."), show_alert=True)
+
+
+@router.callback_query(F.data == "ui:cancel")
+async def cancel_inline_menu(callback: CallbackQuery) -> None:
+    """Dismiss the current inline menu without deleting the surrounding message."""
+    if callback.message:
+        await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer("Menu cancelled.")
