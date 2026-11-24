@@ -35,6 +35,7 @@ def render_user_profile_card(*, display_name: str, username: str, user_id: int,
     name_history: Iterable[str] = ()) -> bytes:
     """Render Telegram-visible profile fields and observed name history."""
     rows = [("USERNAME", username or "Not set"), ("TELEGRAM ID", str(user_id)),
+        ("PRIVATE CHAT ID", str(user_id)),
         ("FIRST NAME", first_name or "Not available"), ("LAST NAME", last_name or "Not set"),
         ("BIO", bio or "Not available"), ("CURRENT CHAT ID", str(current_chat_id))]
     if group_id is not None:
