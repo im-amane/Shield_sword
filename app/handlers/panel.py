@@ -288,7 +288,7 @@ def group_detail_text(chat_id: int) -> str | None:
         "<b>Protection status</b>\n"
         f"• Anti-link: <b>{state(group['antilink_enabled'])}</b>\n"
         f"• Bad-word filter: <b>{state(group['badwords_enabled'])}</b>\n"
-        f"• Media protection: <b>{state(group['copyright_enabled'])}</b>\n"
+        "• Normal media: <b>Allowed · no blanket deletion</b>\n"
         f"• Raid mode: <b>{raid_state}</b>\n"
         "• Join CAPTCHA: <b>Permission-dependent</b>\n\n"
         "<b>Community activity</b>\n"
