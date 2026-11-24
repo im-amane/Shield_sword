@@ -31,7 +31,7 @@ class WelcomeMessageTests(unittest.TestCase):
         message = render_welcome_message("Anime Fans", members)
         self.assertIn("𝐎𝐧𝐞", message)
         self.assertIn("𝐓𝐰𝐨", message)
-        self.assertIn("𝐧𝐞𝐰 𝐦𝐞𝐦𝐛𝐞𝐫𝐬", message)
+        self.assertIn("𝐖𝐞𝐥𝐜𝐨𝐦𝐞 𝐭𝐨 𝐭𝐡𝐞 𝐜𝐨𝐦𝐦𝐮𝐧𝐢𝐭𝐲", message)
 
     def test_welcome_explains_sentinel_verification_and_media_policy(self) -> None:
         member = User(id=12345, is_bot=False, first_name="Ari")
