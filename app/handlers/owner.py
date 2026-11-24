@@ -49,7 +49,7 @@ def create_owner_router(
             NimChatClient(nvidia_api_key, chat_model).generate,
             "Reply with exactly: Guardian chat test passed.",
         )
-        safety_result = await __import__("asyncio").to_thread(
+        safety_result = await asyncio.to_thread(
             request_nim_completion,
             nvidia_api_key,
             safety_model,
