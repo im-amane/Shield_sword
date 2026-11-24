@@ -13,6 +13,9 @@ class LoadSettingsTests(unittest.TestCase):
         self.assertEqual(settings.bot_token, "123:abc")
         self.assertIsNone(settings.owner_id)
         self.assertEqual(settings.welcome_chat_ids, ())
+        self.assertEqual(settings.nvidia_nim_chat_model, "nvidia/nemotron-3.5-bolt-e4b")
+        self.assertFalse(settings.ai_chat_enabled)
+        self.assertFalse(settings.ai_guard_enabled)
 
     def test_loads_optional_owner_id(self) -> None:
         with patch.dict(
