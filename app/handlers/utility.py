@@ -1,4 +1,4 @@
-""""Small utility commands for Telegram chats."""
+"""Small utility commands for Telegram chats."""
 from __future__ import annotations
 
 from aiogram import Router
