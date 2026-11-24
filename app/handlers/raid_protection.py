@@ -106,8 +106,8 @@ def create_raid_router(owner_id: int | None = None) -> Router:
     router = Router(name="raid_protection")
 
     @router.message(Command("raidstatus"))
-    await send_category_card(message, "security", "/raidstatus", "Raid protection controls")
     async def raid_status_command(message: Message) -> None:
+    await send_category_card(message, "security", "/raidstatus", "Raid protection controls")
         if not message.from_user or not is_owner(message.from_user.id, owner_id):
             await message.answer(premium_text("🔒 <b>Owner Access Only</b>\n\nRaid controls are reserved for the bot owner. 👑"))
             return
@@ -122,8 +122,8 @@ def create_raid_router(owner_id: int | None = None) -> Router:
         ))
 
     @router.message(Command("raidoff"))
-    await send_category_card(message, "security", "/raidoff", "Raid protection controls")
     async def raid_off_command(message: Message) -> None:
+    await send_category_card(message, "security", "/raidoff", "Raid protection controls")
         if not message.from_user or not is_owner(message.from_user.id, owner_id):
             await message.answer(premium_text("🔒 <b>Owner Access Only</b>\n\nThis control is reserved for the bot owner. 👑"))
             return
