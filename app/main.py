@@ -33,6 +33,7 @@ from app.handlers.utility import create_utility_router
 from app.handlers.diagnostics import create_diagnostics_router
 from app.handlers.permission_monitor import create_permission_monitor_router
 from app.handlers.security_status import create_security_status_router
+from app.handlers.ai_guard import create_ai_guard_router
 from app.ui import create_ui_router, install_ui_middleware
 from app.storage import (
     create_database_backup, init_storage,
@@ -70,7 +71,7 @@ async def automatic_backup_loop(bot: Bot, owner_id: int) -> None:
                 ),
                 protect_content=True,
                 caption=premium_text(
-                    "🛡️ <b>Automatic Weekly Database Backup</b>\n\n"
+                    "🛡️ <b>Automatic Weekly Database Backup</b>\\n\\n"
                     "An AES-256-GCM encrypted, integrity-verified backup is attached. The next automatic backup is scheduled in 7 days. Keep it private and safe. 🔐"
                 ),
             )
@@ -100,13 +101,13 @@ async def daily_security_report_loop(bot: Bot, owner_id: int) -> None:
         try:
             stats = get_owner_security_summary()
             report = (
-                "🛡️ <b>Daily Security Report</b>\n\n"
-                f"👥 Groups monitored: <b>{stats['groups']}</b>\n"
-                f"🆕 New members (24h): <b>{stats['joins_24h']}</b>\n"
-                f"🚨 Security incidents (24h): <b>{stats['incidents_24h']}</b>\n"
-                f"⚔️ Raids detected (7d): <b>{stats['raids_7d']}</b>\n"
-                f"🔇 Anti-spam actions (24h): <b>{stats['spam_24h']}</b>\n"
-                f"🚧 Active raid modes: <b>{stats['active_raids']}</b>\n\n"
+                "🛡️ <b>Daily Security Report</b>\\n\\n"
+                f"👥 Groups monitored: <b>{stats['groups']}</b>\\n"
+                f"🆕 New members (24h): <b>{stats['joins_24h']}</b>\\n"
+                f"🚨 Security incidents (24h): <b>{stats['incidents_24h']}</b>\\n"
+                f"⚔️ Raids detected (7d): <b>{stats['raids_7d']}</b>\\n"
+                f"🔇 Anti-spam actions (24h): <b>{stats['spam_24h']}</b>\\n"
+                f"🚧 Active raid modes: <b>{stats['active_raids']}</b>\\n\\n"
                 "Next report: in 24 hours. 🔐"
             )
             await bot.send_message(chat_id=owner_id, text=premium_text(report))
@@ -154,6 +155,22 @@ async def run() -> None:
     dispatcher.include_router(create_copyright_router())
     dispatcher.include_router(create_antilink_router())
     dispatcher.include_router(create_raid_router(settings.owner_id))
+
+    # Keep AI moderation opt-in and last in router order so deterministic filters
+    # retain priority. Missing credentials never prevent normal bot startup.
+    if settings.ai_guard_enabled and settings.nvidia_nim_api_key:
+        dispatcher.include_router(create_ai_guard_router(
+            settings.owner_id,
+            settings.nvidia_nim_api_key,
+            settings.nvidia_nim_model,
+        ))
+        logging.getLogger(__name__).info(
+            "NVIDIA NIM AI Guard enabled with model %s.", settings.nvidia_nim_model
+        )
+    elif settings.ai_guard_enabled:
+        logging.getLogger(__name__).warning(
+            "AI_GUARD_ENABLED is true but NVIDIA_NIM_API_KEY is missing; AI Guard remains disabled."
+        )
 
     backup_task = (
         asyncio.create_task(automatic_backup_loop(bot, settings.owner_id))
