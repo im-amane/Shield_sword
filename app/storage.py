@@ -133,6 +133,8 @@ CREATE INDEX IF NOT EXISTS idx_antispam_messages_member_time
     ON antispam_messages(chat_id, user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_antispam_messages_duplicate
     ON antispam_messages(chat_id, user_id, fingerprint, created_at);
+CREATE INDEX IF NOT EXISTS idx_antispam_messages_created_at
+    ON antispam_messages(created_at);
 CREATE TABLE IF NOT EXISTS antispam_mutes (
     chat_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
@@ -226,6 +228,14 @@ def record_antispam_message(
     with _connection() as db:
         db.execute("BEGIN IMMEDIATE")
         db.execute(
+            "DELETE FROM antispam_messages WHERE created_at<?",
+            (float(now) - 600.0,),
+        )
+        db.execute(
+            "DELETE FROM antispam_mutes WHERE muted_until<=?",
+            (float(now),),
+        )
+        db.execute(
             "DELETE FROM antispam_messages WHERE chat_id=? AND user_id=? AND created_at<?",
             (chat_id, user_id, cutoff),
         )
@@ -282,14 +292,6 @@ def clear_antispam_mute(chat_id: int, user_id: int, expected_until: float) -> No
             "DELETE FROM antispam_mutes WHERE chat_id=? AND user_id=? AND muted_until=?",
             (chat_id, user_id, float(expected_until)),
         )
-
-
-def cleanup_antispam_state(now: float) -> None:
-    """Bound retained state to active rolling windows and unexpired mutes."""
-    with _connection() as db:
-        db.execute("DELETE FROM antispam_messages WHERE created_at<?", (float(now) - 600.0,))
-        db.execute("DELETE FROM antispam_mutes WHERE muted_until<=?", (float(now),))
-
 
 
 def add_warning(chat_id: int, user_id: int) -> int:
