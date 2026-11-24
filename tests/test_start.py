@@ -10,10 +10,10 @@ class StartMenuTests(unittest.TestCase):
     def test_private_and_group_start_messages_are_distinct(self):
         private = start_text("Ari")
         group = group_start_text("Anime Fans")
-        self.assertIn("Welcome", private)
+        self.assertIn("𝐖𝐞𝐥𝐜𝐨𝐦𝐞", private)
         self.assertIn("Ari", private)
-        self.assertIn("Sentinel", private)
-        self.assertIn("Sentinel is online", group)
+        self.assertIn("𝐒𝐞𝐧𝐭𝐢𝐧𝐞𝐥", private)
+        self.assertIn("𝐒𝐞𝐧𝐭𝐢𝐧𝐞𝐥 𝐢𝐬 𝐨𝐧𝐥𝐢𝐧𝐞", group)
         self.assertIn("Anime Fans", group)
         self.assertNotEqual(private, group)
 
