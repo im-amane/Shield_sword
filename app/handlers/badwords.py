@@ -12,7 +12,6 @@ from aiogram.filters import BaseFilter, Command
 from aiogram.types import ChatPermissions, Message
 
 from app.handlers.typography import premium_text
-from app.handlers.card_helpers import send_category_card
 from app.handlers.warnings import WARN_LIMIT, add_warning, reset_warnings
 from app.storage import record_audit_event, record_security_incident, add_badword, get_badwords, is_feature_enabled, remove_badword, set_feature_enabled
 
@@ -80,7 +79,6 @@ def create_badwords_router() -> Router:
 
     @router.message(Command("badwords"))
     async def badwords_command(message: Message) -> None:
-        await send_category_card(message, "security", "/badwords", "Bad-word filter settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
@@ -110,7 +108,6 @@ def create_badwords_router() -> Router:
 
     @router.message(Command("addword"))
     async def addword_command(message: Message) -> None:
-        await send_category_card(message, "security", "/addword", "Bad-word filter settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
@@ -126,7 +123,6 @@ def create_badwords_router() -> Router:
 
     @router.message(Command("removeword"))
     async def removeword_command(message: Message) -> None:
-        await send_category_card(message, "security", "/removeword", "Bad-word filter settings")
         if not await require_admin(message):
             return
         args = (message.text or "").split(maxsplit=1)
