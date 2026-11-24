@@ -38,7 +38,7 @@ def start_text(first_name: str) -> str:
         "│ ⚖️ Moderation and security audit logs\n"
         "│ 🔐 Owner reports and encrypted backups\n"
         "╰──────────────────\n\n"
-        "普通 photos, videos, GIFs, documents and other normal media are not blanket-deleted. "
+        "Ordinary photos, videos, GIFs, documents and other normal media are not blanket-deleted. "
         "AI Guard checks text and captions; it does not verify visual copyright ownership.\n\n"
         "<i>Protection with control. Moderation with context.</i>\n\n"
         "Choose a section below to explore Sentinel."
@@ -128,7 +128,7 @@ def help_text() -> str:
         "Commands ko categories mein divide kiya gaya hai. Neeche kisi section par tap karo.\n\n"
         "🛡️ Group protection · 👮 Moderation\n"
         "👤 General · 👑 Owner tools\n\n"
-        "©️ Copyright Shield runs automatically in groups.\n\n"
+        "AI Guard scans text and captions when enabled; ordinary media is not blanket-deleted.\n\n"
         "<i>Har section mein command ka use aur zaroori permissions di gayi hain.</i>"
     )
 
@@ -284,7 +284,7 @@ async def help_section_callback(callback: CallbackQuery) -> None:
         return
     content = _HELP_SECTIONS.get(section)
     if content is None:
-        await callback.answer(premium_text("Unknown help section. 😅"), show_alert=True)
+        await callback.answer(premium_text("That help section is unavailable. Please reopen /help."), show_alert=True)
         return
     await callback.message.edit_text(
         premium_text(content),
@@ -305,7 +305,7 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
     if action == "about":
         await callback.answer(
             premium_text(
-                "🛡️ Shield 剣 · Ani World Guardian\n\n"
+                "🛡️ Sentinel🛡️剣 · Ani World Guardian\n\n"
                 "I protect groups with verification, anti-spam, raid defence, "
                 "link filtering and moderation tools. ✨"
             ),
@@ -326,4 +326,4 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
             await callback.answer(premium_text(message_text), show_alert=True)
         return
 
-    await callback.answer(premium_text("Unknown menu action. 😅"), show_alert=True)
+    await callback.answer(premium_text("This menu action is unavailable. Please reopen /start."), show_alert=True)
