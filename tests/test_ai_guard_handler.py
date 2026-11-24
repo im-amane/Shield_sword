@@ -53,11 +53,9 @@ class AiGuardHandlerTests(unittest.IsolatedAsyncioTestCase):
         warning.assert_not_called()
 
     async def test_unsafe_message_is_deleted_and_audited(self):
-        self.client.classify.return_value = {
-            "unsafe": True, "categories": "Threat"
-        }
-        with patch("app.handlers.ai_guard.add_warning", return_value=1) as warning, \
-             patch("app.handlers.ai_guard.record_audit_event") as audit, \
+        self.client.classify.return_value = {"unsafe": True, "categories": "Threat"}
+        with patch("app.handlers.ai_guard.add_warning", return_value=1) as warning, \\
+             patch("app.handlers.ai_guard.record_audit_event") as audit, \\
              patch("app.handlers.ai_guard.record_security_incident") as incident:
             await self.handler(self.message)
         self.message.delete.assert_awaited_once()
@@ -110,6 +108,43 @@ class AiGuardHandlerTests(unittest.IsolatedAsyncioTestCase):
         await self.handler(self.message)
         self.client.classify.assert_not_awaited()
         self.message.delete.assert_not_awaited()
+
+    async def test_safe_channel_post_is_not_deleted(self):
+        handler = self.router.channel_post.handlers[0].callback
+        post = SimpleNamespace(
+            chat=SimpleNamespace(id=-100456, type="channel", title="Test channel"),
+            text="A normal channel announcement", caption=None, message_id=77,
+            delete=AsyncMock(),
+        )
+        await handler(post)
+        self.client.classify.assert_awaited_once_with("A normal channel announcement")
+        post.delete.assert_not_awaited()
+
+    async def test_unsafe_channel_post_is_deleted_and_audited(self):
+        handler = self.router.channel_post.handlers[0].callback
+        self.client.classify.return_value = {"unsafe": True, "categories": "Phishing"}
+        post = SimpleNamespace(
+            chat=SimpleNamespace(id=-100456, type="channel", title="Test channel"),
+            text=None, caption="Click this credential theft link",
+            message_id=78, delete=AsyncMock(),
+        )
+        with patch("app.handlers.ai_guard.record_audit_event") as audit, \\
+             patch("app.handlers.ai_guard.record_security_incident") as incident:
+            await handler(post)
+        post.delete.assert_awaited_once()
+        audit.assert_called_once()
+        incident.assert_called_once()
+
+    async def test_channel_provider_failure_keeps_post(self):
+        handler = self.router.channel_post.handlers[0].callback
+        self.client.classify.return_value = None
+        post = SimpleNamespace(
+            chat=SimpleNamespace(id=-100456, type="channel", title="Test channel"),
+            text="Ordinary announcement", caption=None, message_id=79,
+            delete=AsyncMock(),
+        )
+        await handler(post)
+        post.delete.assert_not_awaited()
 
 
 if __name__ == "__main__":
