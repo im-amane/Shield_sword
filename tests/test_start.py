@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from app.handlers.start import (
-    _public_url, group_start_keyboard, group_start_text, start_keyboard, start_text,
+    _public_url, group_start_keyboard, group_start_text, help_keyboard, help_section_keyboard, start_keyboard, start_text,
 )
 
 
@@ -25,7 +25,27 @@ class StartMenuTests(unittest.TestCase):
             for row in group_start_keyboard().inline_keyboard
             for button in row
         ]
-        self.assertEqual(callbacks, ["start:help", "start:about"])
+        self.assertEqual(callbacks, ["start:help", "start:about", "ui:cancel"])
+
+
+    def test_help_home_has_main_menu_back_and_cancel(self):
+        callbacks = [
+            button.callback_data
+            for row in help_keyboard().inline_keyboard
+            for button in row
+        ]
+        self.assertIn("help:menu", callbacks)
+        self.assertIn("ui:cancel", callbacks)
+
+    def test_help_section_has_back_and_cancel(self):
+        callbacks = [
+            button.callback_data
+            for row in help_section_keyboard().inline_keyboard
+            for button in row
+        ]
+        self.assertIn("help:home", callbacks)
+        self.assertIn("help:menu", callbacks)
+        self.assertIn("ui:cancel", callbacks)
 
     def test_rejects_non_https_or_malformed_links(self):
         with patch.dict(os.environ, {"MAIN_GROUP_URL": "http://example.com"}):
