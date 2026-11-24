@@ -115,7 +115,7 @@ def start_keyboard(bot_username: str | None = None) -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text="➕ Add Sentinel to Group", url=add_url
                 ) if add_url else InlineKeyboardButton(
-                    text="➕ Add Guardian to Group", callback_data="start:addgroup"
+                    text="➕ Add Sentinel to Group", callback_data="start:addgroup"
                 ),
             ],
         ]
@@ -124,12 +124,12 @@ def start_keyboard(bot_username: str | None = None) -> InlineKeyboardMarkup:
 
 def help_text() -> str:
     return premium_text(
-        "📚 <b>Ani World · Help Center</b> ✨\n\n"
-        "Commands ko categories mein divide kiya gaya hai. Neeche kisi section par tap karo.\n\n"
-        "🛡️ Group protection · 👮 Moderation\n"
-        "👤 General · 👑 Owner tools\n\n"
-        "AI Guard scans text and captions when enabled; ordinary media is not blanket-deleted.\n\n"
-        "<i>Har section mein command ka use aur zaroori permissions di gayi hain.</i>"
+        "📚 <b>Sentinel · Help Center</b> ✨\n\n"
+        "Sentinel ke group security, moderation aur owner controls yahan milenge.\n\n"
+        "🛡️ Automated protection · 🧠 AI safety checks\n"
+        "👮 Moderation · 👑 Owner control center\n\n"
+        "AI Guard scans text and captions when enabled. Normal media is not blanket-deleted.\n\n"
+        "<i>Har section mein command usage aur required permissions di gayi hain.</i>"
     )
 
 
@@ -157,7 +157,7 @@ _HELP_SECTIONS = {
         "/help - Open this help center\n"
         "/id - Show your ID and chat ID\n"
         "/id (reply) - Show another member's ID\n"
-        "/checkpermissions - Check Guardian's admin rights in this group\n"
+        "/checkpermissions - Check Sentinel's admin rights in this group\n"
         "/security - View this group's protection status"
     ),
     "moderation": (
@@ -201,14 +201,14 @@ _HELP_SECTIONS = {
         "/raidoff - Disable active raid mode\n"
         "/audit - View recent security events\n"
         "/backup - Send a private database backup\n"
-        "/aitest - Test NVIDIA chat and safety model endpoints (private chat)\n\n"
+        "/aitest - Test the NVIDIA AI Guard safety endpoint (private chat)\n\n"
         "<i>These commands are restricted to the configured bot owner.</i>"
     ),
     "permissions": (
         "⚙️ <b>Bot Permissions</b>\n\n"
         "/security - View protection status (group admins)\n"
         "/checkpermissions - Check the bot's admin rights\n\n"
-        "Promote Ani World as an administrator in your group.\n\n"
+        "Promote Sentinel as an administrator in your group.\n\n"
         "• <b>Delete Messages:</b> Anti-link and purge\n"
         "• <b>Ban Users:</b> Mute, ban, kick, warnings and verification\n\n"
         "Some commands also require the person using them to be a group admin."
