@@ -165,8 +165,8 @@ _HELP_SECTIONS = {
         "/start - Open the welcome menu\n"
         "/help - Open this help center\n"
         "/id - Show your ID and chat ID\n"
-        "/id USER_ID - Look up a member profile
-/id (reply) - Show another member's profile card\n"
+        "/id USER_ID - Look up a member profile\n"
+        "/id (reply) - Show another member's profile card\n"
         "/checkpermissions - Check Sentinel's admin rights in this group\n"
         "/security - View this group's protection status"
     ),
