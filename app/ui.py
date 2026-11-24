@@ -19,41 +19,12 @@ from app.handlers.typography import premium_text
 
 logger = logging.getLogger(__name__)
 
-_CLOSE_BUTTON = InlineKeyboardButton(
-    text="✖️ Close",
-    callback_data="ui:close",
-)
-
-# Telegram methods that support inline reply_markup. Album sends are excluded
-# because sendMediaGroup does not accept inline reply_markup.
-_REPLY_METHODS = (
-    SendMessage, SendPhoto, SendVideo, SendAnimation, SendDocument,
-    SendAudio, SendVoice, SendLocation,
-    SendVenue, SendContact, SendPoll, SendGame, SendInvoice,
-    EditMessageText, EditMessageCaption, EditMessageMedia,
-)
-
-
-def with_close_button(
-    markup: InlineKeyboardMarkup | None,
-) -> InlineKeyboardMarkup:
-    """Preserve existing inline actions and add one consistent Close action."""
-    rows = [list(row) for row in markup.inline_keyboard] if markup else []
-    if any(
-        button.callback_data in {"ui:close", "owner_panel:close"}
-        for row in rows for button in row
-    ):
-        return markup or InlineKeyboardMarkup(inline_keyboard=[[_CLOSE_BUTTON]])
-    rows.append([_CLOSE_BUTTON])
-    return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
 async def outgoing_ui_middleware(make_request, bot, method):
-    """Attach a Close button to all supported outgoing bot replies and edits."""
-    if isinstance(method, _REPLY_METHODS):
-        markup = getattr(method, "reply_markup", None)
-        if markup is None or isinstance(markup, InlineKeyboardMarkup):
-            method.reply_markup = with_close_button(markup)
+    """Pass outgoing Telegram methods through unchanged.
+
+    Close actions are opt-in and must be added by the screen that owns them;
+    a global middleware must never alter unrelated keyboards or plain replies.
+    """
     return await make_request(bot, method)
 
 
