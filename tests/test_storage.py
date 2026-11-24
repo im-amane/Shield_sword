@@ -27,6 +27,15 @@ class StorageTests(unittest.TestCase):
         storage.reset_warnings(-100, 7)
         self.assertEqual(storage.get_warnings(-100, 7), 0)
 
+    def test_remove_one_warning_is_atomic_and_scoped(self) -> None:
+        self.assertEqual(storage.add_warning(-100, 7), 1)
+        self.assertEqual(storage.add_warning(-100, 7), 2)
+        self.assertEqual(storage.remove_one_warning(-100, 7), 1)
+        self.assertEqual(storage.get_warnings(-100, 7), 1)
+        self.assertEqual(storage.remove_one_warning(-100, 7), 0)
+        self.assertEqual(storage.remove_one_warning(-100, 7), 0)
+        self.assertEqual(storage.get_warnings(-200, 7), 0)
+
     def test_feature_settings_and_allowlists_persist(self) -> None:
         storage.set_feature_enabled("antilink", -100, False)
         self.assertFalse(storage.is_feature_enabled("antilink", -100))
