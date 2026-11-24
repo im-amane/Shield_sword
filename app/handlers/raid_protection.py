@@ -112,7 +112,7 @@ def create_raid_router(owner_id: int | None = None) -> Router:
         active, count, remaining = raid_status(message.chat.id)
         state = "🚨 ACTIVE" if active else "🟢 INACTIVE"
         await message.answer(premium_text(
-            "🛡️ <b>Raid Shield Status</b>\n\n"
+            "🛡️ <b>Sentinel · Raid Protection Status</b>\n\n"
             f"Current mode: <b>{state}</b>\n"
             f"Recent human joins: <b>{count}/{RAID_JOIN_THRESHOLD}</b>\n"
             f"Time remaining: <b>{remaining // 60}m {remaining % 60}s</b>\n\n"
@@ -125,9 +125,9 @@ def create_raid_router(owner_id: int | None = None) -> Router:
             await message.answer(premium_text("🔒 <b>Owner Access Only</b>\n\nThis control is reserved for the bot owner. 👑"))
             return
         if disable_raid_mode(message.chat.id):
-            await message.answer(premium_text("🟢 <b>All Clear!</b>\n\nRaid Shield has been disabled by the owner.\nYour community is back to normal mode. 💚"))
+            await message.answer(premium_text("🟢 <b>All Clear!</b>\n\nSentinel raid protection has been disabled by the owner.\nYour community is back to normal mode. 💚"))
         else:
-            await message.answer(premium_text("😌 <b>All Clear!</b>\n\nRaid Shield is already inactive. Your group is in normal mode. 💚"))
+            await message.answer(premium_text("😌 <b>All Clear!</b>\n\nSentinel raid protection is already inactive. Your group is in normal mode. 💚"))
 
     return router
 
@@ -140,12 +140,12 @@ async def announce_raid_activation(
     """Notify the group and owner when the rapid-join threshold is crossed."""
     chat_title = message.chat.title or "Telegram group"
     group_notice = premium_text((
-        "🚨 <b>RAID ALERT · SHIELD ACTIVATED</b>\n\n"
+        "🚨 <b>RAID ALERT · SENTINEL PROTECTION ACTIVATED</b>\n\n"
         f"<b>{RAID_JOIN_THRESHOLD}</b> human members joined within "
         f"<b>{RAID_WINDOW_SECONDS // 60} minutes</b>.\n\n"
         "🛡️ New members must complete verification before chatting.\n"
         "✅ Existing members are not restricted.\n\n"
-        "<i>Ani World is keeping watch.</i>"
+        "<i>Sentinel is keeping watch.</i>"
     ))
     try:
         await message.answer(group_notice)
