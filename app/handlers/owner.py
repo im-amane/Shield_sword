@@ -37,34 +37,28 @@ def create_owner_router(
         if not authorized_private_owner(message):
             await message.answer(premium_text("🔒 <b>Owner-only</b> · Use /aitest in my private chat."))
             return
-        if not chat_api_key or not guardian_api_key:
+        if not guardian_api_key:
             await message.answer(premium_text(
-                "❌ <b>AI engine keys missing</b>\n\n"
-                "Configure NVIDIA_NIM_CHAT_API_KEY and NVIDIA_NIM_GUARDIAN_API_KEY in Railway Variables."
+                "❌ <b>AI Guard key missing</b>\n\n"
+                "Configure NVIDIA_NIM_GUARDIAN_API_KEY in Railway Variables."
             ))
             return
 
         status = await message.answer(premium_text(
-            "🧪 <b>Guardian AI engine diagnostics</b>\n\nTesting independent chat and Guardian credentials…"
+            "🧪 <b>Guardian AI Guard diagnostics</b>\n\nTesting the safety classifier…"
         ))
-        chat_result = await asyncio.to_thread(
-            NimChatClient(chat_api_key, chat_model).generate,
-            "Reply with exactly: Guardian chat test passed.",
-        )
         safety_started = time.monotonic()
         safety_result = await NimSafetyClient(
             guardian_api_key, safety_model, timeout=20.0
         ).classify("Hello everyone, hope you are having a good day!")
         safety_latency = int((time.monotonic() - safety_started) * 1000)
         safety_ok = bool(safety_result is not None and not safety_result["unsafe"])
-        def line(label: str, ok: bool, latency: int, error: str | None = None) -> str:
-            detail = f" · {latency} ms"
-            if error:
-                detail += f" · {escape(error)}"
-            return f"{'✅' if ok else '❌'} <b>{label}:</b> {'PASS' if ok else 'FAIL'}{detail}"
+
+        detail = f" · {safety_latency} ms"
         report = (
             "🧪 <b>Guardian AI Guard diagnostics</b>\n\n"
-            + line("AI Guard", safety_ok, safety_latency, None if safety_ok else "classification_failed") + "\n"
+            + f"{'✅' if safety_ok else '❌'} <b>AI Guard:</b> "
+            + f"{'PASS' if safety_ok else 'FAIL'}{detail}\n"
             + f"<code>{escape(safety_model)}</code>\n\n"
             + ("Safety classifier responded correctly." if safety_ok else
                "AI Guard needs attention. Feature flags were not changed.")
