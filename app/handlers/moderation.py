@@ -105,7 +105,7 @@ def create_moderation_router(owner_id: int | None = None) -> Router:
                 await message.answer(premium_text(f"🔒 <b>Missing Admin Right</b>\n\nYour admin role needs the {needed} permission."))
                 return False
         if bot_member.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
-            await message.answer(premium_text("⚙️ <b>Bot Permission Needed</b>\n\nPlease promote Ani World as an admin first."))
+            await message.answer(premium_text("⚙️ <b>Bot Permission Needed</b>\n\nPlease promote Sentinel as an administrator first."))
             return False
         if delete and not getattr(bot_member, "can_delete_messages", False):
             await message.answer(premium_text("⚙️ <b>Missing Permission</b>\n\nI need the Delete Messages permission to do that."))
