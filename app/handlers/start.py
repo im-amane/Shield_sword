@@ -165,7 +165,8 @@ _HELP_SECTIONS = {
         "/start - Open the welcome menu\n"
         "/help - Open this help center\n"
         "/id - Show your ID and chat ID\n"
-        "/id (reply) - Show another member's ID\n"
+        "/id USER_ID - Look up a member profile
+/id (reply) - Show another member's profile card\n"
         "/checkpermissions - Check Sentinel's admin rights in this group\n"
         "/security - View this group's protection status"
     ),
@@ -297,13 +298,7 @@ async def help_section_callback(callback: CallbackQuery) -> None:
         return
     if section == "home":
         await callback.message.delete()
-        await callback.message.answer_photo(
-            __import__("aiogram").types.BufferedInputFile(
-                __import__("app.ui_cards", fromlist=["render_category_card"]).render_category_card("help", "Help Center", "Commands and navigation"),
-                filename="sentinel-help-card.png",
-            ),
-            caption="🛡️ <b>Sentinel · Help Center</b>",
-        )
+        await send_category_card(callback.message, "help", "Help Center", "Commands and navigation")
         await callback.message.answer(premium_text(help_text()), reply_markup=help_keyboard())
         await callback.answer()
         return
@@ -316,13 +311,7 @@ async def help_section_callback(callback: CallbackQuery) -> None:
             text = start_text(callback.from_user.first_name or "there")
             keyboard = start_keyboard(identity.username)
         await callback.message.delete()
-        await callback.message.answer_photo(
-            __import__("aiogram").types.BufferedInputFile(
-                __import__("app.ui_cards", fromlist=["render_category_card"]).render_category_card("welcome", "Main Menu", "Sentinel community security"),
-                filename="sentinel-main-menu-card.png",
-            ),
-            caption="🛡️ <b>Sentinel · Main Menu</b>",
-        )
+        await send_category_card(callback.message, "welcome", "Main Menu", "Sentinel community security")
         await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer("Main menu")
         return
@@ -331,13 +320,7 @@ async def help_section_callback(callback: CallbackQuery) -> None:
         await callback.answer(premium_text("That help section is unavailable. Please reopen /help."), show_alert=True)
         return
     await callback.message.delete()
-    await callback.message.answer_photo(
-        __import__("aiogram").types.BufferedInputFile(
-            __import__("app.ui_cards", fromlist=["render_category_card"]).render_category_card("help", "Help · " + section.title(), "Command reference"),
-            filename="sentinel-help-section-card.png",
-        ),
-        caption="🛡️ <b>Sentinel · Help Section</b>",
-    )
+    await send_category_card(callback.message, "help", "Help · " + section.title(), "Command reference")
     await callback.message.answer(
         premium_text(content),
         reply_markup=help_section_keyboard(),
@@ -351,13 +334,7 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
 
     if action == "help" and callback.message:
         await callback.message.delete()
-        await callback.message.answer_photo(
-            __import__("aiogram").types.BufferedInputFile(
-                __import__("app.ui_cards", fromlist=["render_category_card"]).render_category_card("help", "Help Center", "Commands and navigation"),
-                filename="sentinel-help-card.png",
-            ),
-            caption="🛡️ <b>Sentinel · Help Center</b>",
-        )
+        await send_category_card(callback.message, "help", "Help Center", "Commands and navigation")
         await callback.message.answer(help_text(), reply_markup=help_keyboard())
         await callback.answer()
         return
