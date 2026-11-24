@@ -1,5 +1,6 @@
 """Owner-only identity, audit, database and backup commands."""
 import time
+import logging
 from html import escape
 from io import BytesIO
 
@@ -17,6 +18,8 @@ from app.storage import (
     verify_database_backup,
 )
 from app.ai_guard import DEFAULT_NIM_MODEL, NimSafetyClient
+
+logger = logging.getLogger(__name__)
 
 
 def create_owner_router(
@@ -50,11 +53,21 @@ def create_owner_router(
             "🧪 <b>Sentinel · AI Guard diagnostics</b>\n\nTesting the safety classifier…"
         ))
         safety_started = time.monotonic()
-        safety_result = await NimSafetyClient(
-            guardian_api_key, safety_model, timeout=20.0
-        ).classify("Hello everyone, hope you are having a good day!")
+        try:
+            safety_result = await NimSafetyClient(
+                guardian_api_key, safety_model, timeout=20.0
+            ).classify("Hello everyone, hope you are having a good day!")
+        except Exception:
+            logger.exception("AI Guard diagnostic request failed unexpectedly.")
+            safety_result = None
         safety_latency = int((time.monotonic() - safety_started) * 1000)
         safety_ok = bool(safety_result is not None and not safety_result["unsafe"])
+        if safety_result is None:
+            outcome = "NVIDIA NIM returned no valid safety result. Check key validity, model access and runtime warnings."
+        elif safety_result["unsafe"]:
+            outcome = "The safe diagnostic sentence was classified as unsafe; review the configured model."
+        else:
+            outcome = "Safety classifier responded correctly."
 
         detail = f" · {safety_latency} ms"
         report = (
@@ -62,13 +75,14 @@ def create_owner_router(
             + f"{'✅' if safety_ok else '❌'} <b>AI Guard:</b> "
             + f"{'PASS' if safety_ok else 'FAIL'}{detail}\n"
             + f"<code>{escape(safety_model)}</code>\n\n"
-            + ("Safety classifier responded correctly." if safety_ok else
-               "AI Guard needs attention. Feature flags were not changed.")
+            + outcome
+            + "\n\nFeature flags were not changed."
         )
         await status.edit_text(premium_text(report[:3900]))
 
     @router.message(Command("owner"))
     async def owner_command(message: Message) -> None:
+        await send_category_card(message, "owner", "Owner Access", "Identity and control permissions")
         user_id = message.from_user.id if message.from_user else None
         if not is_owner(user_id, owner_id):
             await message.answer(premium_text("🔒 <b>Owner Access</b>\n\nThis area is reserved for the bot owner.\nAuthorization required. 👑"))
@@ -82,6 +96,7 @@ def create_owner_router(
 
     @router.message(Command("audit"))
     async def audit_command(message: Message) -> None:
+        await send_category_card(message, "owner", "Security Audit", "Recent security events")
         if message.chat.type != ChatType.PRIVATE:
             await message.answer(premium_text("🔒 Use /audit in my private chat to keep security records private."))
             return
@@ -103,6 +118,7 @@ def create_owner_router(
 
     @router.message(Command("dbstatus"))
     async def dbstatus_command(message: Message) -> None:
+        await send_category_card(message, "system", "Database Health", "Storage integrity diagnostics")
         if message.chat.type != ChatType.PRIVATE:
             await message.answer(premium_text("🔒 Use /dbstatus in my private chat to keep storage details private."))
             return
@@ -129,6 +145,7 @@ def create_owner_router(
 
     @router.message(Command("backup"))
     async def backup_command(message: Message) -> None:
+        await send_category_card(message, "system", "Encrypted Backup", "Private database recovery")
         if message.chat.type != ChatType.PRIVATE:
             await message.answer(premium_text("🔒 Use /backup in my private chat. Database files must never be posted in a group."))
             return
@@ -148,6 +165,7 @@ def create_owner_router(
 
     @router.message(Command("backupverify"))
     async def backup_verify_command(message: Message) -> None:
+        await send_category_card(message, "system", "Backup Verification", "Isolated recovery test")
         if message.chat.type != ChatType.PRIVATE:
             await message.answer(premium_text("🔒 Use /backupverify in my private chat."))
             return
