@@ -111,7 +111,7 @@ def create_ai_guard_router(owner_id: int | None, api_key: str, model: str) -> Ro
         # Channel post updates generally do not expose the individual poster.
         # Therefore no member warning/mute is attempted; only unsafe post removal
         # and an attributable-to-channel audit/incident record are made.
-        if not limiter.allow(message.chat.id, message.message_id):
+        if not limiter.allow_channel_post(message.chat.id):
             return
         result = await client.classify(content)
         if not result or not result["unsafe"]:

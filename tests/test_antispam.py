@@ -102,6 +102,34 @@ class AntiSpamTests(unittest.TestCase):
         self.assertFalse(permissions.can_send_photos)
         self.assertFalse(permissions.can_send_other_messages)
 
+    def test_500_member_message_burst_is_persisted_without_database_errors(self):
+        """Exercise SQLite write contention at the planned 500-member scale."""
+        member_ids = range(10_000, 10_500)
+
+        def record_for_member(user_id):
+            return storage.record_antispam_message(
+                -500,
+                user_id,
+                f"member-{user_id}",
+                3_000.0,
+                WINDOW_SECONDS,
+                DUPLICATE_WINDOW_SECONDS,
+                MAX_MESSAGES_IN_WINDOW,
+                MAX_IDENTICAL_MESSAGES,
+            )
+
+        with ThreadPoolExecutor(max_workers=32) as executor:
+            results = list(executor.map(record_for_member, member_ids))
+
+        self.assertEqual(len(results), 500)
+        self.assertFalse(any(results))
+        with storage._connection() as db:
+            persisted = db.execute(
+                "SELECT COUNT(*) FROM antispam_messages WHERE chat_id=?",
+                (-500,),
+            ).fetchone()[0]
+        self.assertEqual(persisted, 500)
+
 
 if __name__ == "__main__":
     unittest.main()

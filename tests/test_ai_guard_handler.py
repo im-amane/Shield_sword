@@ -19,7 +19,7 @@ class AiGuardHandlerTests(unittest.IsolatedAsyncioTestCase):
         self.client_patch.start()
         self.addCleanup(self.client_patch.stop)
 
-        self.limiter = SimpleNamespace(allow=Mock(return_value=True))
+        self.limiter = SimpleNamespace(allow=Mock(return_value=True), allow_channel_post=Mock(return_value=True))
         self.limiter_patch = patch(
             "app.handlers.ai_guard.AiScanLimiter", return_value=self.limiter
         )
@@ -134,6 +134,19 @@ class AiGuardHandlerTests(unittest.IsolatedAsyncioTestCase):
         post.delete.assert_awaited_once()
         audit.assert_called_once()
         incident.assert_called_once()
+
+    async def test_channel_scan_budget_skips_extra_provider_calls(self):
+        self.limiter.allow_channel_post.return_value = False
+        handler = self.router.channel_post.handlers[0].callback
+        post = SimpleNamespace(
+            chat=SimpleNamespace(id=-100456, type="channel", title="Test channel"),
+            text="Ordinary announcement", caption=None, message_id=80,
+            delete=AsyncMock(),
+        )
+        await handler(post)
+        self.limiter.allow_channel_post.assert_called_once_with(-100456)
+        self.client.classify.assert_not_awaited()
+        post.delete.assert_not_awaited()
 
     async def test_channel_provider_failure_keeps_post(self):
         handler = self.router.channel_post.handlers[0].callback
