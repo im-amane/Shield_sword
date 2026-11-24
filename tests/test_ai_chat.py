@@ -2,10 +2,18 @@
 import unittest
 
 from app.ai_engine import GuardianAIEngine
+from app.ai_chat import CHAT_SYSTEM_PROMPT
 from app.handlers.ai_chat import AiChatLimiter, _TRIGGER
 
 
 class AiChatLimiterTests(unittest.TestCase):
+    def test_chat_prompt_matches_real_capabilities_and_limits(self):
+        self.assertIn("do not automatically answer every group message", CHAT_SYSTEM_PROMPT)
+        self.assertIn("not blanket-deleted", CHAT_SYSTEM_PROMPT)
+        self.assertIn("no verified copyright ownership", CHAT_SYSTEM_PROMPT)
+        self.assertIn("no persistent conversational memory", CHAT_SYSTEM_PROMPT)
+        self.assertIn("Never invent commands", CHAT_SYSTEM_PROMPT)
+
     def test_only_explicit_guardian_mentions_match(self):
         self.assertTrue(_TRIGGER.search("Hey Guardian, are you there?"))
         self.assertTrue(_TRIGGER.search("hello @Break_mebot"))
