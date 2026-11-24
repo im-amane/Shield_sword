@@ -80,23 +80,3 @@ def render_user_profile_card(*, display_name: str, username: str, user_id: int,
     output=BytesIO()
     image.save(output,format="PNG",optimize=True)
     return output.getvalue()
-
-def render_category_card(category: str, title: str, subtitle: str = "") -> bytes:
-    """Render a distinct branded header card for each command category."""
-    palette={"help":("#142b46","#65d7e8"),"welcome":("#173b35","#72e0b0"),
-      "warning":("#43251f","#ffb36b"),"security":("#202b4b","#9db6ff"),
-      "owner":("#30264a","#c7a8ff"),"ai":("#123b42","#70e6dc"),
-      "moderation":("#3d2636","#ff9ab8"),"verification":("#233b32","#9be4a7"),
-      "system":("#263342","#a9c7e5")}
-    background,accent=palette.get(category,palette["system"])
-    image=Image.new("RGB",(1100,300),"#08111f")
-    draw=ImageDraw.Draw(image)
-    draw.rounded_rectangle((24,24,1076,276),radius=34,fill=background,outline=accent,width=3)
-    draw.rounded_rectangle((60,68,78,232),radius=8,fill=accent)
-    draw.text((112,70),"SENTINEL  /  ANI WORLD",font=_font(20),fill=accent)
-    draw.text((112,112),title[:36],font=_font(48),fill="#f4f7fb")
-    if subtitle:
-        draw.text((114,190),subtitle[:72],font=_font(24),fill="#b8c8d9")
-    output=BytesIO()
-    image.save(output,format="PNG",optimize=True)
-    return output.getvalue()
