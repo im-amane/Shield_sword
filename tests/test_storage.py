@@ -152,6 +152,31 @@ class StorageTests(unittest.TestCase):
         storage.set_channel_media_enabled(-100123, False)
         self.assertFalse(storage.is_channel_media_enabled(-100123))
 
+    def test_backup_includes_persistent_antispam_tables_and_state(self) -> None:
+        import sqlite3
+
+        storage.record_antispam_message(-100, 7, "fingerprint", 1000.0, 8, 20, 6, 3)
+        storage.claim_antispam_mute(-100, 7, 1000.0, 60)
+        snapshot = storage.create_database_backup()
+        with tempfile.TemporaryDirectory() as restore_dir:
+            restored_path = Path(restore_dir) / "restored.sqlite3"
+            restored_path.write_bytes(snapshot)
+            restored = sqlite3.connect(restored_path)
+            try:
+                message_count = restored.execute(
+                    "SELECT COUNT(*) FROM antispam_messages WHERE chat_id=? AND user_id=?",
+                    (-100, 7),
+                ).fetchone()[0]
+                mute_until = restored.execute(
+                    "SELECT muted_until FROM antispam_mutes WHERE chat_id=? AND user_id=?",
+                    (-100, 7),
+                ).fetchone()[0]
+            finally:
+                restored.close()
+        self.assertEqual(message_count, 1)
+        self.assertEqual(mute_until, 1060.0)
+        self.assertEqual(storage.verify_database_backup(snapshot)["integrity"], "ok")
+
     def test_database_backup_is_valid_sqlite(self) -> None:
         storage.record_audit_event(-100, "restore_test", 7, 8, "round-trip")
         backup = storage.create_database_backup()
