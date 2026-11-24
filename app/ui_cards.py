@@ -34,12 +34,12 @@ def render_user_profile_card(*, display_name: str, username: str, user_id: int,
     group_title: str | None, group_id: int | None, avatar: bytes | None = None,
     name_history: Iterable[str] = ()) -> bytes:
     """Render Telegram-visible profile fields and observed name history."""
-    rows = [("USERNAME", username or "Not set"), ("TELEGRAM ID", str(user_id)),
-        ("PRIVATE CHAT ID", str(user_id)),
+    rows = [("USERNAME", username or "Not set"), ("USER ID", str(user_id)),
+        ("CHAT ID", str(current_chat_id)),
         ("FIRST NAME", first_name or "Not available"), ("LAST NAME", last_name or "Not set"),
-        ("BIO", bio or "Not available"), ("CURRENT CHAT ID", str(current_chat_id))]
+        ("BIO", bio or "Not available")]
     if group_id is not None:
-        rows.extend((("GROUP", group_title or "Telegram group"), ("GROUP ID", str(group_id))))
+        rows.extend((("GROUP", group_title or "Telegram group"), ("GROUP CHAT ID", str(group_id))))
     history = list(name_history)
     rows.append(("PREVIOUS OBSERVED NAME", " / ".join(history[:3]) if history else
                  "No earlier name has been observed by Sentinel"))
