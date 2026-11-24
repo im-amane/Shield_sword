@@ -37,6 +37,9 @@ def create_ai_guard_router(owner_id: int | None, api_key: str, model: str) -> Ro
         if content.lstrip().startswith("/") or is_owner(user.id, owner_id):
             return
 
+        # Apply the local scan budget before any extra Telegram API lookup.
+        if not limiter.allow(message.chat.id, user.id):
+            return
         try:
             member = await message.bot.get_chat_member(message.chat.id, user.id)
         except TelegramAPIError:
@@ -46,8 +49,6 @@ def create_ai_guard_router(owner_id: int | None, api_key: str, model: str) -> Ro
             )
             return
         if member.status in {ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR}:
-            return
-        if not limiter.allow(message.chat.id, user.id):
             return
 
         result = await client.classify(content)
