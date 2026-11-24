@@ -15,6 +15,7 @@ from app.handlers.raid_protection import (
 )
 from app.handlers.verification import start_member_verification
 from app.handlers.typography import premium_text
+from app.handlers.card_helpers import send_category_card
 from app.storage import (
     get_raid_join_count, has_recent_security_incident, record_security_incident,
     register_group, record_member_join,
@@ -75,6 +76,7 @@ def create_welcome_router(
                 message.chat.id, chat_title, member.id,
                 member.username, member.full_name,
             )
+        await send_category_card(message, "welcome", "New Member Welcome", "Verification and community rules")
         await message.answer(render_welcome_message(chat_title, members))
 
         newly_activated, join_count, _raid_active = record_join_activity(
