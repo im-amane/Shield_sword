@@ -19,6 +19,16 @@ class StorageTests(unittest.TestCase):
         self.path_patch.stop()
         self.temp_dir.cleanup()
 
+    def test_profile_history_records_only_observed_name_changes(self) -> None:
+        storage.record_member_profile(-100, 7, "Ari", "", "ari")
+        storage.record_member_profile(-100, 7, "Ari", "", "ari")
+        storage.record_member_profile(-100, 7, "Ari New", "", "ari")
+        history = storage.get_member_profile_history(7)
+        self.assertEqual(len(history), 2)
+        self.assertEqual(history[0]["first_name"], "Ari New")
+        self.assertEqual(history[1]["first_name"], "Ari")
+        self.assertEqual(history[0]["username"], "ari")
+
     def test_warning_counts_persist_and_are_scoped(self) -> None:
         self.assertEqual(storage.add_warning(-100, 7), 1)
         self.assertEqual(storage.add_warning(-100, 7), 2)

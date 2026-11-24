@@ -89,6 +89,17 @@ CREATE TABLE IF NOT EXISTS known_groups (
     title TEXT NOT NULL,
     last_seen TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS member_profile_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    chat_id INTEGER NOT NULL,
+    first_name TEXT NOT NULL DEFAULT '',
+    last_name TEXT NOT NULL DEFAULT '',
+    username TEXT NOT NULL DEFAULT '',
+    observed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_profile_history_user
+    ON member_profile_history(user_id, id DESC);
 CREATE TABLE IF NOT EXISTS member_join_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     chat_id INTEGER NOT NULL,
@@ -202,6 +213,40 @@ def init_storage() -> None:
     """Initialize the schema; safe to call repeatedly."""
     with _connection():
         pass
+
+
+def record_member_profile(chat_id: int, user_id: int, first_name: str,
+                         last_name: str = "", username: str = "") -> None:
+    """Store public Telegram name fields only when a profile is first seen or changes."""
+    first_name = _safe_log_text(first_name, 128)
+    last_name = _safe_log_text(last_name, 128)
+    username = _safe_log_text(username, 64)
+    with _connection() as db:
+        row = db.execute(
+            "SELECT first_name, last_name, username FROM member_profile_history WHERE user_id=? ORDER BY id DESC LIMIT 1",
+            (user_id,),
+        ).fetchone()
+        if row and tuple(row) == (first_name, last_name, username):
+            return
+        db.execute(
+            "INSERT INTO member_profile_history (user_id, chat_id, first_name, last_name, username) VALUES (?, ?, ?, ?, ?)",
+            (user_id, chat_id, first_name, last_name, username),
+        )
+        db.execute(
+            "DELETE FROM member_profile_history WHERE user_id=? AND id NOT IN (SELECT id FROM member_profile_history WHERE user_id=? ORDER BY id DESC LIMIT 12)",
+            (user_id, user_id),
+        )
+
+
+def get_member_profile_history(user_id: int, limit: int = 6) -> list[dict]:
+    """Return recent observed public profile-name snapshots, newest first."""
+    limit = max(1, min(int(limit), 12))
+    with _connection() as db:
+        rows = db.execute(
+            "SELECT first_name, last_name, username, observed_at FROM member_profile_history WHERE user_id=? ORDER BY id DESC LIMIT ?",
+            (user_id, limit),
+        ).fetchall()
+    return [{"first_name": row[0], "last_name": row[1], "username": row[2], "observed_at": row[3]} for row in rows]
 
 
 def record_antispam_message(

@@ -62,6 +62,7 @@ class WelcomeRouterTests(unittest.IsolatedAsyncioTestCase):
             User(id=12345, is_bot=False, first_name="Test")
         ]
         message.answer = AsyncMock()
+        message.answer_photo = AsyncMock()
 
         with patch(
             "app.handlers.welcome.start_member_verification",
@@ -70,6 +71,7 @@ class WelcomeRouterTests(unittest.IsolatedAsyncioTestCase):
             await handler(message)
 
         message.answer.assert_awaited_once()
+        message.answer_photo.assert_awaited_once()
         self.assertIn("𝐔𝐧𝐥𝐢𝐬𝐭𝐞𝐝 𝐂𝐨𝐦𝐦𝐮𝐧𝐢𝐭𝐲", message.answer.await_args.args[0])
         start_verification.assert_awaited_once_with(message, message.new_chat_members)
 

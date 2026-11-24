@@ -43,6 +43,7 @@ class AiGuardHandlerTests(unittest.IsolatedAsyncioTestCase):
             ),
             delete=AsyncMock(),
             answer=AsyncMock(),
+            answer_photo=AsyncMock(),
         )
 
     async def test_safe_message_is_not_deleted_or_warned(self):
