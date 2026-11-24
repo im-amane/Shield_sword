@@ -54,7 +54,7 @@ def create_ai_chat_router(
     """Create a mention/reply-only chat router; unsafe or uncertain content gets no reply."""
     router = Router(name="guardian_ai_chat")
     chat_client = NimChatClient(api_key, chat_model)
-    safety_client = NimSafetyClient(api_key, safety_model, timeout=8.0)
+    safety_client = NimSafetyClient(api_key, safety_model, timeout=20.0)
     limiter = AiChatLimiter()
 
     @router.message(
