@@ -76,7 +76,7 @@ class DashboardTests(unittest.TestCase):
         self.assertIn(premium_text("Missing or invalid"), text)
 
     def test_command_index_and_automation_sections_exist(self) -> None:
-        self.assertIn("channelprotect", section_text("commands"))
+        self.assertNotIn("channelprotect", section_text("commands"))
         self.assertIn(premium_text("Weekly encrypted backup"), section_text("automation"))
 
     def test_community_list_has_pagination_and_scoped_buttons(self) -> None:
