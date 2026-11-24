@@ -10,6 +10,7 @@ from aiogram import F, Router
 from aiogram.enums import ChatType
 from aiogram.filters import Command, CommandStart
 from app.handlers.typography import premium_text
+from app.handlers.card_helpers import send_category_card
 
 from aiogram.types import (
     CallbackQuery,
@@ -238,6 +239,7 @@ def help_section_keyboard() -> InlineKeyboardMarkup:
 async def start_command(message: Message) -> None:
     bot_identity = await message.bot.get_me()
     if message.chat.type in (ChatType.GROUP, ChatType.SUPERGROUP):
+        await send_category_card(message, "welcome", "Community Welcome", "Group security and management")
         await message.answer(
             group_start_text(message.chat.title or "this community"),
             reply_markup=group_start_keyboard(),
@@ -273,7 +275,9 @@ async def start_command(message: Message) -> None:
         await sent.edit_text(premium_text(frame))
 
     first_name = message.from_user.first_name if message.from_user else "there"
-    await sent.edit_text(
+    await sent.delete()
+    await send_category_card(message, "welcome", "Welcome to Sentinel", "Private start menu")
+    await message.answer(
         start_text(first_name),
         reply_markup=start_keyboard(bot_identity.username),
     )
@@ -281,6 +285,7 @@ async def start_command(message: Message) -> None:
 
 @router.message(Command("help"))
 async def help_command(message: Message) -> None:
+    await send_category_card(message, "help", "Help Center", "Commands and navigation")
     await message.answer(premium_text(help_text()), reply_markup=help_keyboard())
 
 
@@ -291,7 +296,15 @@ async def help_section_callback(callback: CallbackQuery) -> None:
         await callback.answer()
         return
     if section == "home":
-        await callback.message.edit_text(premium_text(help_text()), reply_markup=help_keyboard())
+        await callback.message.delete()
+        await callback.message.answer_photo(
+            __import__("aiogram").types.BufferedInputFile(
+                __import__("app.ui_cards", fromlist=["render_category_card"]).render_category_card("help", "Help Center", "Commands and navigation"),
+                filename="sentinel-help-card.png",
+            ),
+            caption="🛡️ <b>Sentinel · Help Center</b>",
+        )
+        await callback.message.answer(premium_text(help_text()), reply_markup=help_keyboard())
         await callback.answer()
         return
     if section == "menu":
@@ -302,14 +315,30 @@ async def help_section_callback(callback: CallbackQuery) -> None:
             identity = await callback.bot.get_me()
             text = start_text(callback.from_user.first_name or "there")
             keyboard = start_keyboard(identity.username)
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.message.delete()
+        await callback.message.answer_photo(
+            __import__("aiogram").types.BufferedInputFile(
+                __import__("app.ui_cards", fromlist=["render_category_card"]).render_category_card("welcome", "Main Menu", "Sentinel community security"),
+                filename="sentinel-main-menu-card.png",
+            ),
+            caption="🛡️ <b>Sentinel · Main Menu</b>",
+        )
+        await callback.message.answer(text, reply_markup=keyboard)
         await callback.answer("Main menu")
         return
     content = _HELP_SECTIONS.get(section)
     if content is None:
         await callback.answer(premium_text("That help section is unavailable. Please reopen /help."), show_alert=True)
         return
-    await callback.message.edit_text(
+    await callback.message.delete()
+    await callback.message.answer_photo(
+        __import__("aiogram").types.BufferedInputFile(
+            __import__("app.ui_cards", fromlist=["render_category_card"]).render_category_card("help", "Help · " + section.title(), "Command reference"),
+            filename="sentinel-help-section-card.png",
+        ),
+        caption="🛡️ <b>Sentinel · Help Section</b>",
+    )
+    await callback.message.answer(
         premium_text(content),
         reply_markup=help_section_keyboard(),
     )
@@ -321,7 +350,15 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
     action = callback.data.split(":", 1)[1] if callback.data else ""
 
     if action == "help" and callback.message:
-        await callback.message.edit_text(help_text(), reply_markup=help_keyboard())
+        await callback.message.delete()
+        await callback.message.answer_photo(
+            __import__("aiogram").types.BufferedInputFile(
+                __import__("app.ui_cards", fromlist=["render_category_card"]).render_category_card("help", "Help Center", "Commands and navigation"),
+                filename="sentinel-help-card.png",
+            ),
+            caption="🛡️ <b>Sentinel · Help Center</b>",
+        )
+        await callback.message.answer(help_text(), reply_markup=help_keyboard())
         await callback.answer()
         return
 
