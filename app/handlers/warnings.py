@@ -4,10 +4,10 @@ from __future__ import annotations
 from html import escape
 from datetime import datetime, timedelta, timezone
 
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.enums import ChatMemberStatus, ChatType
 from aiogram.filters import Command
-from aiogram.types import ChatPermissions, Message
+from aiogram.types import (CallbackQuery, ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup, Message)
 
 from app.handlers.typography import premium_text
 from app.storage import record_audit_event
@@ -15,7 +15,7 @@ from app.storage import record_audit_event
 WARN_LIMIT = 3
 AUTO_MUTE_SECONDS = 10 * 60
 
-from app.storage import add_warning, get_warnings, reset_warnings
+from app.storage import add_warning, get_warnings, reset_warnings, remove_one_warning
 
 
 def create_warning_router() -> Router:
@@ -115,11 +115,84 @@ def create_warning_router() -> Router:
         if target is None:
             return
         count = get_warnings(message.chat.id, target.id)
+        markup = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(
+                text="➖ Unwarn",
+                callback_data=f"warnings:unwarn:{message.chat.id}:{target.id}",
+            )
+        ]]) if count > 0 else None
         await message.answer(premium_text(
             f"📋 <b>Warning Record</b>\n\n"
             f"👤 {escape(target.full_name)}\n"
             f"⚠️ Warnings: {count}/{WARN_LIMIT}"
+        ), reply_markup=markup)
+
+    @router.message(Command("unwarn"))
+    async def unwarn_command(message: Message) -> None:
+        if not await check_admin(message):
+            return
+        target = await target_from_reply(message)
+        if target is None:
+            return
+        remaining = remove_one_warning(message.chat.id, target.id)
+        record_audit_event(
+            message.chat.id, "unwarn",
+            message.from_user.id if message.from_user else None,
+            target.id, f"remaining={remaining}",
+        )
+        await message.answer(premium_text(
+            f"➖ <b>One Warning Removed</b>\n\n"
+            f"👤 {escape(target.full_name)}\n"
+            f"⚠️ Remaining warnings: {remaining}/{WARN_LIMIT}"
         ))
+
+    @router.callback_query(F.data.startswith("warnings:unwarn:"))
+    async def unwarn_button(callback: CallbackQuery) -> None:
+        message = callback.message
+        if message is None or message.chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
+            await callback.answer(premium_text("Use this button in its original group. 🔒"), show_alert=True)
+            return
+        try:
+            _, _, raw_chat_id, raw_user_id = (callback.data or "").split(":")
+            chat_id, target_id = int(raw_chat_id), int(raw_user_id)
+        except (ValueError, TypeError):
+            await callback.answer(premium_text("Invalid warning action. 🔒"), show_alert=True)
+            return
+        if message.chat.id != chat_id or callback.from_user is None:
+            await callback.answer(premium_text("This warning action is not valid here. 🔒"), show_alert=True)
+            return
+        try:
+            actor = await callback.bot.get_chat_member(chat_id, callback.from_user.id)
+            target_member = await callback.bot.get_chat_member(chat_id, target_id)
+        except Exception:
+            await callback.answer(premium_text("Could not verify group permissions. Try again."), show_alert=True)
+            return
+        if actor.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
+            await callback.answer(premium_text("Only group admins can remove warnings. 🔒"), show_alert=True)
+            return
+        if target_member.status in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
+            await callback.answer(premium_text("Admins are protected from warning actions. 🔒"), show_alert=True)
+            return
+        remaining = remove_one_warning(chat_id, target_id)
+        record_audit_event(chat_id, "unwarn", callback.from_user.id, target_id, f"remaining={remaining}")
+        if remaining:
+            markup = InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="➖ Unwarn",
+                    callback_data=f"warnings:unwarn:{chat_id}:{target_id}",
+                )
+            ]])
+        else:
+            markup = None
+        await message.edit_text(
+            premium_text(
+                "📋 <b>Warning Record Updated</b>\n\n"
+                f"👤 User ID: <code>{target_id}</code>\n"
+                f"⚠️ Remaining warnings: {remaining}/{WARN_LIMIT}"
+            ),
+            reply_markup=markup,
+        )
+        await callback.answer(premium_text("One warning removed. ✅"))
 
     @router.message(Command("resetwarn"))
     async def resetwarn_command(message: Message) -> None:

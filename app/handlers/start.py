@@ -142,7 +142,8 @@ _HELP_SECTIONS = {
         "⚠️ <b>Warning System</b>\n\n"
         "/warn - Give a warning (reply)\n"
         "/warnings - Check a member's warnings (reply)\n"
-        "/resetwarn - Clear a member's warnings (reply)\n\n"
+        "/unwarn - Remove one warning (reply)\n"
+        "/resetwarn - Clear all warnings (reply)\n\n"
         "At 3 warnings, the member is automatically muted for 10 minutes. "
         "Requires Ban Users permission."
     ),

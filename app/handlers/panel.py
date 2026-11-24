@@ -219,7 +219,7 @@ def section_text(section: str, page: int = 0) -> str:
             "<b>Owner & diagnostics</b>\n"
             "/start · /help · /owner · /panel · /audit · /dbstatus · /backup · /security · /checkpermissions · /id\n\n"
             "<b>Moderation</b>\n"
-            "/mute · /unmute · /ban · /unban · /kick · /purge · /warn · /warnings · /resetwarn\n\n"
+            "/mute · /unmute · /ban · /unban · /kick · /purge · /warn · /warnings · /unwarn · /resetwarn\n\n"
             "<b>Protection settings</b>\n"
             "/antilink · /allowdomain · /removedomain · /badwords · /addword · /removeword\n"
             "/raidstatus · /raidoff · /channelprotect\n\n"
@@ -254,14 +254,14 @@ def section_keyboard(section: str, page: int = 0) -> InlineKeyboardMarkup:
             if navigation:
                 rows.append(navigation)
         rows.append([
-            InlineKeyboardButton(text="⬅️ Dashboard", callback_data="owner_panel:home"),
+            InlineKeyboardButton(text="⬅️ Back", callback_data="owner_panel:home"),
             InlineKeyboardButton(text="🔄 Refresh", callback_data=f"owner_panel:refresh_groups_page:{page}"),
         ])
         rows.append([InlineKeyboardButton(text="✖️ Close", callback_data="owner_panel:close")])
         return InlineKeyboardMarkup(inline_keyboard=rows)
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="⬅️ Dashboard", callback_data="owner_panel:home"),
+            InlineKeyboardButton(text="⬅️ Back", callback_data="owner_panel:home"),
             InlineKeyboardButton(text="🔄 Refresh", callback_data=f"owner_panel:refresh_{section}"),
         ],
         [InlineKeyboardButton(text="✖️ Close", callback_data="owner_panel:close")],
@@ -305,7 +305,7 @@ def group_detail_keyboard(chat_id: int, page: int = 0) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="⬅️ Communities",
+                text="⬅️ Back",
                 callback_data=f"owner_panel:groups_page:{max(0, page)}",
             ),
             InlineKeyboardButton(
