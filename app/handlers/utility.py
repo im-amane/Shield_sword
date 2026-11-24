@@ -7,16 +7,7 @@ from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from app.storage import get_member_profile_history, record_member_profile
-
-
-def _previous_names(history: list[dict]) -> list[str]:
-    names = []
-    for item in history[1:]:
-        name = " ".join(part for part in (item["first_name"], item["last_name"]) if part).strip()
-        if name and name not in names:
-            names.append(name)
-    return names
+from app.storage import record_member_profile
 
 
 def create_utility_router() -> Router:
@@ -71,7 +62,6 @@ def create_utility_router() -> Router:
         record_member_profile(
             message.chat.id, target.id, first_name, last_name, username
         )
-        history = get_member_profile_history(target.id, limit=6)
         group_chat = message.chat.type in (ChatType.GROUP, ChatType.SUPERGROUP)
         lines = [
             "🪪 <b>Telegram ID</b>",
@@ -81,6 +71,6 @@ def create_utility_router() -> Router:
         if group_chat:
             lines.insert(0, f"👥 <b>Group:</b> {message.chat.title or 'Telegram group'}")
             lines.append(f"🆔 <b>Group ID:</b> <code>{message.chat.id}</code>")
-        await message.answer("\\n".join(lines))
+        await message.answer("\n".join(lines))
 
     return router
