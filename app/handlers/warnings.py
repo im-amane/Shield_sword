@@ -77,12 +77,19 @@ def create_warning_router() -> Router:
         count = add_warning(message.chat.id, target.id)
         record_audit_event(message.chat.id, "warn", message.from_user.id if message.from_user else None, target.id, f"count={count}")
         if count < WARN_LIMIT:
+            markup = InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="➖ Unwarn",
+                    callback_data=f"warnings:unwarn:{message.chat.id}:{target.id}",
+                ),
+                InlineKeyboardButton(text="✖️ Close", callback_data="ui:close"),
+            ]])
             await message.answer(premium_text(
                 f"⚠️ <b>Warning Issued</b>\n\n"
                 f"👤 {escape(target.full_name)}\n"
                 f"📊 Warnings: {count}/{WARN_LIMIT}\n\n"
                 f"One more warning will trigger a 10-minute mute."
-            ))
+            ), reply_markup=markup)
             return
         if not await check_admin(message, needs_restrict=True):
             # Keep the threshold reached so an admin can retry after fixing permissions.
@@ -175,15 +182,14 @@ def create_warning_router() -> Router:
             return
         remaining = remove_one_warning(chat_id, target_id)
         record_audit_event(chat_id, "unwarn", callback.from_user.id, target_id, f"remaining={remaining}")
+        buttons = []
         if remaining:
-            markup = InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(
-                    text="➖ Unwarn",
-                    callback_data=f"warnings:unwarn:{chat_id}:{target_id}",
-                )
-            ]])
-        else:
-            markup = None
+            buttons.append(InlineKeyboardButton(
+                text="➖ Unwarn",
+                callback_data=f"warnings:unwarn:{chat_id}:{target_id}",
+            ))
+        buttons.append(InlineKeyboardButton(text="✖️ Close", callback_data="ui:close"))
+        markup = InlineKeyboardMarkup(inline_keyboard=[buttons])
         await message.edit_text(
             premium_text(
                 "📋 <b>Warning Record Updated</b>\n\n"
