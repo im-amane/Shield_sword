@@ -132,8 +132,9 @@ async def run() -> None:
     # Observe every message update before router filters, including /commands.
     # This makes group discovery independent of new-member joins or anti-spam hits.
     dispatcher.message.outer_middleware(GroupRegistryMiddleware())
-    dispatcher.message.outer_middleware(RequestLimitMiddleware(settings.owner_id))
-    dispatcher.callback_query.outer_middleware(RequestLimitMiddleware(settings.owner_id))
+    request_limiter = RequestLimitMiddleware(settings.owner_id)
+    dispatcher.message.outer_middleware(request_limiter)
+    dispatcher.callback_query.outer_middleware(request_limiter)
     # Anti-spam runs first so media updates are checked before the media-policy
     # router consumes them. Non-spam updates raise SkipHandler and continue.
     dispatcher.include_router(create_antispam_router(settings.owner_id))
