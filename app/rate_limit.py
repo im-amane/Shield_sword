@@ -27,8 +27,10 @@ CALLBACK_REFILL_PER_SECOND = 1.0      # 10 burst; then 1 callback / second
 # allowance so 500 members can use the bot without competing at normal rates.
 GROUP_COMMAND_CAPACITY = 60.0
 GROUP_COMMAND_REFILL_PER_SECOND = 6.0
-GROUP_CALLBACK_CAPACITY = 120.0
-GROUP_CALLBACK_REFILL_PER_SECOND = 12.0
+GROUP_CALLBACK_CAPACITY = 60.0
+GROUP_CALLBACK_REFILL_PER_SECOND = 6.0
+BOT_REQUEST_CAPACITY = 200.0
+BOT_REQUEST_REFILL_PER_SECOND = 20.0
 
 STATE_TTL_SECONDS = 180.0
 MAX_BUCKETS = 20_000
@@ -97,10 +99,16 @@ class RequestLimitMiddleware(BaseMiddleware):
             chat_id = event.chat.id
             user_id = user.id
             allowed = self.limiter.allow(
+                ("bot-global",),
+                capacity=BOT_REQUEST_CAPACITY,
+                refill_per_second=BOT_REQUEST_REFILL_PER_SECOND,
+            )
+            if allowed:
+                allowed = self.limiter.allow(
                 ("command-user", chat_id, user_id),
                 capacity=COMMAND_CAPACITY,
                 refill_per_second=COMMAND_REFILL_PER_SECOND,
-            )
+                )
             if allowed and event.chat.type in {"group", "supergroup"}:
                 allowed = self.limiter.allow(
                     ("command-chat", chat_id),
@@ -122,10 +130,16 @@ class RequestLimitMiddleware(BaseMiddleware):
             chat = event.message.chat if event.message is not None else None
             chat_id = chat.id if chat is not None else 0
             allowed = self.limiter.allow(
+                ("bot-global",),
+                capacity=BOT_REQUEST_CAPACITY,
+                refill_per_second=BOT_REQUEST_REFILL_PER_SECOND,
+            )
+            if allowed:
+                allowed = self.limiter.allow(
                 ("callback-user", chat_id, user.id),
                 capacity=CALLBACK_CAPACITY,
                 refill_per_second=CALLBACK_REFILL_PER_SECOND,
-            )
+                )
             if allowed and chat is not None and chat.type in {"group", "supergroup"}:
                 allowed = self.limiter.allow(
                     ("callback-chat", chat_id),
@@ -151,6 +165,10 @@ class RequestLimitMiddleware(BaseMiddleware):
                         key: stamp for key, stamp in self._notice_at.items()
                         if stamp >= cutoff
                     }
+                    if len(self._notice_at) > MAX_BUCKETS:
+                        oldest = sorted(self._notice_at.items(), key=lambda item: item[1])
+                        for key, _ in oldest[: len(self._notice_at) - MAX_BUCKETS]:
+                            self._notice_at.pop(key, None)
                 return None
             return await handler(event, data)
 
