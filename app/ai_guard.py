@@ -88,31 +88,36 @@ class NimSafetyClient:
             },
             method="POST",
         )
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                payload = json.loads(response.read(64_000).decode("utf-8"))
-            content = payload["choices"][0]["message"]["content"]
-            result = parse_safety_result(content)
-            if result is None:
-                logger.warning("NVIDIA NIM safety response did not match the expected JSON schema.")
-            return result
-        except urllib.error.HTTPError as exc:
-            # Log only the status code; never log provider response bodies or credentials.
-            logger.warning("NVIDIA NIM safety request returned HTTP %s.", exc.code)
-            return None
-        except urllib.error.URLError as exc:
-            reason = exc.reason
-            if isinstance(reason, (TimeoutError, OSError)):
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                    payload = json.loads(response.read(64_000).decode("utf-8"))
+                content = payload["choices"][0]["message"]["content"]
+                result = parse_safety_result(content)
+                if result is None:
+                    logger.warning("NVIDIA NIM safety response did not match the expected JSON schema.")
+                return result
+            except urllib.error.HTTPError as exc:
+                if attempt == 0 and exc.code in {502, 503, 504}:
+                    logger.warning("NVIDIA NIM safety endpoint returned transient HTTP %s; retrying once.", exc.code)
+                    time.sleep(0.4)
+                    continue
+                logger.warning("NVIDIA NIM safety request returned HTTP %s.", exc.code)
+                return None
+            except urllib.error.URLError as exc:
+                reason = exc.reason
+                if isinstance(reason, (TimeoutError, OSError)):
+                    logger.warning("NVIDIA NIM safety request timed out or failed at the network layer.")
+                else:
+                    logger.warning("NVIDIA NIM safety request failed at the network layer.")
+                return None
+            except (TimeoutError, OSError):
                 logger.warning("NVIDIA NIM safety request timed out or failed at the network layer.")
-            else:
-                logger.warning("NVIDIA NIM safety request failed at the network layer.")
-            return None
-        except (TimeoutError, OSError):
-            logger.warning("NVIDIA NIM safety request timed out or failed at the network layer.")
-            return None
-        except (ValueError, KeyError, IndexError, TypeError):
-            logger.warning("NVIDIA NIM safety response was invalid or incomplete.")
-            return None
+                return None
+            except (ValueError, KeyError, IndexError, TypeError):
+                logger.warning("NVIDIA NIM safety response was invalid or incomplete.")
+                return None
+        return None
 
     async def classify(self, text: str) -> dict[str, Any] | None:
         if not text or not text.strip():

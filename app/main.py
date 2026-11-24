@@ -144,7 +144,8 @@ async def run() -> None:
     dispatcher.include_router(create_permission_monitor_router(settings.owner_id))
     dispatcher.include_router(create_owner_router(
         settings.owner_id,
-        settings.nvidia_nim_api_key,
+        settings.nvidia_nim_chat_api_key,
+        settings.nvidia_nim_guardian_api_key,
         settings.nvidia_nim_model,
         settings.nvidia_nim_chat_model,
     ))
@@ -158,30 +159,31 @@ async def run() -> None:
     dispatcher.include_router(create_antilink_router())
     dispatcher.include_router(create_raid_router(settings.owner_id))
 
-    if settings.ai_chat_enabled and settings.nvidia_nim_api_key:
+    if settings.ai_chat_enabled and settings.nvidia_nim_chat_api_key and settings.nvidia_nim_guardian_api_key:
         dispatcher.include_router(create_ai_chat_router(
-            settings.nvidia_nim_api_key,
+            settings.nvidia_nim_chat_api_key,
+            settings.nvidia_nim_guardian_api_key,
             settings.nvidia_nim_chat_model,
             settings.nvidia_nim_model,
         ))
         logging.getLogger(__name__).info(
-            "NVIDIA NIM AI Chat enabled with model %s.", settings.nvidia_nim_chat_model
+            "Guardian AI Chat engine enabled with independent chat and safety credentials."
         )
     elif settings.ai_chat_enabled:
         logging.getLogger(__name__).warning(
-            "AI_CHAT_ENABLED is true but NVIDIA_NIM_API_KEY is missing; AI Chat remains disabled."
+            "AI_CHAT_ENABLED is true but one or both NIM engine keys are missing; AI Chat remains disabled."
         )
 
-    if settings.ai_guard_enabled and settings.nvidia_nim_api_key:
+    if settings.ai_guard_enabled and settings.nvidia_nim_guardian_api_key:
         dispatcher.include_router(create_ai_guard_router(
-            settings.owner_id, settings.nvidia_nim_api_key, settings.nvidia_nim_model,
+            settings.owner_id, settings.nvidia_nim_guardian_api_key, settings.nvidia_nim_model,
         ))
         logging.getLogger(__name__).info(
             "NVIDIA NIM AI Guard enabled with model %s.", settings.nvidia_nim_model
         )
     elif settings.ai_guard_enabled:
         logging.getLogger(__name__).warning(
-            "AI_GUARD_ENABLED is true but NVIDIA_NIM_API_KEY is missing; AI Guard remains disabled."
+            "AI_GUARD_ENABLED is true but NVIDIA_NIM_GUARDIAN_API_KEY is missing; AI Guard remains disabled."
         )
 
     backup_task = (

@@ -1,31 +1,31 @@
 # NVIDIA NIM AI integration
 
-## Models
-- Chat: `nvidia/nemotron-3.5-bolt-e4b` (NVIDIA currently lists a Free Endpoint).
-- Safety: `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` (NVIDIA currently lists a Free Endpoint).
-- Both use the OpenAI-compatible NVIDIA NIM Chat Completions endpoint and the same `NVIDIA_NIM_API_KEY`.
+## Independent AI engines
+- Chat engine: `nvidia/nemotron-3.5-bolt-e4b`, authenticated with `NVIDIA_NIM_CHAT_API_KEY`.
+- Guardian safety engine: `nvidia/llama-3.1-nemotron-safety-guard-8b-v3`, authenticated with `NVIDIA_NIM_GUARDIAN_API_KEY`.
+- Both use NVIDIA's OpenAI-compatible Chat Completions endpoint, but credentials and client instances are separate.
 
 ## Railway variables
-- `NVIDIA_NIM_API_KEY`: secret key; never commit or print it.
-- `NVIDIA_NIM_CHAT_MODEL`: optional; defaults to the chat model above.
-- `NVIDIA_NIM_MODEL`: optional; defaults to the safety model above.
-- `AI_GUARD_ENABLED`: defaults to false. Controls automatic moderation.
-- `AI_CHAT_ENABLED`: defaults to false. Enables mention/reply-driven group conversations.
+- `NVIDIA_NIM_CHAT_API_KEY`: secret used only for chat generation.
+- `NVIDIA_NIM_GUARDIAN_API_KEY`: separate secret used for input/output safety classification and optional automatic AI Guard.
+- `NVIDIA_NIM_CHAT_MODEL`: optional chat model override.
+- `NVIDIA_NIM_MODEL`: optional Guardian safety model override.
+- `AI_CHAT_ENABLED`: enables mention/reply-driven group conversations.
+- `AI_GUARD_ENABLED`: controls separate automatic moderation and remains false unless explicitly enabled.
 
 ## Owner diagnostics
-Use `/aitest` in the bot's private chat. It sends fixed, harmless test prompts to both configured model IDs, reports latency and sanitized error categories, and shows a short chat response. It does not send group messages, change feature flags, or log the API key.
+Use `/aitest` in the bot's private chat. It tests chat and Guardian engines independently with their respective keys. It reports sanitized status and latency and does not change feature flags or log credentials.
 
 ## Chat behaviour and safeguards
-- Guardian responds only when a member mentions `Guardian` / `@Break_mebot`, or replies to Guardian. It does not reply to every group message or initiate unsolicited group messages.
-- Per-user 45-second, per-group 8-second and bot-wide 2-second cooldowns bound calls.
-- Incoming member text is screened before generation; generated output is screened again. If either safety check fails, is uncertain, or times out, no reply is posted.
+- Guardian responds in groups when mentioned as `Guardian` / `@Break_mebot`, or when a member replies to Guardian.
+- Per-user cooldown is 12 seconds, per-group 4 seconds, and bot-wide 1 second.
+- Incoming text and generated output are independently screened by the Guardian engine. If a check fails, is uncertain, or times out, no AI reply is posted.
 - Only a bounded excerpt of the triggering message is sent to NVIDIA. No conversation history or database profile is transmitted.
-- Chat replies are escaped as plain text before Telegram delivery.
+- Chat replies are escaped before Telegram delivery.
 
-## Safety and rollout
-- Safety-classification requests have a bounded 20-second timeout to accommodate slower free-endpoint inference. HTTP status, network-timeout and invalid-response categories are logged without provider response bodies or credentials.
-- Failed or uncertain checks still fail closed; the longer timeout does not bypass safety screening.
-- A successful model response proves endpoint access only; it does not certify moderation quality.
-- Automatic AI moderation and AI Chat remain opt-in. Verify both models with `/aitest` before enabling the corresponding flag.
-- NVIDIA marks the listed endpoints as Free Endpoint in its catalog; quotas, availability and applicable trial terms can change. Verify terms before production use in a live community.
-- When enabled, eligible group text is transmitted to NVIDIA for processing. Publish an appropriate privacy notice and assess applicable data-handling requirements first.
+## Reliability and security
+- Guardian safety requests have a bounded 20-second timeout and one bounded retry for transient HTTP 502/503/504 responses.
+- Provider response bodies and credentials are never logged.
+- Standalone AI Guard remains independent from the safety checks required for AI Chat.
+- A successful endpoint test proves connectivity only; it does not certify moderation quality. Provider quotas and availability can change.
+- When enabled, eligible group text is transmitted to NVIDIA for processing. Publish an appropriate privacy notice and assess applicable data-handling requirements.
