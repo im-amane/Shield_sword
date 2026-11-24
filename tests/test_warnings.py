@@ -6,6 +6,7 @@ from app.handlers.warnings import (
     add_warning,
     get_warnings,
     reset_warnings,
+    remove_one_warning,
 )
 
 
@@ -25,6 +26,15 @@ class WarningCountTests(unittest.TestCase):
         self.assertEqual(add_warning(-100, -100), 1)
         self.assertEqual(add_warning(-100, -100), 2)
         self.assertEqual(add_warning(-100, -100), 3)
+
+    def test_remove_one_warning_decrements_and_stops_at_zero(self) -> None:
+        self.assertEqual(remove_one_warning(-100, -100), 0)
+        add_warning(-100, -100)
+        add_warning(-100, -100)
+        self.assertEqual(remove_one_warning(-100, -100), 1)
+        self.assertEqual(remove_one_warning(-100, -100), 0)
+        self.assertEqual(remove_one_warning(-100, -100), 0)
+        self.assertEqual(get_warnings(-100, -100), 0)
 
     def test_reset_clears_warning_count(self) -> None:
         add_warning(-100, -100)
