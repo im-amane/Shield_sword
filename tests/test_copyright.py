@@ -1,15 +1,15 @@
-"""Tests for automatic group copyright media moderation."""
+"""Tests that normal group media is not blanket-deleted."""
 import unittest
 
 from app.handlers.copyright import MEDIA_TYPES, create_copyright_router
 
 
 class CopyrightRouterTests(unittest.TestCase):
-    def test_media_policy_is_automatic_and_command_free(self) -> None:
+    def test_group_media_is_not_registered_for_blanket_deletion(self) -> None:
         router = create_copyright_router()
         self.assertEqual(router.name, "copyright")
-        self.assertEqual(len(router.message.handlers), 2)  # command + group media
-        self.assertEqual(len(router.edited_message.handlers), 1)
+        self.assertEqual(len(router.message.handlers), 1)  # private /channelprotect command only
+        self.assertEqual(len(router.edited_message.handlers), 0)
         self.assertEqual(len(router.channel_post.handlers), 1)
         self.assertEqual(len(router.edited_channel_post.handlers), 1)
         self.assertIn("video", MEDIA_TYPES)
