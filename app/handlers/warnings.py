@@ -41,7 +41,7 @@ def create_warning_router() -> Router:
             await message.answer(premium_text("🔒 <b>Missing Admin Right</b>\n\nYou need Ban Users permission."))
             return False
         if bot_member.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
-            await message.answer(premium_text("⚙️ <b>Bot Permission Needed</b>\n\nPromote Ani World as an admin first."))
+            await message.answer(premium_text("⚙️ <b>Bot Permission Needed</b>\n\nPromote Sentinel as an administrator first."))
             return False
         if needs_restrict and not getattr(bot_member, "can_restrict_members", False):
             await message.answer(premium_text("⚙️ <b>Missing Permission</b>\n\nI need Ban Users permission."))
