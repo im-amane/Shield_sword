@@ -47,9 +47,8 @@ def load_settings() -> Settings:
     ai_chat_enabled = os.getenv("AI_CHAT_ENABLED", "false").strip().casefold() in {
         "1", "true", "yes", "on",
     }
-    legacy_key = os.getenv("NVIDIA_NIM_API_KEY", "").strip()
-    chat_api_key = os.getenv("NVIDIA_NIM_CHAT_API_KEY", "").strip() or legacy_key
-    guardian_api_key = os.getenv("NVIDIA_NIM_GUARDIAN_API_KEY", "").strip() or legacy_key
+    chat_api_key = os.getenv("NVIDIA_NIM_CHAT_API_KEY", "").strip()
+    guardian_api_key = os.getenv("NVIDIA_NIM_GUARDIAN_API_KEY", "").strip()
     nvidia_nim_model = os.getenv("NVIDIA_NIM_MODEL", DEFAULT_NIM_MODEL).strip()
     nvidia_nim_chat_model = os.getenv(
         "NVIDIA_NIM_CHAT_MODEL", DEFAULT_NIM_CHAT_MODEL
