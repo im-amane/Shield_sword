@@ -16,13 +16,13 @@ from app.storage import (
     verify_database_backup,
 )
 from app.ai_chat import DEFAULT_NIM_CHAT_MODEL, NimChatClient
-from app.ai_guard import DEFAULT_NIM_MODEL, parse_safety_result
-from app.nvidia_nim import request_nim_completion
+from app.ai_guard import DEFAULT_NIM_MODEL, NimSafetyClient
 
 
 def create_owner_router(
     owner_id: int | None,
-    nvidia_api_key: str = "",
+    chat_api_key: str = "",
+    guardian_api_key: str = "",
     safety_model: str = DEFAULT_NIM_MODEL,
     chat_model: str = DEFAULT_NIM_CHAT_MODEL,
 ) -> Router:
@@ -40,47 +40,41 @@ def create_owner_router(
         if not authorized_private_owner(message):
             await message.answer(premium_text("🔒 <b>Owner-only</b> · Use /aitest in my private chat."))
             return
-        if not nvidia_api_key:
-            await message.answer(premium_text("❌ <b>NVIDIA NIM key missing</b>\n\nConfigure NVIDIA_NIM_API_KEY in Railway Variables."))
+        if not chat_api_key or not guardian_api_key:
+            await message.answer(premium_text(
+                "❌ <b>AI engine keys missing</b>\n\n"
+                "Configure NVIDIA_NIM_CHAT_API_KEY and NVIDIA_NIM_GUARDIAN_API_KEY in Railway Variables."
+            ))
             return
 
-        status = await message.answer(premium_text("🧪 <b>NVIDIA NIM diagnostics</b>\n\nChecking chat and safety models…"))
+        status = await message.answer(premium_text(
+            "🧪 <b>Guardian AI engine diagnostics</b>\n\nTesting independent chat and Guardian credentials…"
+        ))
         chat_result = await asyncio.to_thread(
-            NimChatClient(nvidia_api_key, chat_model).generate,
+            NimChatClient(chat_api_key, chat_model).generate,
             "Reply with exactly: Guardian chat test passed.",
         )
         safety_result = await asyncio.to_thread(
-            request_nim_completion,
-            nvidia_api_key,
-            safety_model,
-            [
-                {"role": "system", "content": (
-                    'Classify the supplied harmless test message. Return JSON only: '
-                    '{"User Safety":"safe" or "unsafe","Safety Categories":"short string"}.'
-                )},
-                {"role": "user", "content": "Hello everyone, hope you are having a good day!"},
-            ],
-            timeout=8.0,
-            max_tokens=100,
+            NimSafetyClient(guardian_api_key, safety_model, timeout=20.0).classify,
+            "Hello everyone, hope you are having a good day!",
         )
-        parsed_safety = parse_safety_result(safety_result.text or "")
         chat_ok = bool(chat_result.text and chat_result.error is None)
-        safety_ok = bool(parsed_safety is not None and not parsed_safety["unsafe"])
-        def line(label: str, ok: bool, result) -> str:
-            detail = f" · {result.latency_ms} ms"
-            if result.error:
-                detail += f" · {escape(result.error)}"
+        safety_ok = bool(safety_result is not None and not safety_result["unsafe"])
+        def line(label: str, ok: bool, latency: int, error: str | None = None) -> str:
+            detail = f" · {latency} ms"
+            if error:
+                detail += f" · {escape(error)}"
             return f"{'✅' if ok else '❌'} <b>{label}:</b> {'PASS' if ok else 'FAIL'}{detail}"
         preview = escape((chat_result.text or "")[:220])
         report = (
-            "🧪 <b>NVIDIA NIM diagnostics</b>\n\n"
-            + line("Chat model", chat_ok, chat_result) + "\n"
+            "🧪 <b>Guardian AI engine diagnostics</b>\n\n"
+            + line("Chat engine", chat_ok, chat_result.latency_ms, chat_result.error) + "\n"
             + f"<code>{escape(chat_model)}</code>\n\n"
-            + line("Safety model", safety_ok, safety_result) + "\n"
+            + line("Guardian engine", safety_ok, 0, None if safety_ok else "classification_failed") + "\n"
             + f"<code>{escape(safety_model)}</code>\n\n"
             + (f"<b>Chat sample:</b> {preview}\n\n" if preview else "")
-            + ("Both endpoints responded correctly." if chat_ok and safety_ok else
-               "At least one endpoint needs attention. Existing moderation settings were not changed.")
+            + ("Both independent engines responded correctly." if chat_ok and safety_ok else
+               "At least one engine needs attention. Feature flags were not changed.")
         )
         await status.edit_text(premium_text(report[:3900]))
 
