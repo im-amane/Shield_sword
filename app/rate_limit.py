@@ -105,9 +105,9 @@ class RequestLimitMiddleware(BaseMiddleware):
             )
             if allowed:
                 allowed = self.limiter.allow(
-                ("command-user", chat_id, user_id),
-                capacity=COMMAND_CAPACITY,
-                refill_per_second=COMMAND_REFILL_PER_SECOND,
+                    ("command-user", chat_id, user_id),
+                    capacity=COMMAND_CAPACITY,
+                    refill_per_second=COMMAND_REFILL_PER_SECOND,
                 )
             if allowed and event.chat.type in {"group", "supergroup"}:
                 allowed = self.limiter.allow(
@@ -136,9 +136,9 @@ class RequestLimitMiddleware(BaseMiddleware):
             )
             if allowed:
                 allowed = self.limiter.allow(
-                ("callback-user", chat_id, user.id),
-                capacity=CALLBACK_CAPACITY,
-                refill_per_second=CALLBACK_REFILL_PER_SECOND,
+                    ("callback-user", chat_id, user.id),
+                    capacity=CALLBACK_CAPACITY,
+                    refill_per_second=CALLBACK_REFILL_PER_SECOND,
                 )
             if allowed and chat is not None and chat.type in {"group", "supergroup"}:
                 allowed = self.limiter.allow(
