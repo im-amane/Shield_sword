@@ -1,5 +1,6 @@
 """Owner-only identity, audit, database and backup commands."""
 import asyncio
+import time
 from html import escape
 from io import BytesIO
 
@@ -54,10 +55,12 @@ def create_owner_router(
             NimChatClient(chat_api_key, chat_model).generate,
             "Reply with exactly: Guardian chat test passed.",
         )
+        safety_started = time.monotonic()
         safety_result = await asyncio.to_thread(
             NimSafetyClient(guardian_api_key, safety_model, timeout=20.0).classify,
             "Hello everyone, hope you are having a good day!",
         )
+        safety_latency = int((time.monotonic() - safety_started) * 1000)
         chat_ok = bool(chat_result.text and chat_result.error is None)
         safety_ok = bool(safety_result is not None and not safety_result["unsafe"])
         def line(label: str, ok: bool, latency: int, error: str | None = None) -> str:
@@ -70,7 +73,7 @@ def create_owner_router(
             "🧪 <b>Guardian AI engine diagnostics</b>\n\n"
             + line("Chat engine", chat_ok, chat_result.latency_ms, chat_result.error) + "\n"
             + f"<code>{escape(chat_model)}</code>\n\n"
-            + line("Guardian engine", safety_ok, 0, None if safety_ok else "classification_failed") + "\n"
+            + line("Guardian engine", safety_ok, safety_latency, None if safety_ok else "classification_failed") + "\n"
             + f"<code>{escape(safety_model)}</code>\n\n"
             + (f"<b>Chat sample:</b> {preview}\n\n" if preview else "")
             + ("Both independent engines responded correctly." if chat_ok and safety_ok else
