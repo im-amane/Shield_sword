@@ -1,4 +1,4 @@
-"""Small utility commands for Telegram chats."""
+""""Small utility commands for Telegram chats."""
 from __future__ import annotations
 
 from aiogram import Router
@@ -88,9 +88,7 @@ def create_utility_router() -> Router:
         except TelegramAPIError:
             pass
 
-        record_member_profile(
-            message.chat.id, target.id, first_name, last_name, username
-        )
+        record_member_profile(message.chat.id, target.id, first_name, last_name, username)
         history = get_member_profile_history(target.id, limit=6)
         group_chat = message.chat.type in (ChatType.GROUP, ChatType.SUPERGROUP)
         avatar = await _profile_photo(message.bot, target.id)
@@ -107,9 +105,14 @@ def create_utility_router() -> Router:
             avatar=avatar,
             name_history=_previous_names(history),
         )
+        caption = (
+            "🪪 <b>Sentinel · User Profile</b>\n"
+            f"👤 <b>User ID:</b> <code>{target.id}</code>\n"
+            f"💬 <b>Chat ID:</b> <code>{message.chat.id}</code>"
+        )
         await message.answer_photo(
             BufferedInputFile(card, filename=f"sentinel-user-{target.id}.png"),
-            caption="🪪 <b>Sentinel · User Profile Card</b>",
+            caption=caption,
         )
 
     return router
