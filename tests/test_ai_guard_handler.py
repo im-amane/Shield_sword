@@ -54,8 +54,8 @@ class AiGuardHandlerTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_unsafe_message_is_deleted_and_audited(self):
         self.client.classify.return_value = {"unsafe": True, "categories": "Threat"}
-        with patch("app.handlers.ai_guard.add_warning", return_value=1) as warning, \\
-             patch("app.handlers.ai_guard.record_audit_event") as audit, \\
+        with patch("app.handlers.ai_guard.add_warning", return_value=1) as warning, \
+             patch("app.handlers.ai_guard.record_audit_event") as audit, \
              patch("app.handlers.ai_guard.record_security_incident") as incident:
             await self.handler(self.message)
         self.message.delete.assert_awaited_once()
@@ -128,7 +128,7 @@ class AiGuardHandlerTests(unittest.IsolatedAsyncioTestCase):
             text=None, caption="Click this credential theft link",
             message_id=78, delete=AsyncMock(),
         )
-        with patch("app.handlers.ai_guard.record_audit_event") as audit, \\
+        with patch("app.handlers.ai_guard.record_audit_event") as audit, \
              patch("app.handlers.ai_guard.record_security_incident") as incident:
             await handler(post)
         post.delete.assert_awaited_once()
