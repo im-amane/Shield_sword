@@ -30,9 +30,9 @@ def dashboard_text(bot_username: str | None, bot_id: int, owner_id: int) -> str:
     username = f"@{bot_username}" if bot_username else "Not available"
     stats = get_owner_security_summary()
     return premium_text(
-        "🛡️ <b>ANI WORLD · GUARDIAN HQ</b> 👑\n"
+        "🛡️ <b>ANI WORLD · SENTINEL HQ</b> 👑\n"
         "<i>Your community. Our watch.</i>\n\n"
-        "╭─ <b>GUARDIAN STATUS</b>\n"
+        "╭─ <b>SENTINEL STATUS</b>\n"
         "│ 🟢 <b>Online and protecting</b>\n"
         f"│ 🤖 {escape(username)}\n"
         f"│ 🆔 <code>{bot_id}</code>\n"
@@ -215,7 +215,7 @@ def section_text(section: str, page: int = 0) -> str:
         )
     if section == "commands":
         return premium_text(
-            "📚 <b>Guardian Command Index</b>\n\n"
+            "📚 <b>Sentinel Command Index</b>\n\n"
             "<b>Owner & diagnostics</b>\n"
             "/start · /help · /owner · /panel · /audit · /dbstatus · /backup · /security · /checkpermissions · /id\n\n"
             "<b>Moderation</b>\n"
