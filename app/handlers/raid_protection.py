@@ -10,7 +10,6 @@ from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message, User
 
 from app.handlers.typography import premium_text
-from app.handlers.card_helpers import send_category_card
 from app.storage import (
     clear_raid_data,
     clear_raid_expiry,
@@ -107,7 +106,6 @@ def create_raid_router(owner_id: int | None = None) -> Router:
 
     @router.message(Command("raidstatus"))
     async def raid_status_command(message: Message) -> None:
-        await send_category_card(message, "security", "/raidstatus", "Raid protection controls")
         if not message.from_user or not is_owner(message.from_user.id, owner_id):
             await message.answer(premium_text("🔒 <b>Owner Access Only</b>\n\nRaid controls are reserved for the bot owner. 👑"))
             return
@@ -123,7 +121,6 @@ def create_raid_router(owner_id: int | None = None) -> Router:
 
     @router.message(Command("raidoff"))
     async def raid_off_command(message: Message) -> None:
-        await send_category_card(message, "security", "/raidoff", "Raid protection controls")
         if not message.from_user or not is_owner(message.from_user.id, owner_id):
             await message.answer(premium_text("🔒 <b>Owner Access Only</b>\n\nThis control is reserved for the bot owner. 👑"))
             return
