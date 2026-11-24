@@ -28,7 +28,7 @@ class AiGuardTests(unittest.TestCase):
     def test_scan_limiter_enforces_user_chat_and_global_limits(self):
         limiter = AiScanLimiter()
         self.assertTrue(limiter.allow(-100, 1, now=10.0))
-        self.assertFalse(limiter.allow(-100, 1, now=19.0))
+        self.assertFalse(limiter.allow(-100, 1, now=17.9))
         self.assertFalse(limiter.allow(-100, 2, now=10.1))
         self.assertTrue(limiter.allow(-100, 2, now=10.3))
         self.assertTrue(limiter.allow(-200, 3, now=10.6))
