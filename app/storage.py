@@ -160,7 +160,7 @@ _REQUIRED_BACKUP_TABLES = frozenset({
     "warnings", "badword_settings", "badwords", "antilink_settings",
     "allowed_domains", "pending_verifications", "raid_joins", "raid_modes",
     "copyright_settings", "channel_media_settings", "security_audit",
-    "known_groups", "member_join_events", "member_profile_history", "security_incidents",
+    "known_groups", "member_join_events", "security_incidents",
     "automatic_backup_state", "daily_report_state",
     "antispam_messages", "antispam_mutes",
 })
