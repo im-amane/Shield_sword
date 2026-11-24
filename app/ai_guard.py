@@ -133,18 +133,28 @@ class AiScanLimiter:
         self._chats: dict[int, float] = {}
         self._global_next = 0.0
 
+    def _allow_chat_budget(self, chat_id: int, current: float) -> bool:
+        if current < self._chats.get(chat_id, 0.0) or current < self._global_next:
+            return False
+        self._chats[chat_id] = current + 0.25
+        self._global_next = current + 0.2
+        if len(self._chats) > 2_000:
+            self._chats = {key: expiry for key, expiry in self._chats.items() if expiry > current}
+        return True
+
     def allow(self, chat_id: int, user_id: int, now: float | None = None) -> bool:
         current = time.monotonic() if now is None else now
         user_key = (chat_id, user_id)
         if current < self._users.get(user_key, 0.0):
             return False
-        if current < self._chats.get(chat_id, 0.0) or current < self._global_next:
+        if not self._allow_chat_budget(chat_id, current):
             return False
         self._users[user_key] = current + 8.0
-        self._chats[chat_id] = current + 0.25
-        self._global_next = current + 0.2
         if len(self._users) > 10_000:
             self._users = {key: expiry for key, expiry in self._users.items() if expiry > current}
-        if len(self._chats) > 2_000:
-            self._chats = {key: expiry for key, expiry in self._chats.items() if expiry > current}
         return True
+
+    def allow_channel_post(self, chat_id: int, now: float | None = None) -> bool:
+        """Apply chat/global pacing without treating each channel post as a user."""
+        current = time.monotonic() if now is None else now
+        return self._allow_chat_budget(chat_id, current)
