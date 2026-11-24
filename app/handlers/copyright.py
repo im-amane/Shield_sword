@@ -1,4 +1,4 @@
-"""Group and opt-in channel media protection."""
+"""Opt-in channel media protection; group media is moderated by targeted filters."""
 from __future__ import annotations
 
 from html import escape
@@ -12,7 +12,6 @@ from aiogram.types import Message
 from app.handlers.typography import premium_text
 from app.storage import (
     is_channel_media_enabled,
-    is_copyright_enabled,
     record_audit_event,
     record_security_incident,
     set_channel_media_enabled,
@@ -25,7 +24,7 @@ MEDIA_TYPES = {
 
 
 def create_copyright_router() -> Router:
-    """Protect group media by default and channels only after explicit opt-in."""
+    """Keep ordinary group media intact; protect channels only after explicit opt-in."""
     router = Router(name="copyright")
 
     @router.message(Command("channelprotect"))
