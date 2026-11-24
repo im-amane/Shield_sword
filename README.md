@@ -1,18 +1,19 @@
 # Ani World 剣 Management Bot
 
-The bot is built one feature at a time, with automated tests and live verification before moving to the next module.
+A Telegram group security and management bot. It is built one feature at a time, with automated tests and deployment verification.
 
 ## Stack
 
 - Python 3.11+
 - aiogram 3
-- Railway environment variables
+- SQLite on Railway persistent storage
+- NVIDIA NIM safety classifier (optional AI Guard)
 - Telegram long polling
 
 ## Run locally
 
 1. Create a bot with [@BotFather](https://t.me/BotFather).
-2. Set `BOT_TOKEN` in your environment.
+2. Set `BOT_TOKEN` and `OWNER_ID` in your environment.
 3. Install dependencies and start:
 
 ```bash
@@ -24,85 +25,67 @@ export OWNER_ID="your-telegram-user-id"
 python -m app.main
 ```
 
-On Windows PowerShell:
+## Railway configuration
 
-```powershell
-$env:BOT_TOKEN="your-token"
-$env:OWNER_ID="your-telegram-user-id"
-python -m app.main
-```
+Required:
+- `BOT_TOKEN`
+- `OWNER_ID`
 
-## Railway deployment
+AI Guard (optional, enabled when both settings are present):
+- `AI_GUARD_ENABLED=true`
+- `NVIDIA_NIM_GUARDIAN_API_KEY`
+- Optional `NVIDIA_NIM_MODEL`; defaults to `nvidia/llama-3.1-nemotron-safety-guard-8b-v3`
 
-Set `BOT_TOKEN` and `OWNER_ID` in the existing Railway service Variables. Optional public menu links are `MAIN_GROUP_URL` and `OWNER_CONTACT_URL` (HTTPS URLs only). The Add Me button is generated automatically from the bot username. The service starts with `python -m app.main`.
+Other optional settings:
+- `MAIN_GROUP_URL`
+- `OWNER_CONTACT_URL`
+- `DATABASE_PATH=/data/aniworld.sqlite3`
+- `BACKUP_ENCRYPTION_KEY` (required for encrypted backup delivery)
 
-The bot needs these Telegram administrator permissions for the current group features:
-- Delete messages: anti-spam cleanup.
-- Ban users: temporary restrictions for verification and anti-spam. This permission does not mean the bot automatically bans members.
+There is no conversational AI Chat feature or chat-model API configuration. AI Guard is a moderation classifier only.
 
-## Current group protection
+## Group protection
 
-- Public welcome messages for new human members.
-- Arithmetic captcha verification for every new human member. Members stay restricted until they answer correctly; unanswered challenges expire after 3 minutes and the bot removes the member. Expired challenges are enforced by a persistent worker, including after service restarts.
-- Anti-spam: flood detection and temporary 60-second restrictions.
-- Automatic raid detection: activates when **500 human members join within 10 minutes**.
-- Raid mode lasts **30 minutes** and sends an alert to the group and configured owner. The owner can use `/raidstatus` in a group to inspect it and `/raidoff` to disable it manually.
-- During raid mode, all new human members continue to face the existing verification challenge. Existing members are not restricted.
+- New human members receive an arithmetic CAPTCHA and remain restricted until they answer correctly.
+- Unanswered challenges expire after 3 minutes; a persistent worker enforces expiry after restarts.
+- Anti-spam detects flood behavior and applies temporary 60-second restrictions.
+- Raid mode activates at 500 human joins within 10 minutes, lasts 30 minutes, and alerts the group and owner. The owner can inspect with `/raidstatus` and disable with `/raidoff`.
+- An early-warning owner alert is sent when 25 human accounts join within 60 seconds. This alert does not itself ban or restrict members.
+- AI Guard checks group text and media captions for defined high-risk safety categories. It exempts the owner, admins, bots and commands; ambiguous content is treated as safe by the classifier. Provider or member-lookup failures do not trigger AI deletion.
+- Existing anti-link, bad-word and anti-spam filters remain active.
 
-Raid counters and active mode are persisted in SQLite. The database survives process restarts only when its path is on persistent storage. On Railway, attach a Volume mounted at `/data` and set `DATABASE_PATH=/data/aniworld.sqlite3`; without that, redeploys may replace the database.
+## Media policy and copyright limitations
 
-## Channel media protection
+- Ordinary group photos, videos, GIFs, documents, audio, voice notes, video notes and stickers are allowed. Group media is not blanket-deleted.
+- Text and captions remain subject to the relevant group safety filters.
+- Channel media protection is opt-in and OFF by default. Add the bot as a channel administrator with Delete Messages permission, then use `/channelprotect @channel on|off|status` in private chat.
+- When channel protection is ON, all media posts are removed, including posts by channel administrators. Telegram channel-post updates do not reliably identify the individual poster.
+- The bot does not verify copyright ownership or detect visual copyright infringement. No copyright-related deletion is performed on ordinary group media. Handle rights-holder complaints through review and use licensed/official sources.
 
-- Channel protection is opt-in and OFF by default, so adding the bot to a channel does not silently remove channel posts.
-- Add the bot as a channel administrator with Delete Messages permission.
-- In the bot's private chat, a channel administrator can run:
-  - `/channelprotect @channel on`
-  - `/channelprotect @channel off`
-  - `/channelprotect @channel status`
-- When enabled, photos, videos, animations, documents, audio, voice notes, video notes and stickers in channel posts are removed, including edited channel posts.
-- Important Telegram limitation: channel-post updates do not reliably identify the individual administrator who published a post. Therefore, ON mode removes media from admins too. Enable it only if that is the intended channel policy.
-- Channel settings are stored separately from group settings and persist in the Railway database volume.
+## Moderation and management
 
-## Automatic copyright-risk controls
+- Admin moderation commands include mute, unmute, ban, kick, unban and purge.
+- Warning controls include `/unwarn` and `/resetwarn`; owner/admin access is enforced by the relevant handlers.
+- Owner-only `/panel` opens the private control center with Overview, Security Intelligence, Groups, Member Activity, Audit Log, Database Health, Secure Configuration, Automation Monitor, Command Index and encrypted backup.
+- Use `/audit`, `/dbstatus`, `/backup` and `/aitest` in the bot's private chat as appropriate.
+- The daily owner security report and weekly automatic backup use persisted delivery timestamps to avoid duplicate sends after restarts.
 
-- Every group automatically blocks ordinary members from posting photos, videos, animations/GIFs, documents, audio, voice notes, video notes and stickers. No setup command is required.
-- Group admins can still publish approved media; text discussion remains available.
-- The filter also checks edited media messages and records removal metadata in the security audit log.
-- This is a group-level upload policy, not a copyright ownership detector or legal guarantee. It does not yet moderate channel posts. Channel protection requires a separate channel-admin integration and Telegram's Restrict Saving Content setting should also be enabled manually where appropriate.
-- Use licensed/official anime sources and respond to valid rights-holder notices.
+## Storage, audit and backups
 
-## Security
+- Mount a Railway Volume at `/data` and set `DATABASE_PATH=/data/aniworld.sqlite3` so SQLite data survives redeploys.
+- The dashboard records group observations, join timestamps, usernames/display names and user IDs, raid alerts, and moderation/security incident metadata.
+- Stored intelligence does not include message bodies, phone numbers, IP addresses, device details or bot tokens.
+- Join history is capped at 5,000 records, security incidents at 3,000 and audit events at 5,000.
+- Manual and automatic backups are encrypted with AES-256-GCM before delivery. `BACKUP_ENCRYPTION_KEY` must be URL-safe base64 encoding of exactly 32 random bytes. The bot fails closed rather than sending plaintext if the key is missing or invalid.
+- Keep an offline, access-controlled copy of the encryption key. Losing it makes encrypted backups unrecoverable. Older backups created before encryption are not retroactively protected.
 
-- All bot-sent messages/documents use Telegram's protected-content flag by default to discourage forwarding and saving.
-- This does not prevent screenshots, screen recording, copying text manually, or protect user-posted content. Enable Telegram channel/group Restrict Saving Content in chat settings for stronger chat-wide controls.
-- Owner-only `/panel` opens the private control center with Overview, Security Intelligence, Groups, Member Activity, Audit Log, Database Health, Secure Configuration, Automation Monitor, Command Index, and one-tap encrypted backup.
-- The Configuration panel reports whether required secrets/settings are present and displays only a short SHA-256 fingerprint for the backup key. It never displays bot tokens, encryption keys, or other secret values in Telegram.
-- The dashboard records groups the bot observes, new-member join timestamps, public Telegram usernames/display names and user IDs, raid alerts, anti-spam, anti-link, bad-word and media-policy incidents.
-- An early-warning alert is sent to the owner when 25 human accounts join within 60 seconds. This is an alert only; it does not automatically ban or restrict members. The existing 500-joins/10-minute threshold activates Raid Mode.
-- Join history is capped at the newest 5,000 records and security incidents at 3,000. Audit events are capped at 5,000. Stored intelligence is metadata only: no message bodies, phone numbers, IP addresses, device details or bot tokens are collected.
-- Use `/audit`, `/dbstatus` and `/backup` in the bot's private chat. The dashboard and backup are private-only so database files and incident details are never posted into a group.
-- Automatic verified SQLite backups are sent to the configured owner once every 7 days. The last successful delivery time is stored in the persistent database, so service restarts do not trigger duplicate backups. The first backup is sent shortly after the first-ever startup. Keep a separate copy outside Telegram/Railway for disaster recovery.
-- Telegram bots cannot see a member's IP address, device fingerprint, phone number or real-world identity unless the user separately shares that information. The dashboard only shows information Telegram makes available to the bot.
-- Audit and incident records contain moderation/security metadata only; never store bot tokens or private message contents.
+## Telegram permissions
 
+The bot needs only the administrator permissions required for the enabled features:
+- Delete Messages: moderation cleanup and channel protection.
+- Restrict Members: CAPTCHA and temporary anti-spam/AI-warning mutes.
+- Ban Users: member removal and verification expiry.
+
+Telegram bots cannot see a member's IP address, device fingerprint, phone number or real-world identity unless the user separately shares that information.
 
 Never commit `.env`, paste bot tokens into chats, or print secrets in logs. If a token is exposed, revoke it through @BotFather and create a new one.
-
-
-## Global inline UI
-- Bot replies in groups and private chats include a `✖️ Close` inline button. Existing inline actions are preserved. Tapping Close deletes that bot message for everyone in the chat.
-
-
-## Daily owner security reports
-- A daily security summary is sent to the configured owner in private chat.
-- It includes monitored groups, new member joins, recent security incidents, raid detections, anti-spam actions and active raid modes.
-- Successful delivery time is persisted in SQLite, so a service restart does not cause duplicate reports. The first report is sent shortly after the first-ever startup; failed deliveries retry after one hour.
-
-
-## Encrypted database backups
-
-- Manual `/backup`, the Owner Panel's one-tap backup, and automatic weekly backups are encrypted with AES-256-GCM before they leave the service.
-- Configure `BACKUP_ENCRYPTION_KEY` as a Railway secret/environment variable. It must be URL-safe base64 encoding of exactly 32 random bytes. The bot fails closed and will not send plaintext backups if the key is missing or invalid.
-- Keep an offline, access-controlled copy of this key separately from Telegram and Railway backups. Losing the key makes encrypted backups unrecoverable. Never commit it to GitHub or send it in chat.
-- Encrypted files use the `.sqlite3.awb` extension and the versioned `AWB1` envelope. Restore tooling must authenticate/decrypt with the same key before validating the resulting SQLite database.
-- Existing backups created before this change remain unencrypted. Protect or securely dispose of those older files according to your retention needs; they are not retroactively encrypted.
