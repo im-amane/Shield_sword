@@ -10,6 +10,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from app.handlers.typography import premium_text
+from app.handlers.card_helpers import send_category_card
 from app.storage import is_feature_enabled
 
 
@@ -50,6 +51,7 @@ def create_security_status_router() -> Router:
         if actor.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR):
             await message.answer(premium_text("🔒 <b>Admin Only</b>\n\nOnly group admins can view security settings."))
             return
+        await send_category_card(message, "security", "Security Status", "Group protection overview")
         await message.answer(security_status_text(message.chat.id, message.chat.title or "Telegram group"))
 
     return router
