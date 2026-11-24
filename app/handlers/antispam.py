@@ -177,7 +177,7 @@ def create_antispam_router(owner_id: int | None = None) -> Router:
             await message.answer(premium_text(
                 f"⚠️ <b>Easy there!</b>\n\nYou’re sending messages a little too fast. "
                 f"Please slow down and let everyone enjoy the conversation. 💬\n\n"
-                f"🛡️ <b>Ani World Anti-Spam</b> · Timeout: {MUTE_SECONDS}s"
+                f"🛡️ <b>Sentinel · Anti-Spam</b> · Timeout: {MUTE_SECONDS}s"
             ))
         except TelegramAPIError:
             logger.exception("Could not send anti-spam notice chat_id=%s", chat_id)

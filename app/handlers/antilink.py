@@ -86,7 +86,7 @@ def create_antilink_router() -> Router:
             await message.answer(premium_text("🔒 <b>Missing Admin Right</b>\n\nYou need Delete Messages permission."))
             return False
         if bot_member.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR) or not getattr(bot_member, "can_delete_messages", False):
-            await message.answer(premium_text("⚙️ <b>Bot Permission Needed</b>\n\nPromote Ani World with Delete Messages permission."))
+            await message.answer(premium_text("⚙️ <b>Bot Permission Needed</b>\n\nPromote Sentinel with Delete Messages permission."))
             return False
         return True
 

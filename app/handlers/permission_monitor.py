@@ -1,4 +1,4 @@
-"""Owner alerts for Guardian bot membership and admin-right changes."""
+"""Owner alerts for Sentinel bot membership and admin-right changes."""
 from __future__ import annotations
 
 from html import escape
@@ -57,7 +57,7 @@ def permission_change_summary(update: ChatMemberUpdated) -> list[str]:
 
 
 def create_permission_monitor_router(owner_id: int | None) -> Router:
-    """Notify the configured owner when Guardian's group permissions change."""
+    """Notify the configured owner when Sentinel's group permissions change."""
     router = Router(name="permission_monitor")
 
     @router.my_chat_member()
@@ -82,7 +82,7 @@ def create_permission_monitor_router(owner_id: int | None) -> Router:
         )
         if owner_id is None:
             return
-        heading = "🚨 <b>Guardian Permission Alert</b>" if critical else "🛡️ <b>Guardian Permission Update</b>"
+        heading = "🚨 <b>Sentinel Permission Alert</b>" if critical else "🛡️ <b>Sentinel Permission Update</b>"
         body = (
             f"{heading}\n\n"
             f"Chat: <b>{chat_title}</b>\n"

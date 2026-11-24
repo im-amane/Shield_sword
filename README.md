@@ -1,8 +1,8 @@
-# Ani World 剣 Management Bot
+# Sentinel🛡️剣 · Ani World Security & Management
 
-A Telegram group security and management bot. It is built one feature at a time, with automated tests and deployment verification.
+Sentinel is Ani World's automated Telegram group and channel security and management bot. It is built one feature at a time, with automated tests and deployment verification.
 
-## Stack
+## Public identity\n\n- Telegram display name: `Sentinel🛡️剣`\n- Private `/start`: personal introduction and navigation menu.\n- Group `/start`: group-specific security overview and admin guidance.\n- New-member welcome: verification instructions and clear media policy.\n- On startup, the worker synchronizes the bot's Telegram name, full description and short description.\n\n## Stack
 
 - Python 3.11+
 - aiogram 3
@@ -42,7 +42,7 @@ Other optional settings:
 - `DATABASE_PATH=/data/aniworld.sqlite3`
 - `BACKUP_ENCRYPTION_KEY` (required for encrypted backup delivery)
 
-There is no conversational AI Chat feature or chat-model API configuration. AI Guard is a moderation classifier only.
+There is no conversational AI Chat feature or chat-model API configuration. AI Guard is a safety classifier for group messages and channel posts containing text or captions.
 
 ## Group protection
 
@@ -66,7 +66,7 @@ There is no conversational AI Chat feature or chat-model API configuration. AI G
 
 - Admin moderation commands include mute, unmute, ban, kick, unban and purge.
 - Warning controls include `/unwarn` and `/resetwarn`; owner/admin access is enforced by the relevant handlers.
-- Owner-only `/panel` opens the private control center with Overview, Security Intelligence, Groups, Member Activity, Audit Log, Database Health, Secure Configuration, Automation Monitor, Command Index and encrypted backup.
+- Owner-only `/panel` opens Sentinel's private control center with Overview, Security Intelligence, Groups, Member Activity, Audit Log, Database Health, Secure Configuration, Automation Monitor, Command Index and encrypted backup.
 - Use `/audit`, `/dbstatus`, `/backup` and `/aitest` in the bot's private chat as appropriate.
 - The daily owner security report and weekly automatic backup use persisted delivery timestamps to avoid duplicate sends after restarts.
 

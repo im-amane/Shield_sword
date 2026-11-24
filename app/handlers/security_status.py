@@ -10,21 +10,20 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from app.handlers.typography import premium_text
-from app.storage import is_copyright_enabled, is_feature_enabled
+from app.storage import is_feature_enabled
 
 
 def security_status_text(chat_id: int, title: str) -> str:
     """Build a concise status report from the group's persisted settings."""
     antilink = is_feature_enabled("antilink", chat_id)
     badwords = is_feature_enabled("badwords", chat_id)
-    copyright_filter = is_copyright_enabled(chat_id)
     state = lambda enabled: "🟢 ON" if enabled else "⚪ OFF"
     return premium_text(
-        "🛡️ <b>Ani World · Security Status</b>\n\n"
+        "🛡️ <b>Sentinel · Security Status</b>\n\n"
         f"🏠 <b>Group:</b> {escape(title)}\n\n"
         f"🔗 Anti-link: <b>{state(antilink)}</b>\n"
         f"🤬 Bad-word filter: <b>{state(badwords)}</b>\n"
-        f"©️ Media upload policy: <b>{state(copyright_filter)}</b>\n"
+        f"🖼️ Normal media: <b>Allowed · no blanket deletion</b>\n"
         "🧩 New-member CAPTCHA: <b>🟢 ON</b>\n"
         "🌊 Anti-spam: <b>🟢 ON</b>\n"
         "🚨 Raid detection: <b>🟢 ON</b>\n\n"

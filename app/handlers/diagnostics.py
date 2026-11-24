@@ -13,7 +13,7 @@ from app.handlers.typography import premium_text
 
 
 def permission_lines(member) -> list[str]:
-    """Describe the Telegram rights needed by Guardian's active protections."""
+    """Describe the Telegram rights needed by Sentinel's active protections."""
     if member.status == ChatMemberStatus.CREATOR:
         return ["✅ Group owner: full administrator rights"]
     if member.status != ChatMemberStatus.ADMINISTRATOR:
@@ -66,7 +66,7 @@ def create_diagnostics_router() -> Router:
 
         heading = "🟢 All required permissions are ready." if ready else "🟠 Missing permissions detected."
         await message.answer(premium_text(
-            "🛡️ <b>Ani World · Security Check</b>\n"
+            "🛡️ <b>Sentinel · Security Check</b>\n"
             f"<b>{escape(message.chat.title or 'Telegram group')}</b> · <code>{format_member_status(bot_member.status)}</code>\n\n"
             + "\n".join(lines)
             + f"\n\n<b>{heading}</b>"

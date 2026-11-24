@@ -45,7 +45,7 @@ def create_owner_router(
             return
 
         status = await message.answer(premium_text(
-            "🧪 <b>Guardian AI Guard diagnostics</b>\n\nTesting the safety classifier…"
+            "🧪 <b>Sentinel · AI Guard diagnostics</b>\n\nTesting the safety classifier…"
         ))
         safety_started = time.monotonic()
         safety_result = await NimSafetyClient(
@@ -56,7 +56,7 @@ def create_owner_router(
 
         detail = f" · {safety_latency} ms"
         report = (
-            "🧪 <b>Guardian AI Guard diagnostics</b>\n\n"
+            "🧪 <b>Sentinel · AI Guard diagnostics</b>\n\n"
             + f"{'✅' if safety_ok else '❌'} <b>AI Guard:</b> "
             + f"{'PASS' if safety_ok else 'FAIL'}{detail}\n"
             + f"<code>{escape(safety_model)}</code>\n\n"

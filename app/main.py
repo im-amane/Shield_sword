@@ -121,6 +121,31 @@ async def daily_security_report_loop(bot: Bot, owner_id: int) -> None:
             await asyncio.sleep(60 * 60)
 
 
+async def sync_bot_profile(bot: Bot) -> None:
+    """Keep Telegram's public bot profile aligned with the Sentinel identity."""
+    logger = logging.getLogger(__name__)
+    profile = {
+        "name": "Sentinel🛡️剣",
+        "description": (
+            "Sentinel is Ani World's automated Telegram group and channel security "
+            "manager. It provides member verification, anti-spam and link protection, "
+            "AI safety checks for text and captions, raid monitoring, moderation, "
+            "security audit logs and owner reports. Normal media is not blanket-deleted."
+        ),
+        "short_description": (
+            "Ani World security & management: verification, AI text safety, "
+            "anti-spam, raid monitoring and moderation."
+        ),
+    }
+    try:
+        await bot.set_my_name(name=profile["name"])
+        await bot.set_my_description(description=profile["description"])
+        await bot.set_my_short_description(short_description=profile["short_description"])
+        logger.info("Telegram bot profile synchronized to Sentinel identity.")
+    except TelegramAPIError:
+        logger.exception("Could not synchronize Telegram bot profile; continuing startup.")
+
+
 async def run() -> None:
     init_storage()
     settings = load_settings()
@@ -179,6 +204,7 @@ async def run() -> None:
     verification_task = asyncio.create_task(verification_expiry_loop(bot))
     try:
         me = await bot.get_me()
+        await sync_bot_profile(bot)
         logging.getLogger(__name__).info(
             "Connected to Telegram as @%s (id=%s)", me.username, me.id
         )

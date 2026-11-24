@@ -7,6 +7,7 @@ from html import escape
 from urllib.parse import urlsplit
 
 from aiogram import F, Router
+from aiogram.enums import ChatType
 from aiogram.filters import Command, CommandStart
 from app.handlers.typography import premium_text
 
@@ -21,24 +22,55 @@ router = Router(name="start")
 
 
 def start_text(first_name: str) -> str:
-    safe_name = escape(first_name)
+    """Private welcome for an individual user."""
+    safe_name = escape(first_name, quote=True)
     return premium_text((
-        f"Welcome home, {safe_name}. 👋\n\n"
-        "⚔️ <b>𝗔𝗡𝗜 𝗪𝗢𝗥𝗟𝗗 剣</b>\n"
-        "🛡️ <b>GUARDIAN · COMMUNITY PROTECTION</b>\n\n"
-        "Think of me as the elder brother watching over this community. "
-        "I'll welcome the good ones, keep an eye on trouble, and step in "
-        "when someone puts the family at risk. 🤝\n\n"
-        "╭─ <b>MY PROMISE</b>\n"
-        "│ 🧩 Verify new members\n"
-        "│ 🌊 Stop spam and harmful links\n"
-        "│ ⚔️ Detect raid activity\n"
-        "│ ⚖️ Apply fair, consistent moderation\n"
-        "│ 🔔 Keep the owner informed\n"
-        "╰────────────────\n\n"
-        "<i>Protect the community. Respect its people. Never punish without reason.</i>\n\n"
-        "Use the buttons below to explore my systems. ❤️"
+        f"Welcome, {safe_name}. 👋\n\n"
+        "🛡️ <b>Sentinel · Ani World 剣</b>\n"
+        "<i>Autonomous Community Security & Management</i>\n\n"
+        "I am Sentinel, the security and management system built for Ani World communities. "
+        "I work quietly in the background to help keep groups and channels safer.\n\n"
+        "╭─ <b>SECURITY SYSTEMS</b>\n"
+        "│ 🧩 New-member verification\n"
+        "│ 🚫 Anti-spam and link protection\n"
+        "│ 🧠 AI safety checks for text and captions\n"
+        "│ ⚔️ Raid and unusual-join monitoring\n"
+        "│ ⚖️ Moderation and security audit logs\n"
+        "│ 🔐 Owner reports and encrypted backups\n"
+        "╰──────────────────\n\n"
+        "Ordinary photos, videos, GIFs, documents and other normal media are not blanket-deleted. "
+        "AI Guard checks text and captions; it does not verify visual copyright ownership.\n\n"
+        "<i>Protection with control. Moderation with context.</i>\n\n"
+        "Choose a section below to explore Sentinel."
     ))
+
+
+def group_start_text(chat_title: str) -> str:
+    """A separate introduction intended for a group or supergroup."""
+    safe_title = escape(chat_title or "this community", quote=True)
+    return premium_text((
+        f"🛡️ <b>Sentinel is online in {safe_title}</b>\n"
+        "<i>Ani World 剣 · Community Security & Management</i>\n\n"
+        "This group is connected to Sentinel's automated protection system. "
+        "I monitor suspicious activity and apply the configured safety rules.\n\n"
+        "╭─ <b>ACTIVE PROTECTION</b>\n"
+        "│ 🧩 New-member verification\n"
+        "│ 🚫 Anti-spam and link filtering\n"
+        "│ 🧠 AI safety checks for text and captions\n"
+        "│ ⚔️ Raid and join-surge monitoring\n"
+        "│ ⚖️ Moderation and incident logging\n"
+        "╰──────────────────\n\n"
+        "Admins: use /security to review protection status and /checkpermissions "
+        "to verify Sentinel's Telegram permissions. Use /help for the command guide.\n\n"
+        "<i>Normal photos, videos and other media are not blanket-deleted.</i>"
+    ))
+
+
+def group_start_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="📚 Help Center", callback_data="start:help"),
+        InlineKeyboardButton(text="🛡️ About Sentinel", callback_data="start:about"),
+    ]])
 
 
 def _public_url(name: str) -> str | None:
@@ -77,13 +109,13 @@ def start_keyboard(bot_username: str | None = None) -> InlineKeyboardMarkup:
                 ) if owner_url else InlineKeyboardButton(
                     text="👑 Owner", callback_data="start:owner"
                 ),
-                InlineKeyboardButton(text="🛡️ My Promise", callback_data="start:about"),
+                InlineKeyboardButton(text="🛡️ About Sentinel", callback_data="start:about"),
             ],
             [
                 InlineKeyboardButton(
-                    text="➕ Add Guardian to Group", url=add_url
+                    text="➕ Add Sentinel to Group", url=add_url
                 ) if add_url else InlineKeyboardButton(
-                    text="➕ Add Guardian to Group", callback_data="start:addgroup"
+                    text="➕ Add Sentinel to Group", callback_data="start:addgroup"
                 ),
             ],
         ]
@@ -92,12 +124,12 @@ def start_keyboard(bot_username: str | None = None) -> InlineKeyboardMarkup:
 
 def help_text() -> str:
     return premium_text(
-        "📚 <b>Ani World · Help Center</b> ✨\n\n"
-        "Commands ko categories mein divide kiya gaya hai. Neeche kisi section par tap karo.\n\n"
-        "🛡️ Group protection · 👮 Moderation\n"
-        "👤 General · 👑 Owner tools\n\n"
-        "©️ Copyright Shield runs automatically in groups.\n\n"
-        "<i>Har section mein command ka use aur zaroori permissions di gayi hain.</i>"
+        "📚 <b>Sentinel · Help Center</b> ✨\n\n"
+        "Sentinel ke group security, moderation aur owner controls yahan milenge.\n\n"
+        "🛡️ Automated protection · 🧠 AI safety checks\n"
+        "👮 Moderation · 👑 Owner control center\n\n"
+        "AI Guard checks group messages and channel posts containing text or captions when enabled. Normal media is not blanket-deleted.\n\n"
+        "<i>Har section mein command usage aur required permissions di gayi hain.</i>"
     )
 
 
@@ -125,7 +157,7 @@ _HELP_SECTIONS = {
         "/help - Open this help center\n"
         "/id - Show your ID and chat ID\n"
         "/id (reply) - Show another member's ID\n"
-        "/checkpermissions - Check Guardian's admin rights in this group\n"
+        "/checkpermissions - Check Sentinel's admin rights in this group\n"
         "/security - View this group's protection status"
     ),
     "moderation": (
@@ -169,14 +201,14 @@ _HELP_SECTIONS = {
         "/raidoff - Disable active raid mode\n"
         "/audit - View recent security events\n"
         "/backup - Send a private database backup\n"
-        "/aitest - Test NVIDIA chat and safety model endpoints (private chat)\n\n"
+        "/aitest - Test the NVIDIA AI Guard safety endpoint (private chat)\n\n"
         "<i>These commands are restricted to the configured bot owner.</i>"
     ),
     "permissions": (
         "⚙️ <b>Bot Permissions</b>\n\n"
         "/security - View protection status (group admins)\n"
         "/checkpermissions - Check the bot's admin rights\n\n"
-        "Promote Ani World as an administrator in your group.\n\n"
+        "Promote Sentinel as an administrator in your group.\n\n"
         "• <b>Delete Messages:</b> Anti-link and purge\n"
         "• <b>Ban Users:</b> Mute, ban, kick, warnings and verification\n\n"
         "Some commands also require the person using them to be a group admin."
@@ -192,7 +224,15 @@ def help_section_keyboard() -> InlineKeyboardMarkup:
 
 @router.message(CommandStart())
 async def start_command(message: Message) -> None:
-    # Telegram text reveal/loading animation before the actual welcome message.
+    bot_identity = await message.bot.get_me()
+    if message.chat.type in (ChatType.GROUP, ChatType.SUPERGROUP):
+        await message.answer(
+            group_start_text(message.chat.title or "this community"),
+            reply_markup=group_start_keyboard(),
+        )
+        return
+
+    # Keep the short loading animation in private chat only.
     frames = [
         "╭──────────────╮\n"
         "   ⚔️ <b>ANI WORLD</b>\n"
@@ -215,7 +255,6 @@ async def start_command(message: Message) -> None:
         "╰──────────────╯\n"
         "<i>Ready! ✨</i>",
     ]
-    bot_identity = await message.bot.get_me()
     sent = await message.answer(premium_text(frames[0]))
     for frame in frames[1:]:
         await asyncio.sleep(0.55)
@@ -245,7 +284,7 @@ async def help_section_callback(callback: CallbackQuery) -> None:
         return
     content = _HELP_SECTIONS.get(section)
     if content is None:
-        await callback.answer(premium_text("Unknown help section. 😅"), show_alert=True)
+        await callback.answer(premium_text("That help section is unavailable. Please reopen /help."), show_alert=True)
         return
     await callback.message.edit_text(
         premium_text(content),
@@ -266,9 +305,8 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
     if action == "about":
         await callback.answer(
             premium_text(
-                "🛡️ Shield 剣 · Ani World Guardian\n\n"
-                "I protect groups with verification, anti-spam, raid defence, "
-                "link filtering and moderation tools. ✨"
+                "🛡️ Sentinel🛡️剣 · Ani World\n\n"
+                "Automated group and channel security: verification, anti-spam, AI safety checks for text/captions, raid monitoring and moderation. Normal media stays allowed."
             ),
             show_alert=True,
         )
@@ -277,7 +315,7 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
     missing_links = {
         "group": ("MAIN_GROUP_URL", "Main Group link is not configured yet. 🔗"),
         "owner": ("OWNER_CONTACT_URL", "Owner contact link is not configured yet. 👤"),
-        "addgroup": ("", "Use the Add Me button after opening /start again. ➕"),
+        "addgroup": ("", "Open /start in private chat to access the add-to-group link. ➕"),
     }
     if action in missing_links:
         variable, message_text = missing_links[action]
@@ -287,4 +325,4 @@ async def start_menu_callback(callback: CallbackQuery) -> None:
             await callback.answer(premium_text(message_text), show_alert=True)
         return
 
-    await callback.answer(premium_text("Unknown menu action. 😅"), show_alert=True)
+    await callback.answer(premium_text("This menu action is unavailable. Please reopen /start."), show_alert=True)

@@ -31,7 +31,14 @@ class WelcomeMessageTests(unittest.TestCase):
         message = render_welcome_message("Anime Fans", members)
         self.assertIn("𝐎𝐧𝐞", message)
         self.assertIn("𝐓𝐰𝐨", message)
-        self.assertIn("𝐧𝐞𝐰 𝐦𝐞𝐦𝐛𝐞𝐫𝐬", message)
+        self.assertIn("𝐖𝐞𝐥𝐜𝐨𝐦𝐞 𝐭𝐨 𝐭𝐡𝐞 𝐜𝐨𝐦𝐦𝐮𝐧𝐢𝐭𝐲", message)
+
+    def test_welcome_explains_sentinel_verification_and_media_policy(self) -> None:
+        member = User(id=12345, is_bot=False, first_name="Ari")
+        message = render_welcome_message("Anime Fans", [member])
+        self.assertIn("𝐒𝐞𝐧𝐭𝐢𝐧𝐞𝐥 𝐢𝐬 𝐩𝐫𝐨𝐭𝐞𝐜𝐭𝐢𝐧𝐠", message)
+        self.assertIn("𝐯𝐞𝐫𝐢𝐟𝐢𝐜𝐚𝐭𝐢𝐨𝐧 𝐜𝐡𝐚𝐥𝐥𝐞𝐧𝐠𝐞", message)
+        self.assertIn("𝐧𝐨𝐭 𝐛𝐥𝐚𝐧𝐤𝐞𝐭-𝐝𝐞𝐥𝐞𝐭𝐞𝐝", message)
 
     def test_handles_missing_group_title(self) -> None:
         member = User(id=12345, is_bot=False, first_name="Ari")
