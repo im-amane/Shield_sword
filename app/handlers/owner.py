@@ -1,4 +1,5 @@
 """Owner-only identity, audit, database and backup commands."""
+import asyncio
 from html import escape
 from io import BytesIO
 
@@ -44,7 +45,7 @@ def create_owner_router(
             return
 
         status = await message.answer(premium_text("🧪 <b>NVIDIA NIM diagnostics</b>\n\nChecking chat and safety models…"))
-        chat_result = await __import__("asyncio").to_thread(
+        chat_result = await asyncio.to_thread(
             NimChatClient(nvidia_api_key, chat_model).generate,
             "Reply with exactly: Guardian chat test passed.",
         )
