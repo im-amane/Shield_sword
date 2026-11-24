@@ -9,7 +9,7 @@ from html import escape
 
 from aiogram import F, Router
 from aiogram.dispatcher.event.bases import SkipHandler
-from aiogram.enums import ChatType, ChatMemberStatus
+from aiogram.enums import ChatType
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message
 
@@ -105,6 +105,6 @@ def create_ai_chat_router(
             try:
                 await message.answer(premium_text(safe_text))
             except TelegramAPIError:
-                logger.warning("Guardian AI chat reply could not be delivered." )
+                logger.warning("Guardian AI chat reply could not be delivered.")
 
     return router
