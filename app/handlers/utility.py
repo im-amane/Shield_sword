@@ -108,8 +108,8 @@ def create_utility_router() -> Router:
             name_history=_previous_names(history),
         )
         caption = (
-            "🪪 <b>Sentinel · User Profile</b>\\n"
-            f"<b>Chat ID:</b> <code>{message.chat.id}</code>\\n"
+            "🪪 <b>Sentinel · User Profile</b>\n"
+            f"<b>Chat ID:</b> <code>{message.chat.id}</code>\n"
             f"<b>User ID:</b> <code>{target.id}</code>"
         )
         await message.answer_photo(
