@@ -73,7 +73,7 @@ def create_badwords_router() -> Router:
             await message.answer(premium_text("⚙️ You need Delete Messages permission to manage this filter."))
             return False
         if bot_member.status not in (ChatMemberStatus.CREATOR, ChatMemberStatus.ADMINISTRATOR) or not getattr(bot_member, "can_delete_messages", False):
-            await message.answer(premium_text("🛡️ Promote Ani World with Delete Messages permission."))
+            await message.answer(premium_text("🛡️ Promote Sentinel with Delete Messages permission."))
             return False
         return True
 
